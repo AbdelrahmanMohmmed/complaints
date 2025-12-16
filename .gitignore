@@ -1,7 +1,7 @@
 # Data
 google-chrome-stable_current_amd64.deb
 /downloaded_files
-/DE_venv
+/venv
 # Mac OS-specific storage files
 .DS_Store
 
