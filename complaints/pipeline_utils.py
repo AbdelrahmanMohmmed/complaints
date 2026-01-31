@@ -14,17 +14,20 @@ def extract(data_locs,use_first_col_index=True):
     
     return main_df
 
-def transform(df,col_name='comment'):
+def transform(df,col_name='comment',complaint=(food_clusters_ara,
+                                               food_clusters_en)):
     english_df = df[df[col_name].apply(isEnglish)]
     arabic_df  = df[~df[col_name].apply(isEnglish)]
     arabic_df["complaint_cluster"] = arabic_df[col_name].apply(
-        lambda x: ' '.join(classify_comment_ar(x, food_clusters_ara))
+        lambda x: ' '.join(classify_comment_ar(x, complaint[0]))
     )
     english_df["complaint_cluster"] = english_df[col_name].apply(
-        lambda x: ' '.join(classify_comment_en(x, food_clusters_en))
+        lambda x: ' '.join(classify_comment_en(x, complaint[1]))
     )
 
     return english_df,arabic_df
+
+
 
 def load(df,loc):
     df.to_csv(loc,index=False)
