@@ -16,6 +16,15 @@ def extract(data_locs,use_first_col_index=True):
 
 def transform(df,col_name='comment',complaint=(food_clusters_ara,
                                                food_clusters_en)):
+    
+    df[col_name] = df[col_name].fillna("").astype(str).str.strip()
+
+    # Drop empty rows
+    df = df[df[col_name] != ""]
+
+    # Drop rows that contain only numbers (e.g., "9", "10")
+    df = df[~df[col_name].str.fullmatch(r'\d+')]
+
     english_df = df[df[col_name].apply(isEnglish)]
     arabic_df  = df[~df[col_name].apply(isEnglish)]
     arabic_df["complaint_cluster"] = arabic_df[col_name].apply(

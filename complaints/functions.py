@@ -10,7 +10,7 @@ def loadDictionary(location):
 
 
 ENGLISH_WORDS = loadDictionary('/home/jax/complaints/complaints/dictionary.txt')
-LETTERS_AND_SPACE = string.ascii_letters + ' \t\n'
+LETTERS_AND_SPACE = string.ascii_letters + ' '
 
 def removeNonLetters(message):
     lettersOnly = []
@@ -20,6 +20,7 @@ def removeNonLetters(message):
     return ''.join(lettersOnly)
 
 def getEnglishCount(message):
+    message = str(message)
     message = message.upper()
     message = removeNonLetters(message)
     possibleWords = message.split()

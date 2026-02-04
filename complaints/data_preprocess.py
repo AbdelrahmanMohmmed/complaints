@@ -3,7 +3,7 @@ import os
 import glob
 
 # Directory location for data folder
-DATA_LOCATION = '/home/jax/complaints/data/external'
+DATA_LOCATION = '/home/jax/complaints/data/interim'
 
 def complain_pipeline(prefix,comment,complains_dict,eng_loc,ara_loc,extra=None):
     """
@@ -66,7 +66,7 @@ def complain_pipeline(prefix,comment,complains_dict,eng_loc,ara_loc,extra=None):
     df = extract(files)
     print("Combined DataFrame shape:", df.shape)
     print("Sample of combined DataFrame:\n", df.head())
-    
+    df[comment] = df[comment].astype('object')
     # Transform DataFrame: split by language and label complaint clusters
     eng_df,ara_df = transform(df,col_name=comment,complaint=complains_dict)
     print("English DataFrame sample:\n", eng_df.head())
@@ -78,5 +78,5 @@ def complain_pipeline(prefix,comment,complains_dict,eng_loc,ara_loc,extra=None):
     load(eng_df,eng_loc)
     load(ara_df,ara_loc)
 
-complain_pipeline('all','text',(Plumbing_clusters_ara,
-                                Plumbing_clusters_en),'Plumbing_eng.csv','Plumbing_ara.csv')
+complain_pipeline('elmenu','comment',(Plumbing_clusters_ara,
+                                Plumbing_clusters_en),'Food_eng_train.csv','Food_ara_test.csv')
