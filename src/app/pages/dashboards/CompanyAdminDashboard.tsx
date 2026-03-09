@@ -1,7 +1,7 @@
 // NOTE: Company Admin Dashboard with Reports integrated
 
 import React from 'react';
-import { Link } from 'react-router';
+// import { Link } from 'react-router';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { mockFeedback } from '../../data/mockData';
@@ -29,10 +29,6 @@ import {
   Clock,
   AlertCircle,
   CheckCircle,
-  TrendingUp,
-  TrendingDown,
-  Plus,
-  Plug,
   Building2,
   Smile
 } from 'lucide-react';
@@ -304,7 +300,7 @@ export function CompanyAdminDashboard() {
       </div>
 
       {/* REPORTS SECTION */}
-
+{/* 
       <Card>
 
         <CardHeader>
@@ -321,7 +317,7 @@ export function CompanyAdminDashboard() {
 
         </CardContent>
 
-      </Card>
+      </Card> */}
 
     </div>
 

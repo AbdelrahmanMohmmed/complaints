@@ -296,16 +296,16 @@ export const mockCompanies: Company[] = [
 export const mockDomains: Domain[] = [
   {
     id: 'domain-1',
-    name: 'Resturants',
-    description: 'food',
+    name: 'Restaurants',
+    description: 'Food services, restaurants, and dining experiences',
     totalFeedback: 2450,
     companies: 12,
     createdAt: '2025-01-01T00:00:00Z',
   },
   {
     id: 'domain-2',
-    name: 'Senatiary tools',
-    description: 'Medical services, pharmaceuticals, health insurance',
+    name: 'Sanitary Ware',
+    description: 'Sanitary products, plumbing supplies, and bathroom equipment',
     totalFeedback: 1830,
     companies: 8,
     createdAt: '2025-01-01T00:00:00Z',

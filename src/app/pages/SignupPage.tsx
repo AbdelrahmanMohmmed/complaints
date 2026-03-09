@@ -21,7 +21,6 @@ import {
   MessageSquare,
   Mail,
   UserPlus,
-  Trash2,
   Facebook,
 } from 'lucide-react';
 
@@ -87,7 +86,7 @@ export function SignupPage() {
   const strengthLabels = isAr ? ['ضعيفة', 'مقبولة', 'جيدة', 'قوية'] : ['Weak', 'Fair', 'Good', 'Strong'];
 
   const atLeastOneApi = apis.facebook || apis.whatsapp || apis.x;
-  const displayDomainLabel = domainLabel.trim() || selectedDomain?.name || '';
+  // const displayDomainLabel = domainLabel.trim() || selectedDomain?.name || '';
 
   const canProceedStep1 =
     form.name.trim() &&
@@ -120,8 +119,7 @@ export function SignupPage() {
     if (step > 1) setStep(step - 1);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     setError('');
     if (!selectedDomain || !atLeastOneApi) return;
 
