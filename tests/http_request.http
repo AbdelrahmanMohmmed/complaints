@@ -1,0 +1,14 @@
+GET http://127.0.0.1:8000
+Accept : application/json
+
+POST http://127.0.0.1:8000/users
+content-Type :application/json
+
+{
+"company_id": 2,
+  "role_id": 2,
+  "f_name": "garen",
+  "l_name": "yegar",
+  "email": "fukoff2@gmail.com",
+  "password": "wakeupBich"
+}
