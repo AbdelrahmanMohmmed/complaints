@@ -36,11 +36,11 @@ export function LoginPage() {
     const result = await login(email, password);
     setIsLoading(false);
 
-    if (result.success) {
-      navigate(from, { replace: true });
-    } else {
-      setError(result.error || 'Login failed');
-    }
+if (result.success) {
+  navigate('/app', { replace: true });
+} else {
+  setError(result.error || 'Login failed');
+}
   };
 
   const handleDemoLogin = (demoEmail: string) => {

@@ -52,11 +52,13 @@ export function SignupPage() {
 
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
-    name: '',
+    f_name: '',
+    l_name: '',
     email: '',
     company: '',
     password: '',
     confirmPassword: '',
+      phone: '',   // ← add this
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -90,9 +92,11 @@ export function SignupPage() {
   const displayDomainLabel = domainLabel.trim() || selectedDomain?.name || '';
 
   const canProceedStep1 =
-    form.name.trim() &&
+    form.f_name.trim() &&
+    form.l_name.trim() &&
     form.company.trim() &&
     form.email.trim() &&
+    form.phone.trim() &&   // ← add this
     form.password.length >= 6 &&
     form.password === form.confirmPassword;
   const canProceedStep2 = !!selectedDomain;
@@ -127,11 +131,13 @@ export function SignupPage() {
 
     setIsLoading(true);
     const payload: SignupRequest = {
-      name: form.name.trim(),
-      email: form.email.trim(),
+      f_name: form.f_name.trim(),
+      l_name: form.l_name.trim(),
+        email: form.email.trim(),
       company: form.company.trim(),
       password: form.password,
-      domainId: selectedDomain.id,
+      phone: form.phone.trim(),   // ← add this
+      domainId: Number(selectedDomain.id),
       domainLabel: domainLabel.trim() || undefined,
       apis: { ...apis },
       extraUser:
@@ -254,15 +260,28 @@ export function SignupPage() {
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                        {isAr ? 'الاسم الكامل' : 'Full Name'} <span className="text-red-500">*</span>
+                        {isAr ? 'الاسم الأول' : 'First Name'} <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
                         required
-                        value={form.name}
-                        onChange={(e) => setForm({ ...form, name: e.target.value })}
+                        value={form.f_name}
+                        onChange={(e) => setForm({ ...form, f_name: e.target.value })}
                         className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                        placeholder={isAr ? 'اسمك الكامل' : 'John Smith'}
+                        placeholder={isAr ? 'الاسم الأول' : 'John'}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                        {isAr ? 'اسم العائلة' : 'Last Name'} <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={form.l_name}
+                        onChange={(e) => setForm({ ...form, l_name: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        placeholder={isAr ? 'اسم العائلة' : 'Smith'}
                       />
                     </div>
                     <div>
@@ -290,6 +309,20 @@ export function SignupPage() {
                       onChange={(e) => setForm({ ...form, email: e.target.value })}
                       className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                       placeholder="you@company.com"
+                      dir="ltr"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                      {isAr ? 'رقم الهاتف' : 'Phone Number'} <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="tel"
+                      required
+                      value={form.phone}
+                      onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      placeholder="01xxxxxxxxx"
                       dir="ltr"
                     />
                   </div>

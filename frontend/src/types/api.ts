@@ -80,17 +80,15 @@ export type SignupApiChannel = 'facebook' | 'whatsapp' | 'x' | 'email';
  * TODO (Backend - FastAPI): POST /api/v1/auth/signup
  */
 export interface SignupRequest {
-  name: string;
+  f_name: string;
+  l_name: string;
   email: string;
   company: string;
   password: string;
-  /** Selected domain id (required) */
-  domainId: string;
-  /** Optional custom label for the domain; if empty use domain name */
+  phone: string;        // ← add this
+  domainId: number;
   domainLabel?: string;
-  /** At least one of facebook, whatsapp, x required; email is optional */
-  apis: { facebook?: boolean; whatsapp?: boolean; x?: boolean; email?: boolean };
-  /** Optional: invite another user (role must be manager or agent, not admin) */
+  apis: { facebook: boolean; whatsapp: boolean; x: boolean; email: boolean };
   extraUser?: { name: string; email: string; role: 'manager' | 'agent' };
 }
 

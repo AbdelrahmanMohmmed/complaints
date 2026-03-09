@@ -22,8 +22,7 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   setUser: (user: User | null) => void;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  logout: () => Promise<void>;
+login: (email: string, password: string) => Promise<{ success: boolean; error?: string; role?: UserRole }>;  logout: () => Promise<void>;
   isLoading: boolean;
 }
 
@@ -78,19 +77,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    * - Return 400 if credentials invalid
    * - Return 429 if rate-limited
    */
-  const login = async (
-    email: string,
-    password: string
-  ): Promise<{ success: boolean; error?: string }> => {
+ const login = async (
+  email: string,
+  password: string
+): Promise<{ success: boolean; error?: string; role?: UserRole }> => {
     try {
-      const response = await authService.login(email, password);
-      setUser(response.user);
-      return { success: true };
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Login failed';
-      return { success: false, error: message };
-    }
-  };
+    const response = await authService.login(email, password);
+    setUser(response.user);
+    return { success: true, role: response.user.role };  // ← pass role back
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Login failed';
+    return { success: false, error: message };
+  }
+};
 
   /**
    * Logout function

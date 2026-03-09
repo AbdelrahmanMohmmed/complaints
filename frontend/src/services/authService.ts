@@ -9,7 +9,8 @@
  * - Add error handling and retry logic
  * - Coordinate with AuthContext for state management
  */
-
+import { UserRole } from '../app/contexts/AuthContext';
+import { request } from './api';
 import {
   User,
   LoginRequest,
@@ -123,18 +124,20 @@ const MOCK_USERS: Record<string, { password: string; user: User }> = {
  * - Return 201 { success, message }; do NOT return tokens
  */
 export async function signup(data: SignupRequest): Promise<SignupResponse> {
-  await new Promise((resolve) => setTimeout(resolve, 600));
-  // TODO: Replace with actual API call
-  // const response = await request<SignupResponse>('/auth/signup', {
-  //   method: 'POST',
-  //   body: JSON.stringify(data),
-  //   skipAuth: true,
-  // });
-  return {
-    success: true,
-    message: 'Verification email sent. Please check your inbox and then sign in.',
-    verificationToken: `mock-verify-${Date.now()}`,
-  };
+  const response = await request<SignupResponse>('/companies/', {
+    method: 'POST',
+    body: JSON.stringify({
+      company_name: data.company,
+      email: data.email,
+      phone: data.phone,
+      domain_id: data.domainId,
+      f_name: data.f_name,
+      l_name: data.l_name,
+      password: data.password,
+    }),
+    skipAuth: true,
+  });
+  return { success: true, message: 'Account created successfully' };
 }
 
 /**
@@ -173,43 +176,58 @@ export async function verifyEmail(token: string): Promise<{ success: boolean; er
  * @throws Error with message if login fails
  */
 export async function login(email: string, password: string): Promise<LoginResponse> {
-  // Simulate network delay
-  await new Promise((resolve) => setTimeout(resolve, 800));
+  const formData = new URLSearchParams();
+  formData.append('username', email);
+  formData.append('password', password);
 
-  // TODO: Replace with actual API call:
-  // const response = await request<LoginResponse>('/auth/login', {
-  //   method: 'POST',
-  //   body: JSON.stringify({ email, password }),
-  //   skipAuth: true, // No token needed for login
-  // });
+  const response = await request<{ access_token: string; token_type: string }>('/login', {
+    method: 'POST',
+    body: formData.toString(),
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    skipAuth: true,
+  });
 
-  // Mock validation
-  const mockUser = MOCK_USERS[email.toLowerCase()];
-  if (!mockUser || mockUser.password !== password) {
-    throw new Error('Invalid email or password');
-  }
+  // Store token first so /users/me can use it
+  localStorage.setItem('ara2kom-access-token', response.access_token);
+  tokenStorage.setTokens(response.access_token);
 
-  // Mock response
-  const mockResponse: LoginResponse = {
-    access_token: `mock-access-token-${Date.now()}`,
-    refresh_token: `mock-refresh-token-${Date.now()}`,
-    user: mockUser.user,
+  // Fetch real user info including role_id
+  const me = await request<{
+    user_id: number;
+    f_name: string;
+    l_name: string;
+    email: string;
+    role_id: number;
+    company_id: number;
+  }>('/users/me');
+
+  const user: User = {
+    id: String(me.user_id),
+    name: `${me.f_name} ${me.l_name}`,
+    email: me.email,
+    role: mapRoleIdToRole(me.role_id),   // ← converts 1,2,3 to role string
+    companyId: String(me.company_id),
   };
 
-  // Store tokens in memory
-  tokenStorage.setTokens(
-    mockResponse.access_token,
-    mockResponse.refresh_token,
-    mockResponse.user
-  );
+  tokenStorage.setTokens(response.access_token, undefined, user);
+  localStorage.setItem('ara2kom-user', JSON.stringify(user));
 
-  // Also persist to localStorage for demo (TODO: remove in production)
-  localStorage.setItem('ara2kom-access-token', mockResponse.access_token);
-  localStorage.setItem('ara2kom-user', JSON.stringify(mockResponse.user));
-
-  return mockResponse;
+  return {
+    access_token: response.access_token,
+    refresh_token: '',
+    user,
+  };
 }
 
+// ← ADD THIS helper
+function mapRoleIdToRole(role_id: number): UserRole {
+  switch (role_id) {
+    case 1: return 'companyAdmin';
+    case 2: return 'manager';
+    case 3: return 'agent';
+    default: return 'agent';
+  }
+}
 /**
  * Logout Function
  * 

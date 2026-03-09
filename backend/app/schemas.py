@@ -17,6 +17,17 @@ class UserOut(BaseModel):
     class Config:
         from_attributes = True
 
+class UserMe(BaseModel):
+    user_id: int
+    f_name: str
+    l_name: str
+    email: EmailStr
+    role_id: int
+    company_id: int
+
+    class Config:
+        from_attributes = True
+        
 class CompanyCreate(BaseModel):
     company_name: str
     email: Optional[EmailStr] = None
@@ -30,6 +41,15 @@ class CompanyOut(BaseModel):
     created_at: datetime
     class Config:
         from_attributes = True
+
+class CompanySignup(BaseModel):
+    company_name: str
+    email: EmailStr
+    phone: Optional[str] = None
+    domain_id: int
+    f_name: str
+    l_name: str
+    password: str
 
 class Token(BaseModel):
     access_token: str

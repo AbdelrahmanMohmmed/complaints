@@ -7,9 +7,9 @@ class Settings (BaseSettings):
     DATABASE_USERNAME:str
     DATABASE_PORT:str
     DATABASE_NAME:str
-    SECRET_KEY:str
-    ALGORITHM:str
-    ACCESS_TOKEN_EXPIRE_MINUTES:str
+    secret_key:str
+    algorithm:str
+    access_token_expire_minutes:int
     model_config = {"env_file": ".env"}
     
 settings = Settings()

@@ -295,7 +295,7 @@ export const mockCompanies: Company[] = [
 
 export const mockDomains: Domain[] = [
   {
-    id: 'domain-1',
+    id: '1',  // ← was 'domain-1'
     name: 'Resturants',
     description: 'food',
     totalFeedback: 2450,
@@ -303,7 +303,7 @@ export const mockDomains: Domain[] = [
     createdAt: '2025-01-01T00:00:00Z',
   },
   {
-    id: 'domain-2',
+    id: '2',  // ← was 'domain-2'
     name: 'Senatiary tools',
     description: 'Medical services, pharmaceuticals, health insurance',
     totalFeedback: 1830,
