@@ -1,18 +1,19 @@
 from fastapi import APIRouter, status, HTTPException, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from .. import models, schemas, utils, database ,oauth2
+from .. import models, utils, database, oauth2
+from ..schemas import user
 
 router = APIRouter(prefix="/users", tags=['Users'])
 
-@router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.UserOut)
-def create_user(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
-    user_data = user.dict()
-    password = user_data.pop('password')
+@router.post("/", status_code=status.HTTP_201_CREATED, response_model=user.UserOut)
+def create_user(user_data: user.UserCreate, db: Session = Depends(database.get_db)):
+    data = user_data.dict()
+    password = data.pop('password')
     
-    user_data['password_hash'] = utils.hash(password)
+    data['password_hash'] = utils.hash(password)
     
-    new_user = models.User(**user_data)
+    new_user = models.User(**data)
     try:
         db.add(new_user)
         db.commit()
@@ -22,7 +23,7 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(database.get_db)
         raise HTTPException(status_code=400, detail="Email already registered")
     return new_user
 
-@router.get("/me", response_model=schemas.UserMe)
+@router.get("/me", response_model=user.UserMe)
 def get_me(
     db: Session = Depends(database.get_db),
     current_user_id: int = Depends(oauth2.get_current_user)

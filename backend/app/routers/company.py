@@ -1,12 +1,13 @@
 from fastapi import APIRouter, status, HTTPException, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from .. import models, schemas, utils, database
+from .. import models, utils, database
+from ..schemas import company
 
 router = APIRouter(prefix="/companies", tags=['Companies'])
 
-@router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.CompanyOut)
-def create_company(signup: schemas.CompanySignup, db: Session = Depends(database.get_db)):
+@router.post("/", status_code=status.HTTP_201_CREATED, response_model=company.CompanyOut)
+def create_company(signup: company.CompanySignup, db: Session = Depends(database.get_db)):
     # 1. Check domain exists
     domain = db.query(models.Domain).filter(models.Domain.domain_id == signup.domain_id).first()
     if not domain:
@@ -50,6 +51,9 @@ def create_company(signup: schemas.CompanySignup, db: Session = Depends(database
 
     return new_company
 
-@router.get("/", response_model=list[schemas.CompanyOut])
+
+# This route may be benefit for superadmin (Us)  
+@router.get("/", response_model=list[company.CompanyOut])
 def get_companies(db: Session = Depends(database.get_db)):
     return db.query(models.Company).all()
+

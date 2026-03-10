@@ -3,8 +3,8 @@ from datetime import datetime, timedelta
 from fastapi import Depends, status, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-from . import database, models, schemas
 from .config import settings
+from . import models, database
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='login')
 
@@ -27,3 +27,17 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
         return int(user_id)
     except JWTError:
         raise credentials_exception
+
+
+def get_current_user_with_company(
+    user_id: int = Depends(get_current_user),
+    db: Session = Depends(database.get_db)
+):
+    """Get current user with company_id from database"""
+    user = db.query(models.User).filter(models.User.user_id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found"
+        )
+    return {"user_id": user.user_id, "company_id": user.company_id, "role_id": user.role_id}
