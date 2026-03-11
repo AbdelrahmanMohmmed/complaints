@@ -2,16 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { sendContactMessage } from '../../services/contactService';
 import {
   Brain,
   BarChart3,
   Shield,
   Globe2,
-  MessageSquare,
-  Users,
   Zap,
   ChevronRight,
-  Star,
   CheckCircle2,
   ArrowRight,
   Moon,
@@ -19,13 +17,7 @@ import {
   Languages,
   Menu,
   X,
-  Mail,
-  Phone,
-  MapPin,
-  TrendingUp,
-  Bot,
   Filter,
-  Bell,
 } from 'lucide-react';
 
 const ANALYTICS_IMAGE = 'https://images.unsplash.com/photo-1759661966728-4a02e3c6ed91?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkYXRhJTIwYW5hbHl0aWNzJTIwYnVzaW5lc3MlMjBpbnRlbGxpZ2VuY2UlMjB2aXN1YWxpemF0aW9ufGVufDF8fHx8MTc3MjA4OTI4MXww&ixlib=rb-4.1.0&q=80&w=1080';
@@ -37,6 +29,7 @@ export function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
   const [contactForm, setContactForm] = useState({ name: '', email: '', company: '', message: '' });
   const [contactSent, setContactSent] = useState(false);
+  const [sending, setSending] = useState(false);
 
   const isAr = language === 'ar';
 
@@ -46,11 +39,40 @@ export function LandingPage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleContactSubmit = (e: React.FormEvent) => {
+  // const handleContactSubmit = (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   setContactSent(true);
+  //   setContactForm({ name: '', email: '', company: '', message: '' });
+  //   setTimeout(() => setContactSent(false), 4000);
+  // };
+
+  const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setContactSent(true);
-    setContactForm({ name: '', email: '', company: '', message: '' });
-    setTimeout(() => setContactSent(false), 4000);
+
+    if (sending) return;
+
+    setSending(true);
+
+    try {
+      await sendContactMessage(contactForm);
+
+      setContactSent(true);
+
+      setContactForm({
+        name: "",
+        email: "",
+        company: "",
+        message: "",
+      });
+
+      setTimeout(() => setContactSent(false), 4000);
+
+    } catch (error) {
+      console.error("Contact form error:", error);
+      alert(isAr ? "فشل إرسال الرسالة" : "Failed to send message");
+    }
+
+    setSending(false);
   };
 
   const navLinks = isAr
@@ -78,7 +100,7 @@ export function LandingPage() {
         color: 'from-blue-500 to-blue-600',
       },
       {
-        icon: Filter, 
+        icon: Filter,
         title: 'تصنيف ذكي تلقائي',
         desc: 'يصنف الآراء تلقائياً حسب الفئات المحددة مسبقاً لتوجيهها للفريق المختص بكفاءة عالية.',
         color: 'from-purple-500 to-purple-600',
@@ -101,7 +123,7 @@ export function LandingPage() {
         desc: 'واجهة مستخدم كاملة باللغتين العربية والإنجليزية مع دعم تام للكتابة من اليمين إلى اليسار.',
         color: 'from-pink-500 to-pink-600',
       },
-     
+
     ]
     : [
       {
@@ -113,7 +135,7 @@ export function LandingPage() {
       {
         icon: Filter,
         title: 'Smart Auto-Categorization',
-        desc: 'Automatically classifies feedbacks into predefined categories.',
+        desc: 'Automatically classifies feedback into predefined categories.',
         color: 'from-purple-500 to-purple-600',
       },
       {
@@ -134,7 +156,7 @@ export function LandingPage() {
         desc: 'Full Arabic and English UI with complete RTL layout support, switching seamlessly between languages.',
         color: 'from-pink-500 to-pink-600',
       },
-      
+
     ];
 
   const steps = isAr
@@ -144,36 +166,36 @@ export function LandingPage() {
       { step: '03', title: 'رؤى وتقارير', desc: 'تحليلات وتقارير شاملة تساعدك على اتخاذ قرارات أفضل.' },
     ]
     : [
-      { step: '01', title: 'Collect feedbacks', desc: 'The system ingests feedbacks from all channels — email, WhatsApp, your website, and more.' },
+      { step: '01', title: 'Collect feedback', desc: 'The system ingests feedback from all channels — email, WhatsApp, your website, and more.' },
       { step: '02', title: 'AI Analysis', desc: 'Our AI analyzes sentiment, detects emotions, and auto-categorizes each feedback instantly.' },
       { step: '03', title: 'Insights & Reports', desc: 'Get comprehensive analytics and reports to make data-driven decisions.' }
     ];
 
-  const stats = isAr
-    ? [
-      { value: '98%', label: 'دقة تحليل المشاعر' },
-      { value: '3x', label: 'أسرع في حل الآراء' },
-      { value: '500+', label: 'شركة تثق بنا' },
-      { value: '24/7', label: 'دعم متواصل' },
-    ]
-    : [
-      { value: '98%', label: 'Sentiment Accuracy' },
-      { value: '3x', label: 'Faster Resolution' },
-      { value: '500+', label: 'Companies Trust Us' },
-      { value: '24/7', label: 'Always Available' },
-    ];
+  // const stats = isAr
+  //   ? [
+  //     { value: '98%', label: 'دقة تحليل المشاعر' },
+  //     { value: '3x', label: 'أسرع في حل الآراء' },
+  //     { value: '500+', label: 'شركة تثق بنا' },
+  //     { value: '24/7', label: 'دعم متواصل' },
+  //   ]
+  //   : [
+  //     { value: '98%', label: 'Sentiment Accuracy' },
+  //     { value: '3x', label: 'Faster Resolution' },
+  //     { value: '500+', label: 'Companies Trust Us' },
+  //     { value: '24/7', label: 'Always Available' },
+  //   ];
 
-  const testimonials = isAr
-    ? [
-      { name: 'خالد العمري', role: 'مدير خدمة العملاء', company: 'شركة الفجر للتقنية', quote: 'أحدث Ara2kom تحولاً جذرياً في طريقة إدارتنا للآراء. انخفضت أوقات الاستجابة بنسبة 70%.', rating: 5 },
-      { name: 'Amira Benali', role: 'VP Customer Experience', company: 'Riyad Telecom', quote: 'The bilingual support and AI insights are game-changing for our Saudi and international teams.', rating: 5 },
-      { name: 'سلمى النجار', role: 'مديرة العمليات', company: 'بنك الأمان', quote: 'واجهة سهلة الاستخدام ورؤى عميقة. الأفضل في مجاله على الإطلاق.', rating: 5 },
-    ]
-    : [
-      { name: 'Khalid Al-Omari', role: 'Customer Service Director', company: 'Al-Fajr Technology', quote: 'Ara2kom transformed how we handle feedbacks. Our response times dropped by 70% in the first month.', rating: 5 },
-      { name: 'Amira Benali', role: 'VP Customer Experience', company: 'Riyad Telecom', quote: 'The bilingual support and AI-powered insights are game-changing for our diverse teams.', rating: 5 },
-      { name: 'Salma Al-Najjar', role: 'Operations Manager', company: 'Amanah Bank', quote: 'Easy to use and incredibly insightful. The best feedback analytics platform we\'ve ever used.', rating: 5 },
-    ];
+  // const testimonials = isAr
+  //   ? [
+  //     { name: 'خالد العمري', role: 'مدير خدمة العملاء', company: 'شركة الفجر للتقنية', quote: 'أحدث Ara2kom تحولاً جذرياً في طريقة إدارتنا للآراء. انخفضت أوقات الاستجابة بنسبة 70%.', rating: 5 },
+  //     { name: 'Amira Benali', role: 'VP Customer Experience', company: 'Riyad Telecom', quote: 'The bilingual support and AI insights are game-changing for our Saudi and international teams.', rating: 5 },
+  //     { name: 'سلمى النجار', role: 'مديرة العمليات', company: 'بنك الأمان', quote: 'واجهة سهلة الاستخدام ورؤى عميقة. الأفضل في مجاله على الإطلاق.', rating: 5 },
+  //   ]
+  //   : [
+  //     { name: 'Khalid Al-Omari', role: 'Customer Service Director', company: 'Al-Fajr Technology', quote: 'Ara2kom transformed how we handle feedback. Our response times dropped by 70% in the first month.', rating: 5 },
+  //     { name: 'Amira Benali', role: 'VP Customer Experience', company: 'Riyad Telecom', quote: 'The bilingual support and AI-powered insights are game-changing for our diverse teams.', rating: 5 },
+  //     { name: 'Salma Al-Najjar', role: 'Operations Manager', company: 'Amanah Bank', quote: 'Easy to use and incredibly insightful. The best feedback analytics platform we\'ve ever used.', rating: 5 },
+  //   ];
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950 transition-colors duration-300" dir={isAr ? 'rtl' : 'ltr'}>
@@ -319,7 +341,7 @@ export function LandingPage() {
                   </>
                 ) : (
                   <>
-                    <span className="block">Turn feedbacks</span>
+                    <span className="block">Turn feedback</span>
                     <span className="block bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                       Into Growth
                     </span>
@@ -330,7 +352,7 @@ export function LandingPage() {
               <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-400 mb-8 max-w-xl leading-relaxed">
                 {isAr
                   ? 'منصة ذكاء اصطناعي متكاملة لتحليل آراء العملاء وقياس المشاعر وتصنيف المشكلات تلقائياً — لمساعدتك على تقديم خدمة عملاء استثنائية.'
-                  : 'An AI-powered platform for analyzing customer feedbacks, measuring sentiment, and auto-classifying issues — helping you deliver exceptional customer service at scale.'}
+                  : 'An AI-powered platform for analyzing customer feedback, measuring sentiment, and auto-classifying issues — helping you deliver exceptional customer service at scale.'}
               </p>
 
               <div className={`flex flex-col sm:flex-row gap-4 ${isAr ? 'sm:flex-row-reverse' : ''}`}>
@@ -350,7 +372,7 @@ export function LandingPage() {
               </div>
 
               {/* Social proof */}
-              
+
             </div>
 
             {/* Image / Dashboard Preview */}
@@ -364,9 +386,9 @@ export function LandingPage() {
                 <div className="absolute inset-0 bg-gradient-to-t from-blue-900/40 via-transparent to-transparent" />
 
                 {/* Floating cards */}
-              
 
-                
+
+
               </div>
             </div>
           </div>
@@ -388,7 +410,7 @@ export function LandingPage() {
             <p className="text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">
               {isAr
                 ? 'تأسست Ara2kom AI عام 2026 بهدف واحد: مساعدة الشركات على تحويل آراء العملاء من عبء إلى فرصة ذهبية للتحسين. نجمع بين الذكاء الاصطناعي المتقدم وخبرة عميقة في خدمة العملاء لتقديم منصة متكاملة تدعم فرق العمل في اتخاذ قرارات مبنية على البيانات.'
-                : 'Founded in 2026, Ara2kom AI was built with one mission: to help businesses transform customer feedbacks from a burden into a golden opportunity for improvement. We combine cutting-edge AI with deep customer service expertise to deliver a platform that empowers teams to make data-driven decisions.'}
+                : 'Founded in 2026, Ara2kom AI was built with one mission: to help businesses transform customer feedback from a burden into a golden opportunity for improvement. We combine cutting-edge AI with deep customer service expertise to deliver a platform that empowers teams to make data-driven decisions.'}
             </p>
             <p className="text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
               {isAr
@@ -418,7 +440,7 @@ export function LandingPage() {
               <span>{isAr ? 'المميزات' : 'Features'}</span>
             </div>
             <h2 className="text-3xl sm:text-4xl font-black text-gray-900 dark:text-white mb-4">
-              {isAr ? 'كل ما تحتاجه لإدارة آراء العملاء' : 'Everything You Need to Manage Customer feedbacks'}
+              {isAr ? 'كل ما تحتاجه لإدارة آراء العملاء' : 'Everything You Need to Manage Customer feedback'}
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-400">
               {isAr
@@ -429,30 +451,30 @@ export function LandingPage() {
 
           <div className="flex flex-wrap justify-center gap-8 max-w-6xl mx-auto">
 
-  {features.map((f, i) => (
-    <div
-      key={i}
-      className="w-full sm:w-[46%] lg:w-[30%]"
-    >
-      <div className="group h-full bg-gray-50 dark:bg-gray-900 rounded-2xl p-6 border border-gray-100 dark:border-gray-800 transition-all duration-300 hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1">
+            {features.map((f, i) => (
+              <div
+                key={i}
+                className="w-full sm:w-[46%] lg:w-[30%]"
+              >
+                <div className="group h-full bg-gray-50 dark:bg-gray-900 rounded-2xl p-6 border border-gray-100 dark:border-gray-800 transition-all duration-300 hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1">
 
-        <div className={`w-12 h-12 bg-gradient-to-br ${f.color} rounded-xl flex items-center justify-center mb-5 shadow-md group-hover:scale-110 transition-transform duration-300`}>
-          <f.icon className="w-6 h-6 text-white" />
-        </div>
+                  <div className={`w-12 h-12 bg-gradient-to-br ${f.color} rounded-xl flex items-center justify-center mb-5 shadow-md group-hover:scale-110 transition-transform duration-300`}>
+                    <f.icon className="w-6 h-6 text-white" />
+                  </div>
 
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-          {f.title}
-        </h3>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    {f.title}
+                  </h3>
 
-        <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-          {f.desc}
-        </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                    {f.desc}
+                  </p>
 
-      </div>
-    </div>
-  ))}
+                </div>
+              </div>
+            ))}
 
-</div>
+          </div>
         </div>
       </section>
 
@@ -488,7 +510,7 @@ export function LandingPage() {
       <section className="py-20 bg-gradient-to-r from-blue-600 via-blue-700 to-purple-700">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl sm:text-4xl font-black text-white mb-4">
-            {isAr ? 'ابدأ تحليل اراء عملائك اليوم' : 'Start Analyzing Your Customer Feedbacks Today'}
+            {isAr ? 'ابدأ تحليل اراء عملائك اليوم' : 'Start Analyzing Your Customer feedback Today'}
           </h2>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -603,9 +625,13 @@ export function LandingPage() {
                   </div>
                   <button
                     type="submit"
-                    className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-blue-500/25 transition-all hover:scale-[1.02] flex items-center justify-center gap-2"
+                    disabled={sending}
+                    className={`w-full py-3.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl flex items-center justify-center gap-2
+  ${sending ? "opacity-70 cursor-not-allowed" : "hover:shadow-lg hover:shadow-blue-500/25 hover:scale-[1.02]"}`}
                   >
-                    {isAr ? 'إرسال الرسالة' : 'Send Message'}
+                    {sending
+                      ? (isAr ? "جاري الإرسال..." : "Sending...")
+                      : (isAr ? "إرسال الرسالة" : "Send Message")}
                     <ArrowRight className={`w-4 h-4 ${isAr ? 'rotate-180' : ''}`} />
                   </button>
                 </form>
@@ -630,7 +656,7 @@ export function LandingPage() {
               <p className="text-sm leading-relaxed max-w-sm">
                 {isAr
                   ? 'منصة ذكاء اصطناعي متكاملة لتحليل آراء العملاء وتحسين خدمة العملاء.'
-                  : 'AI-powered platform for analyzing customer feedbacks and improving customer service excellence.'}
+                  : 'AI-powered platform for analyzing customer feedback and improving customer service excellence.'}
               </p>
             </div>
 

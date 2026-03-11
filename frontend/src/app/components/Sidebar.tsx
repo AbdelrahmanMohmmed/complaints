@@ -8,7 +8,6 @@ import {
   Users,
   Settings,
   Building2,
-  Plug,
   LogOut,
   ChevronLeft,
   ChevronRight,
@@ -83,7 +82,7 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
         title: language === 'ar' ? 'التحليلات' : 'Analytics',
         items: [
           { name: t('nav.systemAnalytics'), href: '/app/system-analytics', icon: Activity },
-          { name: t('nav.logs'), href: '/app/logs', icon: ScrollText },
+          // { name: t('nav.logs'), href: '/app/logs', icon: ScrollText },
         ],
       },
       {
@@ -99,9 +98,9 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
           { name: t('nav.dashboard'), href: '/app', icon: LayoutDashboard },
           // { name: t('nav.feedback'), href: '/app/feedback', icon: MessageSquare },
           // { name: t('nav.categories'), href: '/app/categories', icon: Tag },
-          { name: t('nav.apis'), href: '/app/integrations', icon: Plug },
+          // { name: t('nav.apis'), href: '/app/integrations', icon: Plug },
           { name: t('nav.users'), href: '/app/users', icon: Users },
-          // { name: t('nav.reports'), href: '/app/reports', icon: BarChart3 },
+          { name: t('nav.reports'), href: '/app/reports', icon: BarChart3 },
           { name: t('nav.settings'), href: '/app/settings', icon: Settings },
         ],
       },
@@ -113,6 +112,8 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
           { name: t('nav.allComplaints'), href: '/app/feedback', icon: MessageSquare },
           { name: t('nav.teamPerformance'), href: '/app/team-performance', icon: BarChart3 },
           { name: t('nav.reports'), href: '/app/reports', icon: Activity },
+          { name: t('nav.settings'), href: '/app/settings', icon: Settings },
+
         ],
       },
     ],
