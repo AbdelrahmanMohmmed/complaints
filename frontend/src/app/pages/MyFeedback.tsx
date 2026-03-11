@@ -1,10 +1,10 @@
 // NOTE: This page shows an agent's feedback using MOCK data from `mockData.ts`.
 // TODO: Replace `mockFeedback` with real `/api/v1/complaints` data filtered by the current agent.
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
-import { mockFeedback, Feedback } from '../data/mockData';
+import { request } from '../../services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -21,7 +21,19 @@ import {
 } from 'lucide-react';
 import { cn } from '../components/ui/utils';
 import { WelcomeBanner } from '../components/WelcomeBanner';
-
+interface BackendFeedback {
+  feedback_id: number;
+  company_id: number;
+  api_id: number;
+  category_id: number | null;
+  customer_name: string | null;
+  feedback_context: string | null;
+  status: string | null;
+  sentiment: string | null;
+  emotion: string | null;
+  priority: string | null;
+  created_at: string;
+}
 const statusColors: Record<string, string> = {
   open: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
   inProgress: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
@@ -54,47 +66,70 @@ export function MyFeedback() {
   const isAr = language === 'ar';
 
   // Agent sees all feedback for demo (pretend they're assigned)
-  const myFeedback = mockFeedback.filter(fb => fb.assignedTo === 'agent-1' || fb.status === 'open' || fb.status === 'inProgress');
+  const [myFeedback, setMyFeedback] = useState<BackendFeedback[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [feedbackStatuses, setFeedbackStatuses] = useState<Record<number, string>>({});
 
-  const [feedbackStatuses, setFeedbackStatuses] = useState<Record<string, string>>(
-    () => Object.fromEntries(myFeedback.map(fb => [fb.id, fb.status]))
-  );
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  useEffect(() => {
+    const fetchFeedback = async () => {
+      try {
+        const data = await request<BackendFeedback[]>('/feedback/');
+        setMyFeedback(data);
+        setFeedbackStatuses(
+          Object.fromEntries(data.map(fb => [fb.feedback_id, fb.status || 'open']))
+        );
+      } catch (err) {
+        console.error('Failed to fetch feedback', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchFeedback();
+  }, []);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
   const [noteDialogOpen, setNoteDialogOpen] = useState(false);
-  const [noteTarget, setNoteTarget] = useState<Feedback | null>(null);
+const [noteTarget, setNoteTarget] = useState<BackendFeedback | null>(null);
   const [noteText, setNoteText] = useState('');
   const [savedNotes, setSavedNotes] = useState<Record<string, string[]>>({});
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredFeedback = myFeedback.filter(fb => {
-    const matchesStatus = statusFilter === 'all' || feedbackStatuses[fb.id] === statusFilter;
-    const matchesSearch = fb.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      fb.content.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesStatus && matchesSearch;
-  });
+  const matchesStatus = statusFilter === 'all' || feedbackStatuses[fb.feedback_id] === statusFilter;
+  const matchesSearch = (fb.customer_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (fb.feedback_context || '').toLowerCase().includes(searchQuery.toLowerCase());
+  return matchesStatus && matchesSearch;
+});
 
-  const handleStatusChange = (feedbackId: string, newStatus: string) => {
-    setFeedbackStatuses(prev => ({ ...prev, [feedbackId]: newStatus }));
-  };
+  const handleStatusChange = async (feedbackId: number, newStatus: string) => {
+  setFeedbackStatuses(prev => ({ ...prev, [feedbackId]: newStatus }));
+  try {
+    await request(`/feedback/${feedbackId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: newStatus }),
+    });
+  } catch (err) {
+    console.error('Failed to update status', err);
+  }
+};
 
-  const handleAddNote = (fb: Feedback) => {
-    setNoteTarget(fb);
-    setNoteText('');
-    setNoteDialogOpen(true);
-  };
+  const handleAddNote = (fb: BackendFeedback) => {
+  setNoteTarget(fb);
+  setNoteText('');
+  setNoteDialogOpen(true);
+};
 
   const handleSaveNote = () => {
-    if (noteTarget && noteText.trim()) {
-      setSavedNotes(prev => ({
-        ...prev,
-        [noteTarget.id]: [...(prev[noteTarget.id] || []), noteText.trim()],
-      }));
-    }
-    setNoteDialogOpen(false);
-    setNoteText('');
-    setNoteTarget(null);
-  };
+  if (noteTarget && noteText.trim()) {
+    setSavedNotes(prev => ({
+      ...prev,
+      [noteTarget.feedback_id]: [...(prev[noteTarget.feedback_id] || []), noteText.trim()],
+    }));
+  }
+  setNoteDialogOpen(false);
+  setNoteText('');
+  setNoteTarget(null);
+};
 
   const open = Object.values(feedbackStatuses).filter(s => s === 'open').length;
   const inProgress = Object.values(feedbackStatuses).filter(s => s === 'inProgress').length;
@@ -220,67 +255,59 @@ export function MyFeedback() {
             </CardContent>
           </Card>
         ) : (
-          filteredFeedback.map((fb) => {
-            const isExpanded = expandedId === fb.id;
-            const currentStatus = feedbackStatuses[fb.id] || fb.status;
-            const notes = savedNotes[fb.id] || [];
-            const ChannelIcon = channelIcons[fb.channel] || MessageSquare;
+filteredFeedback.map((fb) => {
+  const isExpanded = expandedId === fb.feedback_id;
+  const currentStatus = feedbackStatuses[fb.feedback_id] || fb.status || 'open';
+  const notes = savedNotes[fb.feedback_id] || [];
 
-            return (
-              <Card key={fb.id} className={cn('transition-all duration-200', isExpanded ? 'ring-2 ring-orange-500/30 shadow-md' : '')}>
-                <CardContent className="p-0">
-                  {/* Card Header Row */}
-                  <div
-                    className="flex items-start gap-3 p-4 cursor-pointer"
-                    onClick={() => setExpandedId(isExpanded ? null : fb.id)}
-                  >
-                    {/* Sentiment Indicator */}
-                    <div className={cn('w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0', sentimentDotColors[fb.sentiment])} />
+  return (
+    <Card key={fb.feedback_id} className={cn('transition-all duration-200', isExpanded ? 'ring-2 ring-orange-500/30 shadow-md' : '')}>
+      <CardContent className="p-0">
+        {/* Card Header Row */}
+        <div
+          className="flex items-start gap-3 p-4 cursor-pointer"
+          onClick={() => setExpandedId(isExpanded ? null : fb.feedback_id)}
+        >
+          {/* Sentiment Indicator */}
+          <div className={cn('w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0', sentimentDotColors[fb.sentiment || 'neutral'])} />
 
-                    {/* Main Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <p className="font-semibold text-gray-900 dark:text-white text-sm">{fb.customerName}</p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">{fb.customerEmail}</p>
-                        </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <Badge className={cn('text-xs', statusColors[currentStatus])}>
-                            {t(`status.${currentStatus}`)}
-                          </Badge>
-                          {isExpanded
-                            ? <ChevronUp className="w-4 h-4 text-gray-400" />
-                            : <ChevronDown className="w-4 h-4 text-gray-400" />
-                          }
-                        </div>
-                      </div>
+          {/* Main Content */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <p className="font-semibold text-gray-900 dark:text-white text-sm">{fb.customer_name || 'Unknown'}</p>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <Badge className={cn('text-xs', statusColors[currentStatus])}>
+                  {t(`status.${currentStatus}`)}
+                </Badge>
+                {isExpanded
+                  ? <ChevronUp className="w-4 h-4 text-gray-400" />
+                  : <ChevronDown className="w-4 h-4 text-gray-400" />
+                }
+              </div>
+            </div>
 
-                      <p className={cn('text-sm text-gray-600 dark:text-gray-400 mt-1.5', isExpanded ? '' : 'line-clamp-2')}>
-                        {fb.content}
-                      </p>
+            <p className={cn('text-sm text-gray-600 dark:text-gray-400 mt-1.5', isExpanded ? '' : 'line-clamp-2')}>
+              {fb.feedback_context || '—'}
+            </p>
 
-                      <div className="flex flex-wrap items-center gap-2 mt-2">
-                        <Badge className={cn('text-xs', sentimentColors[fb.sentiment])}>
-                          {t(`sentiment.${fb.sentiment}`)}
-                        </Badge>
-                        <span className="flex items-center gap-1 text-xs text-gray-400">
-                          <Tag className="w-3 h-3" />
-                          {fb.category}
-                        </span>
-                        <span className="flex items-center gap-1 text-xs text-gray-400">
-                          <ChannelIcon className="w-3 h-3" />
-                          {fb.channel}
-                        </span>
-                        <span className="text-xs text-gray-400">{formatDate(fb.createdAt)}</span>
-                        {notes.length > 0 && (
-                          <span className="flex items-center gap-1 text-xs text-orange-500 dark:text-orange-400">
-                            <StickyNote className="w-3 h-3" />
-                            {notes.length} {isAr ? 'ملاحظة' : 'note(s)'}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+            <div className="flex flex-wrap items-center gap-2 mt-2">
+              {fb.sentiment && (
+                <Badge className={cn('text-xs', sentimentColors[fb.sentiment])}>
+                  {t(`sentiment.${fb.sentiment}`)}
+                </Badge>
+              )}
+              <span className="text-xs text-gray-400">{formatDate(fb.created_at)}</span>
+              {notes.length > 0 && (
+                <span className="flex items-center gap-1 text-xs text-orange-500 dark:text-orange-400">
+                  <StickyNote className="w-3 h-3" />
+                  {notes.length} {isAr ? 'ملاحظة' : 'note(s)'}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
 
                   {/* Expanded Section */}
                   {isExpanded && (
@@ -296,8 +323,7 @@ export function MyFeedback() {
                             {(['open', 'inProgress', 'resolved', 'closed'] as const).map(status => (
                               <button
                                 key={status}
-                                onClick={() => handleStatusChange(fb.id, status)}
-                                className={cn(
+                                  onClick={() => handleStatusChange(fb.feedback_id, status)}                                className={cn(
                                   'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all',
                                   currentStatus === status
                                     ? statusColors[status] + ' ring-2 ring-offset-1 ring-current'
@@ -363,12 +389,10 @@ export function MyFeedback() {
                         </div>
                         <div className="p-2.5 bg-white dark:bg-gray-700/50 rounded-lg">
                           <p className="text-xs text-gray-400 mb-1">{isAr ? 'آخر تحديث' : 'Last Updated'}</p>
-                          <p className="text-xs font-semibold text-gray-900 dark:text-white">{formatDate(fb.updatedAt)}</p>
-                        </div>
+<p className="text-xs font-semibold text-gray-900 dark:text-white">{formatDate(fb.created_at)}</p>                        </div>
                         <div className="p-2.5 bg-white dark:bg-gray-700/50 rounded-lg">
                           <p className="text-xs text-gray-400 mb-1">{isAr ? 'رقم الشكوى' : 'Feedback ID'}</p>
-                          <p className="text-xs font-mono font-semibold text-gray-900 dark:text-white">{fb.id}</p>
-                        </div>
+<p className="text-xs font-mono font-semibold text-gray-900 dark:text-white">{fb.feedback_id}</p>                        </div>
                       </div>
                     </div>
                   )}
@@ -385,8 +409,7 @@ export function MyFeedback() {
           <DialogHeader>
             <DialogTitle>{t('feedback.addNote')}</DialogTitle>
             <DialogDescription>
-              {isAr ? `إضافة ملاحظة على شكوى ${noteTarget?.customerName}` : `Add a note to ${noteTarget?.customerName}'s feedback`}
-            </DialogDescription>
+{isAr ? `إضافة ملاحظة على شكوى ${noteTarget?.customer_name}` : `Add a note to ${noteTarget?.customer_name}'s feedback`}            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <Textarea
