@@ -98,7 +98,7 @@ class Feedback(Base):
     category_id = Column(Integer, ForeignKey("feedback_categories.category_id"), nullable=True)
     customer_name = Column(String(100))
     feedback_context = Column(Text)
-    status = Column(String(20), default="new")
+    status = Column(String(20), default="unprocessed")
     sentiment = Column(String(20), nullable=True)         
     emotion = Column(String(20), nullable=True)          
     priority = Column(String(20), nullable=True)         
