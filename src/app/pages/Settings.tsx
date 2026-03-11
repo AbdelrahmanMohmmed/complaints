@@ -1,220 +1,164 @@
-import React, { useState } from 'react';
-import { useLanguage } from '../contexts/LanguageContext';
-import { useAuth } from '../contexts/AuthContext';
+import React from "react";
+import { useLanguage } from "../contexts/LanguageContext";
+import { useAuth } from "../contexts/AuthContext";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Label } from '../components/ui/label';
-import { Separator } from '../components/ui/separator';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
 
-import { IntegrationSettings } from './IntegrationSettings';
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Separator } from "../components/ui/separator";
 
-import { User, Database } from 'lucide-react';
+import { IntegrationSettings } from "./IntegrationSettings";
+
+import { User } from "lucide-react";
 
 export function Settings() {
-
   const { t } = useLanguage();
   const { user } = useAuth();
-
-  const [activeTab, setActiveTab] = useState<'profile' | 'integrations'>('profile');
+  // const user = {
+  //   firstName: "John",
+  //   lastName: "Doe",
+  //   email: "john.doe@example.com"
+  // };
 
   return (
     <div className="space-y-6">
-
       {/* Header */}
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-          {t('nav.settings')}
+          {t("nav.settings")}
         </h1>
 
         <p className="text-gray-500 dark:text-gray-400 mt-1">
-          Manage your account and system preferences
+          Manage your account settings and preferences
         </p>
       </div>
 
+      {/* ============================= */}
+      {/* Profile Information */}
+      {/* ============================= */}
 
-      {/* ========================= */}
-      {/* INTEGRATIONS FULL PAGE */}
-      {/* ========================= */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Profile Information</CardTitle>
 
-      {activeTab === 'integrations' && user?.role === 'companyAdmin' ? (
+          <CardDescription>
+            Update your personal information and profile photo
+          </CardDescription>
+        </CardHeader>
 
-        <div className="space-y-6">
+        <CardContent className="space-y-6">
+          {/* Avatar */}
+          <div className="flex items-center gap-4">
+            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
+              <User className="w-10 h-10 text-white" />
+            </div>
 
-          {/* Back Button */}
-          <Button
-            variant="outline"
-            onClick={() => setActiveTab('profile')}
-            className="w-fit"
-          >
-            ← Back to Settings
-          </Button>
-
-          <IntegrationSettings />
-
-        </div>
-
-      ) : (
-
-        /* ========================= */
-        /* SETTINGS LAYOUT */
-        /* ========================= */
-
-        <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-6">
-
-          {/* LEFT NAVIGATION */}
-          <Card className="h-fit">
-
-            <CardHeader>
-              <CardTitle className="text-base">
-                Settings
-              </CardTitle>
-            </CardHeader>
-
-            <CardContent className="space-y-2">
-
-              {/* PROFILE */}
-              <Button
-                variant="ghost"
-                onClick={() => setActiveTab('profile')}
-                className={`w-full justify-start gap-3 rounded-lg px-3 py-2 transition
-                ${
-                  activeTab === 'profile'
-                    ? 'bg-blue-600 text-white hover:bg-blue-600'
-                    : 'hover:bg-gray-100 dark:hover:bg-gray-800'
-                }`}
-              >
-                <User className="w-4 h-4" />
-                Profile
+            <div>
+              <Button variant="outline" size="sm">
+                Change Photo
               </Button>
 
-
-              {/* INTEGRATIONS (Company Admin only) */}
-              {user?.role === 'companyAdmin' && (
-
-                <Button
-                  variant="ghost"
-                  onClick={() => setActiveTab('integrations')}
-                  className={`w-full justify-start gap-3 rounded-lg px-3 py-2 transition
-                  ${
-                    activeTab === 'integrations'
-                      ? 'bg-blue-600 text-white hover:bg-blue-600'
-                      : 'hover:bg-gray-100 dark:hover:bg-gray-800'
-                  }`}
-                >
-                  <Database className="w-4 h-4" />
-                  Integrations
-                </Button>
-
-              )}
-
-            </CardContent>
-
-          </Card>
-
-
-          {/* RIGHT CONTENT */}
-          <div className="space-y-6">
-
-            {/* PROFILE TAB */}
-            {activeTab === 'profile' && (
-
-              <Card>
-
-                <CardHeader>
-
-                  <CardTitle>
-                    Profile Settings
-                  </CardTitle>
-
-                  <CardDescription>
-                    Update your personal information and preferences
-                  </CardDescription>
-
-                </CardHeader>
-
-
-                <CardContent className="space-y-6">
-
-                  {/* Avatar */}
-                  <div className="flex items-center gap-4">
-
-                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
-                      <User className="w-10 h-10 text-white" />
-                    </div>
-
-                    <div>
-
-                      <Button variant="outline" size="sm">
-                        Change Photo
-                      </Button>
-
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        JPG, PNG or GIF. Max 2MB
-                      </p>
-
-                    </div>
-
-                  </div>
-
-                  <Separator />
-
-
-                  {/* Name Fields */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-                    <div className="space-y-2">
-                      <Label>First Name</Label>
-                      <Input placeholder="John" />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Last Name</Label>
-                      <Input placeholder="Doe" />
-                    </div>
-
-                  </div>
-
-
-                  {/* Email */}
-                  <div className="space-y-2">
-                    <Label>Email</Label>
-                    <Input
-                      type="email"
-                      placeholder="john@example.com"
-                    />
-                  </div>
-
-
-                  <Separator />
-
-
-                  {/* Buttons */}
-                  <div className="flex justify-end gap-2">
-
-                    <Button variant="outline">
-                      {t('common.cancel')}
-                    </Button>
-
-                    <Button>
-                      {t('common.save')}
-                    </Button>
-
-                  </div>
-
-                </CardContent>
-
-              </Card>
-
-            )}
-
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                JPG, PNG or GIF. Max 2MB
+              </p>
+            </div>
           </div>
 
-        </div>
+          <Separator />
 
+          {/* Name Fields */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Name</Label>
+              <Input defaultValue={user?.name || ""} />
+            </div>
+
+            {/* <div className="space-y-2">
+              <Label>Last Name</Label>
+              <Input defaultValue={user?.lastName || ""} />
+            </div> */}
+          </div>
+
+          {/* Email */}
+          <div className="space-y-2">
+            <Label>Email</Label>
+
+            <Input type="email" defaultValue={user?.email || ""} />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ============================= */}
+      {/* Change Password */}
+      {/* ============================= */}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Change Password</CardTitle>
+
+          <CardDescription>
+            Update your account password
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Current Password</Label>
+
+            <Input type="password" placeholder="Enter current password" />
+          </div>
+
+          <div className="space-y-2">
+            <Label>New Password</Label>
+
+            <Input type="password" placeholder="Enter new password" />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Confirm Password</Label>
+
+            <Input type="password" placeholder="Confirm new password" />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ============================= */}
+      {/* Integrations (CompanyAdmin only) */}
+      {/* ============================= */}
+
+      {user?.role === "companyAdmin" && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Integrations</CardTitle>
+
+            <CardDescription>
+              Manage external service integrations
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent>
+            <IntegrationSettings />
+          </CardContent>
+        </Card>
       )}
 
+      {/* ============================= */}
+      {/* Save Button */}
+      {/* ============================= */}
+
+      <div className="flex justify-end gap-2">
+        <Button variant="outline">{t("common.cancel")}</Button>
+
+        <Button>{t("common.save")}</Button>
+      </div>
     </div>
   );
 }

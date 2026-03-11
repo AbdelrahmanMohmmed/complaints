@@ -158,23 +158,23 @@ export function TopBar({ onMenuClick }: TopBarProps) {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="gap-2">
+            {/* <DropdownMenuItem className="gap-2">
               <User className="w-4 h-4" />
               {isAr ? 'الملف الشخصي' : 'Profile'}
-            </DropdownMenuItem>
+            </DropdownMenuItem> */}
             <DropdownMenuItem onClick={() => navigate('/app/settings')} className="gap-2">
               <Settings className="w-4 h-4" />
               {isAr ? 'الإعدادات' : 'Settings'}
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={toggleLanguage} className="gap-2">
+            {/* <DropdownMenuItem onClick={toggleLanguage} className="gap-2">
               <Languages className="w-4 h-4" />
               {language === 'en' ? 'العربية' : 'English'}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={toggleTheme} className="gap-2">
+            </DropdownMenuItem> */}
+            {/* <DropdownMenuItem onClick={toggleTheme} className="gap-2">
               {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
               {theme === 'light' ? (isAr ? 'الوضع المظلم' : 'Dark Mode') : (isAr ? 'الوضع الفاتح' : 'Light Mode')}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
+            </DropdownMenuItem> */}
+            {/* <DropdownMenuSeparator /> */}
             <DropdownMenuItem onClick={handleLogout} className="text-red-600 dark:text-red-400 gap-2">
               <LogOut className="w-4 h-4" />
               {isAr ? 'تسجيل الخروج' : 'Logout'}

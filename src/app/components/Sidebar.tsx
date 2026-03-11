@@ -8,7 +8,6 @@ import {
   Users,
   Settings,
   Building2,
-  Plug,
   LogOut,
   ChevronLeft,
   ChevronRight,
@@ -83,7 +82,7 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
         title: language === 'ar' ? 'التحليلات' : 'Analytics',
         items: [
           { name: t('nav.systemAnalytics'), href: '/app/system-analytics', icon: Activity },
-          { name: t('nav.logs'), href: '/app/logs', icon: ScrollText },
+          // { name: t('nav.logs'), href: '/app/logs', icon: ScrollText },
         ],
       },
       {

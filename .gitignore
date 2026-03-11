@@ -18,7 +18,4 @@ dist/
 Thumbs.db
 
 # temporary docs (not ready yet)
-ATTRIBUTIONS.md
-BACKEND_INTEGRATION.md
-README.md
-REFACTORING_SUMMARY.md
+notImportantCurrently/
