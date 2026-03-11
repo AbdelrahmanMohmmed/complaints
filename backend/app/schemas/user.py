@@ -4,7 +4,6 @@ from datetime import datetime
 
 class UserCreate(BaseModel):
     """Schema for creating a new user"""
-    company_id: int
     role_id: int
     f_name: str
     l_name: str
