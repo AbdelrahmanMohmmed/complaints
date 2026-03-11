@@ -10,16 +10,23 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str
 
+class UserUpdate(BaseModel):
+    f_name: str
+    l_name: str
+    email: EmailStr
+    role_id: int
 
 class UserOut(BaseModel):
-    """Schema for user response (minimal info)"""
     user_id: int
+    f_name: str
+    l_name: str
     email: EmailStr
+    role_id: int
+    is_active: bool
     created_at: datetime
 
     class Config:
         from_attributes = True
-
 
 class UserMe(BaseModel):
     """Schema for current user profile"""
@@ -32,3 +39,4 @@ class UserMe(BaseModel):
 
     class Config:
         from_attributes = True
+

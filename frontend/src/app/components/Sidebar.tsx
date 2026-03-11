@@ -96,7 +96,7 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
       {
         items: [
           { name: t('nav.dashboard'), href: '/app', icon: LayoutDashboard },
-          // { name: t('nav.feedback'), href: '/app/feedback', icon: MessageSquare },
+          { name: t('nav.feedback'), href: '/app/feedback', icon: MessageSquare },
           // { name: t('nav.categories'), href: '/app/categories', icon: Tag },
           // { name: t('nav.apis'), href: '/app/integrations', icon: Plug },
           { name: t('nav.users'), href: '/app/users', icon: Users },

@@ -1,83 +1,138 @@
-// NOTE: User management currently relies on MOCK user data from `mockData.ts`.
-// TODO: Replace `mockUsers` with real `/api/v1/users` endpoints (list/create/update/delete).
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { mockUsers, User } from '../data/mockData';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Badge } from '../components/ui/badge';
 import { Switch } from '../components/ui/switch';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '../components/ui/table';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger,
 } from '../components/ui/dialog';
 import { Label } from '../components/ui/label';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '../components/ui/select';
 import { Plus, Users as UsersIcon, UserCheck, UserX } from 'lucide-react';
 import { cn } from '../components/ui/utils';
+import { request } from '../../services/api';
 
-const roleColors = {
-  superAdmin: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
+interface BackendUser {
+  user_id: number;
+  f_name: string;
+  l_name: string;
+  email: string;
+  role_id: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+const roleMap: Record<number, string> = { 1: 'companyAdmin', 2: 'manager', 3: 'agent' };
+const roleIdMap: Record<string, number> = { companyAdmin: 1, manager: 2, agent: 3 };
+const roleColors: Record<string, string> = {
   companyAdmin: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
   manager: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
   agent: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400',
 };
 
 export function UserManagement() {
-
   const { t } = useLanguage();
+  const [users, setUsers] = useState<BackendUser[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const [users, setUsers] = useState<User[]>(mockUsers);
-
+  // Add user form state
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [newUser, setNewUser] = useState({ f_name: '', l_name: '', email: '', password: '', role_id: '2' });
+  const [addError, setAddError] = useState('');
+  const [addLoading, setAddLoading] = useState(false);
 
-  const [editingUser, setEditingUser] = useState<User | null>(null);
+  // Edit user state
+  const [editingUser, setEditingUser] = useState<BackendUser | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
+  // Fetch users on mount
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    setIsLoading(true);
+    try {
+      const data = await request<BackendUser[]>('/users/');
+      setUsers(data);
+    } catch (err: any) {
+      setError(err?.message || 'Failed to load users');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAddUser = async () => {
+    setAddError('');
+    setAddLoading(true);
+    try {
+      const created = await request<BackendUser>('/users/', {
+        method: 'POST',
+        body: JSON.stringify({
+          f_name: newUser.f_name.trim(),
+          l_name: newUser.l_name.trim(),
+          email: newUser.email.trim(),
+          password: newUser.password,
+          role_id: Number(newUser.role_id),
+        }),
+      });
+      setUsers((prev) => [...prev, created]);
+      setIsDialogOpen(false);
+      setNewUser({ f_name: '', l_name: '', email: '', password: '', role_id: '2' });
+    } catch (err: any) {
+      setAddError(err?.message || 'Failed to create user');
+    } finally {
+      setAddLoading(false);
+    }
+  };
+
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+
+
+const toggleUserStatus = async (user_id: number) => {
+  try {
+    const updated = await request<BackendUser>(`/users/${user_id}/status`, { method: 'PATCH' });
+    setUsers((prev) => prev.map((u) => u.user_id === user_id ? updated : u));
+  } catch (err: any) {
+    alert(err?.message || 'Failed to update status');
+  }
+};
+
+const updateUser = async () => {
+  if (!editingUser) return;
+  try {
+    const updated = await request<BackendUser>(`/users/${editingUser.user_id}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        f_name: editingUser.f_name,
+        l_name: editingUser.l_name,
+        email: editingUser.email,
+        role_id: editingUser.role_id,
+      }),
     });
-  };
+    setUsers((prev) => prev.map((u) => u.user_id === updated.user_id ? updated : u));
+    setIsEditOpen(false);
+  } catch (err: any) {
+    alert(err?.message || 'Failed to update user');
+  }
+};
 
-  const toggleUserStatus = (id: string) => {
-    setUsers((prev) =>
-      prev.map((user) =>
-        user.id === id ? { ...user, isActive: !user.isActive } : user
-      )
-    );
-  };
-
-  const updateUser = (updatedUser: User) => {
-    setUsers((prev) =>
-      prev.map((u) => (u.id === updatedUser.id ? updatedUser : u))
-    );
-  };
-
-  const deleteUser = (id: string) => {
-    setUsers((prev) => prev.filter((user) => user.id !== id));
+  const deleteUser = async (user_id: number) => {
+    try {
+      await request(`/users/${user_id}`, { method: 'DELETE' });
+      setUsers((prev) => prev.filter((user) => user.user_id !== user_id));
+    } catch (err: any) {
+      alert(err?.message || 'Failed to delete user');
+    }
   };
 
   return (
@@ -181,7 +236,7 @@ export function UserManagement() {
                 {t('common.cancel')}
               </Button>
 
-              <Button onClick={() => setIsDialogOpen(false)}>
+              <Button onClick={updateUser}>
                 {t('common.save')}
               </Button>
 
@@ -231,7 +286,7 @@ export function UserManagement() {
               </p>
 
               <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">
-                {users.filter((u) => u.isActive).length}
+              {users.filter((u) => u.is_active).length}
               </p>
 
             </div>
@@ -253,8 +308,7 @@ export function UserManagement() {
               </p>
 
               <p className="text-3xl font-bold text-gray-600 dark:text-gray-400 mt-2">
-                {users.filter((u) => !u.isActive).length}
-              </p>
+                {users.filter((u) => !u.is_active).length}             </p>
 
             </div>
 
@@ -299,8 +353,7 @@ export function UserManagement() {
 
               {users.map((user) => (
 
-                <TableRow key={user.id}>
-
+                  <TableRow key={user.user_id}>
                   <TableCell>
 
                     <div className="flex items-center gap-3">
@@ -309,16 +362,14 @@ export function UserManagement() {
 
                         <span className="text-white font-medium text-sm">
 
-                          {user.name.split(' ').map(n => n[0]).join('')}
-
+                            {user.f_name[0]}{user.l_name[0]}
                         </span>
 
                       </div>
 
                       <div className="font-medium text-gray-900 dark:text-white">
 
-                        {user.name}
-
+                          {user.f_name} {user.l_name}
                       </div>
 
                     </div>
@@ -337,72 +388,39 @@ export function UserManagement() {
 
                   <TableCell>
 
-                    <Badge className={cn('capitalize', roleColors[user.role])}>
-
-                      {t(`role.${user.role}`)}
-
+                    <Badge className={cn('capitalize', roleColors[roleMap[user.role_id]])}>
+                      {t(`role.${roleMap[user.role_id]}`)}
                     </Badge>
 
                   </TableCell>
 
-                  <TableCell>
-
-                    <div className="flex items-center gap-2">
-
-                      <Switch
-
-                        checked={user.isActive}
-
-                        onCheckedChange={() => toggleUserStatus(user.id)}
-
-                      />
-
-                      <Badge
-
-                        className={cn(
-
-                          user.isActive
-
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={user.is_active}
+                          onCheckedChange={() => toggleUserStatus(user.user_id)}
+                        />
+                        <Badge className={cn(
+                          user.is_active
                             ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-
                             : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400'
+                        )}>
+                          {user.is_active ? t('common.active') : t('common.inactive')}
+                        </Badge>
+                      </div>
+                    </TableCell>
 
-                        )}
+                    <TableCell className="hidden lg:table-cell">
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                        {formatDate(user.created_at)}
+                      </div>
+                    </TableCell>
 
-                      >
-
-                        {user.isActive ? t('common.active') : t('common.inactive')}
-
-                      </Badge>
-
-                    </div>
-
-                  </TableCell>
-
-                  <TableCell className="hidden lg:table-cell">
-
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
-
-                      {formatDate(user.createdAt)}
-
-                    </div>
-
-                  </TableCell>
-
-                  <TableCell>
-
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setEditingUser(user);
-                        setIsEditOpen(true);
-                      }}
-                    >
-                      {t('common.edit')}
-                    </Button>
-
-                  </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="sm" onClick={() => { setEditingUser(user); setIsEditOpen(true); }}>
+                        {t('common.edit')}
+                      </Button>
+                    </TableCell>
 
                 </TableRow>
 
@@ -439,20 +457,21 @@ export function UserManagement() {
 
             <div className="space-y-4 py-4">
 
-              <div className="space-y-2">
-
-                <Label>Name</Label>
-
-                <Input
-
-                  defaultValue={editingUser.name}
-
-                  onChange={(e) =>
-                    setEditingUser({ ...editingUser, name: e.target.value })
-                  }
-
-                />
-
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>First Name</Label>
+                  <Input
+                    defaultValue={editingUser.f_name}
+                    onChange={(e) => setEditingUser({ ...editingUser, f_name: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Last Name</Label>
+                  <Input
+                    defaultValue={editingUser.l_name}
+                    onChange={(e) => setEditingUser({ ...editingUser, l_name: e.target.value })}
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -476,37 +495,14 @@ export function UserManagement() {
                 <Label>Role</Label>
 
                 <Select
-
-                  defaultValue={editingUser.role}
-
-                  onValueChange={(value) =>
-                    setEditingUser({ ...editingUser, role: value as User['role'] })
-                  }
-
+                  defaultValue={String(editingUser.role_id)}
+                  onValueChange={(v) => setEditingUser({ ...editingUser, role_id: Number(v) })}
                 >
-
-                  <SelectTrigger>
-
-                    <SelectValue />
-
-                  </SelectTrigger>
-
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-
-                    <SelectItem value="companyAdmin">
-                      {t('role.companyAdmin')}
-                    </SelectItem>
-
-                    <SelectItem value="manager">
-                      {t('role.manager')}
-                    </SelectItem>
-
-                    <SelectItem value="agent">
-                      {t('role.agent')}
-                    </SelectItem>
-
+                    <SelectItem value="2">Manager</SelectItem>
+                    <SelectItem value="3">Agent</SelectItem>
                   </SelectContent>
-
                 </Select>
 
               </div>
@@ -516,8 +512,8 @@ export function UserManagement() {
                 <Button
                   variant="destructive"
                   onClick={() => {
-                    deleteUser(editingUser.id);
-                    setIsEditOpen(false);
+                      deleteUser(editingUser.user_id);
+                      setIsEditOpen(false);
                   }}
                 >
                   Delete User
@@ -529,13 +525,8 @@ export function UserManagement() {
                     Cancel
                   </Button>
 
-                  <Button
-                    onClick={() => {
-                      updateUser(editingUser);
-                      setIsEditOpen(false);
-                    }}
-                  >
-                    Save
+                  <Button onClick={updateUser}>
+                    {t('common.save')}
                   </Button>
 
                 </div>

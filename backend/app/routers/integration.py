@@ -33,13 +33,14 @@ async def validate_api_credentials(channel_name: str, api_key: str) -> bool:
                 return response.status_code == 200
         
         elif channel_name == "twitter":
-            # Twitter: GET /users/me with Bearer token
-            url = f"{BASE_URLS['twitter']}/users/me"
+            # Use /2/tweets/search/recent instead — works with app-only Bearer token
+            url = f"{BASE_URLS['twitter']}/tweets/search/recent"
             headers = {"Authorization": f"Bearer {api_key}"}
+            params = {"query": "test", "max_results": 10}
             async with httpx.AsyncClient(timeout=10) as client:
-                response = await client.get(url, headers=headers)
+                response = await client.get(url, headers=headers, params=params)
                 return response.status_code == 200
-        
+         
         elif channel_name == "whatsapp":
             # WhatsApp: GET /me with Bearer token
             url = f"{BASE_URLS['whatsapp']}/me"
