@@ -5,7 +5,7 @@ from typing import Optional
 class FeedbackOut(BaseModel):
     feedback_id: int
     company_id: int
-    api_id: int
+    api_id: Optional[int] = None  # ← change from int to Optional[int]
     category_id: Optional[int] = None
     customer_name: Optional[str] = None
     feedback_context: Optional[str] = None

@@ -25,7 +25,7 @@ import { cn } from '../components/ui/utils';
 interface BackendFeedback {
   feedback_id: number;
   company_id: number;
-  api_id: number;
+  api_id: number | null; 
   category_id: number | null;
   customer_name: string | null;
   feedback_context: string | null;
@@ -83,16 +83,19 @@ const agents: any[] = []; // TODO: fetch from /users/ when needed
   const isManager = user?.role === 'manager';
   const isSuperAdmin = user?.role === 'superAdmin';
   const isCompanyAdmin = user?.role === 'companyAdmin';
+const [fetchError, setFetchError] = useState('');
 
 useEffect(() => {
   const fetchFeedback = async () => {
     try {
       const data = await request<BackendFeedback[]>('/feedback/');
+      console.log('Fetched feedback:', data); // ← add this temporarily
       setFeedbackList(data);
       setFeedbackStatuses(Object.fromEntries(data.map(fb => [fb.feedback_id, fb.status || 'open'])));
       setFeedbackPriorities(Object.fromEntries(data.map(fb => [fb.feedback_id, fb.priority || 'low'])));
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to fetch feedback', err);
+      setFetchError(err?.message || 'Failed to load feedback');
     } finally {
       setIsLoading(false);
     }
