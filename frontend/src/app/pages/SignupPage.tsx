@@ -28,7 +28,6 @@ const STEPS = [
   { id: 1, key: 'account', labelEn: 'Account', labelAr: 'الحساب' },
   { id: 2, key: 'domain', labelEn: 'Domain', labelAr: 'المجال' },
   { id: 3, key: 'apis', labelEn: 'APIs', labelAr: 'الواجهات' },
-  { id: 4, key: 'extraUser', labelEn: 'Team (optional)', labelAr: 'فريق (اختياري)' },
 ];
 
 const API_OPTIONS = [
@@ -51,10 +50,16 @@ export function SignupPage() {
 
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
+<<<<<<< HEAD:frontend/src/app/pages/SignupPage.tsx
     f_name: '',
     l_name: '',
+=======
+    firstName: '',
+    lastName: '',
+>>>>>>> origin/frontend:src/app/pages/SignupPage.tsx
     email: '',
     company: '',
+    phone: '',
     password: '',
     confirmPassword: '',
       phone: '',   // ← add this
@@ -70,10 +75,6 @@ export function SignupPage() {
 
   // Step 3: At least one of Facebook, WhatsApp, X; Email optional
   const [apis, setApis] = useState({ facebook: false, whatsapp: false, x: false, email: false });
-
-  // Step 4: Optional extra user (role: manager | agent only)
-  const [extraUser, setExtraUser] = useState<{ name: string; email: string; role: 'manager' | 'agent' } | null>(null);
-  const [showExtraUser, setShowExtraUser] = useState(false);
 
   const passwordStrength = (() => {
     if (!form.password) return 0;
@@ -91,9 +92,15 @@ export function SignupPage() {
   // const displayDomainLabel = domainLabel.trim() || selectedDomain?.name || '';
 
   const canProceedStep1 =
+<<<<<<< HEAD:frontend/src/app/pages/SignupPage.tsx
     form.f_name.trim() &&
     form.l_name.trim() &&
+=======
+    form.firstName.trim() &&
+    form.lastName.trim() &&
+>>>>>>> origin/frontend:src/app/pages/SignupPage.tsx
     form.company.trim() &&
+    form.phone.trim() &&
     form.email.trim() &&
     form.phone.trim() &&   // ← add this
     form.password.length >= 6 &&
@@ -115,7 +122,8 @@ export function SignupPage() {
       setError(isAr ? 'يجب تفعيل واجهة واحدة على الأقل (فيسبوك، واتساب، أو إكس)' : 'Select at least one API (Facebook, WhatsApp, or X)');
       return;
     }
-    if (step < 4) setStep(step + 1);
+    if (step < 3) setStep(step + 1);
+    else if (step === 3) handleSubmit();
   };
 
   const handleBack = () => {
@@ -129,19 +137,21 @@ export function SignupPage() {
 
     setIsLoading(true);
     const payload: SignupRequest = {
+<<<<<<< HEAD:frontend/src/app/pages/SignupPage.tsx
       f_name: form.f_name.trim(),
       l_name: form.l_name.trim(),
         email: form.email.trim(),
+=======
+      name: `${form.firstName.trim()} ${form.lastName.trim()}`,
+      email: form.email.trim(),
+>>>>>>> origin/frontend:src/app/pages/SignupPage.tsx
       company: form.company.trim(),
+      phone: form.phone.trim(),
       password: form.password,
       phone: form.phone.trim(),   // ← add this
       domainId: Number(selectedDomain.id),
       domainLabel: domainLabel.trim() || undefined,
       apis: { ...apis },
-      extraUser:
-        showExtraUser && extraUser?.name.trim() && extraUser?.email.trim()
-          ? { name: extraUser.name.trim(), email: extraUser.email.trim(), role: extraUser.role }
-          : undefined,
     };
 
     try {
@@ -242,7 +252,6 @@ export function SignupPage() {
                 {step === 1 && (isAr ? 'الحساب' : 'Account')}
                 {step === 2 && (isAr ? 'اختر المجال' : 'Select Domain')}
                 {step === 3 && (isAr ? 'قنوات الاستقبال' : 'Channels & APIs')}
-                {step === 4 && (isAr ? 'إضافة مستخدم (اختياري)' : 'Add Team Member (optional)')}
               </h2>
 
               {error && (
@@ -263,23 +272,41 @@ export function SignupPage() {
                       <input
                         type="text"
                         required
+<<<<<<< HEAD:frontend/src/app/pages/SignupPage.tsx
                         value={form.f_name}
                         onChange={(e) => setForm({ ...form, f_name: e.target.value })}
                         className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                         placeholder={isAr ? 'الاسم الأول' : 'John'}
+=======
+                        value={form.firstName}
+                        onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        placeholder={isAr ? 'اسمك الأول' : 'John'}
+>>>>>>> origin/frontend:src/app/pages/SignupPage.tsx
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+<<<<<<< HEAD:frontend/src/app/pages/SignupPage.tsx
                         {isAr ? 'اسم العائلة' : 'Last Name'} <span className="text-red-500">*</span>
+=======
+                        {isAr ? 'الاسم الأخير' : 'Last Name'} <span className="text-red-500">*</span>
+>>>>>>> origin/frontend:src/app/pages/SignupPage.tsx
                       </label>
                       <input
                         type="text"
                         required
+<<<<<<< HEAD:frontend/src/app/pages/SignupPage.tsx
                         value={form.l_name}
                         onChange={(e) => setForm({ ...form, l_name: e.target.value })}
                         className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                         placeholder={isAr ? 'اسم العائلة' : 'Smith'}
+=======
+                        value={form.lastName}
+                        onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        placeholder={isAr ? 'اسمك الأخير' : 'Smith'}
+>>>>>>> origin/frontend:src/app/pages/SignupPage.tsx
                       />
                     </div>
                     <div>
@@ -293,6 +320,20 @@ export function SignupPage() {
                         onChange={(e) => setForm({ ...form, company: e.target.value })}
                         className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                         placeholder={isAr ? 'شركتك' : 'Acme Corp'}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                        {isAr ? 'رقم هاتف الشركة' : 'Company Phone'} <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="tel"
+                        required
+                        value={form.phone}
+                        onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        placeholder={isAr ? '+966 XX XXX XXXX' : '+1 (555) 000-0000'}
+                        dir="ltr"
                       />
                     </div>
                   </div>
@@ -450,7 +491,7 @@ export function SignupPage() {
               {step === 3 && (
                 <div className={`space-y-4 ${isAr ? 'text-right' : ''}`}>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {isAr ? 'فعّل واجهة واحدة على الأقل (فيسبوك، واتساب، أو إكس). البريد اختياري.' : 'Enable at least one channel (Facebook, WhatsApp, or X). Email is optional.'}
+                    {isAr ? 'فعّل واجهة واحدة على الأقل.' : 'Enable at least one channel '}
                   </p>
                   <div className="space-y-3">
                     {API_OPTIONS.map((opt) => (
@@ -466,73 +507,14 @@ export function SignupPage() {
                         />
                         <opt.Icon className="w-5 h-5 text-gray-600 dark:text-gray-400 flex-shrink-0" />
                         <span className="font-medium text-gray-900 dark:text-white">{isAr ? opt.labelAr : opt.labelEn}</span>
-                        {opt.required && <span className="text-red-500 text-sm">*</span>}
-                        {!opt.required && <span className="text-xs text-gray-500 dark:text-gray-400">({isAr ? 'اختياري' : 'optional'})</span>}
+                        {/* {!opt.required && <span className="text-xs text-gray-500 dark:text-gray-400">({isAr ? 'اختياري' : 'optional'})</span>} */}
                       </label>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Step 4: Optional extra user (manager | agent) */}
-              {step === 4 && (
-                <div className={`space-y-4 ${isAr ? 'text-right' : ''}`}>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {isAr ? 'يمكنك إضافة مستخدم آخر بصلاحية مدير أو وكيل (بدون صلاحيات مدير نظام).' : 'You can add another user with Manager or Agent role (no admin roles).'}
-                  </p>
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={showExtraUser}
-                      onChange={(e) => {
-                        setShowExtraUser(e.target.checked);
-                        if (!e.target.checked) setExtraUser(null);
-                        else setExtraUser({ name: '', email: '', role: 'manager' });
-                      }}
-                      className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <UserPlus className="w-5 h-5 text-gray-500" />
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{isAr ? 'إضافة مستخدم آخر' : 'Add another user'}</span>
-                  </label>
-                  {showExtraUser && extraUser && (
-                    <div className="grid sm:grid-cols-2 gap-4 p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{isAr ? 'الاسم' : 'Name'}</label>
-                        <input
-                          type="text"
-                          value={extraUser.name}
-                          onChange={(e) => setExtraUser((u) => (u ? { ...u, name: e.target.value } : null))}
-                          className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
-                          placeholder={isAr ? 'الاسم' : 'Full name'}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{isAr ? 'البريد' : 'Email'}</label>
-                        <input
-                          type="email"
-                          value={extraUser.email}
-                          onChange={(e) => setExtraUser((u) => (u ? { ...u, email: e.target.value } : null))}
-                          className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
-                          placeholder="user@company.com"
-                          dir="ltr"
-                        />
-                      </div>
-                      <div className="sm:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{isAr ? 'الدور' : 'Role'}</label>
-                        <select
-                          value={extraUser.role}
-                          onChange={(e) => setExtraUser((u) => (u ? { ...u, role: e.target.value as 'manager' | 'agent' } : null))}
-                          className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
-                        >
-                          {EXTRA_ROLES.map((r) => (
-                            <option key={r.value} value={r.value}>{isAr ? r.labelAr : r.labelEn}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
+
 
               {/* Navigation */}
               <div className={`flex gap-3 mt-8 ${isAr ? 'flex-row-reverse' : ''}`}>
@@ -546,7 +528,7 @@ export function SignupPage() {
                     {isAr ? 'السابق' : 'Back'}
                   </button>
                 ) : null}
-                {step < 4 ? (
+                {step < 3 ? (
                   <button
                     type="button"
                     onClick={handleNext}
@@ -558,7 +540,7 @@ export function SignupPage() {
                 ) : (
                   <button
                     type="button"
-                    onClick={handleSubmit}
+                    onClick={handleNext}
                     disabled={isLoading}
                     className="flex-1 py-3.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-blue-500/25 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >

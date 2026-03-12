@@ -7,7 +7,7 @@ export interface Feedback {
   customerEmail: string;
   content: string;
   sentiment: 'positive' | 'negative' | 'neutral';
-  emotion: 'happy' | 'angry' | 'sad' | 'frustrated' | 'satisfied' | 'disappointed';
+  emotion: 'disgusted' | 'neutral' |  'frustrated' | 'satisfied'  ;
   priority: 'low' | 'medium' | 'high';
   status: 'open' | 'inProgress' | 'resolved' | 'closed';
   category: string;
@@ -38,7 +38,8 @@ export interface Domain {
 
 export interface User {
   id: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   role: 'superAdmin' | 'companyAdmin' | 'manager' | 'agent';
   companyId?: string;
@@ -61,6 +62,7 @@ export interface Category {
   name: string;
   domain: string;
   companyId: string;
+  slug: string;
   feedbackCount: number;
 }
 
@@ -85,7 +87,7 @@ export const mockFeedback: Feedback[] = [
     emotion: 'satisfied',
     priority: 'low',
     status: 'closed',
-    category: 'Service Quality',
+    category: 'service_quality',
     channel: 'Email',
     assignedTo: 'agent-1',
     companyId: 'company-1',
@@ -98,10 +100,10 @@ export const mockFeedback: Feedback[] = [
     customerEmail: 'sarah@example.com',
     content: 'I am very disappointed with the product quality. It broke after just one week of use. This is unacceptable!',
     sentiment: 'negative',
-    emotion: 'angry',
+    emotion: 'frustrated',
     priority: 'high',
     status: 'inProgress',
-    category: 'Product Quality',
+    category: 'food_quality',
     channel: 'WhatsApp',
     assignedTo: 'agent-2',
     companyId: 'company-1',
@@ -117,7 +119,7 @@ export const mockFeedback: Feedback[] = [
     emotion: 'satisfied',
     priority: 'medium',
     status: 'open',
-    category: 'Delivery',
+    category: 'delivery_issues',
     channel: 'Web Form',
     companyId: 'company-1',
     createdAt: '2026-02-23T12:00:00Z',
@@ -132,7 +134,7 @@ export const mockFeedback: Feedback[] = [
     emotion: 'frustrated',
     priority: 'high',
     status: 'open',
-    category: 'Customer Support',
+    category: 'service_quality',
     channel: 'Phone',
     companyId: 'company-1',
     createdAt: '2026-02-24T09:30:00Z',
@@ -144,10 +146,10 @@ export const mockFeedback: Feedback[] = [
     customerEmail: 'khalid@example.com',
     content: 'Great product! Exactly what I was looking for. The price is very competitive too.',
     sentiment: 'positive',
-    emotion: 'happy',
+    emotion: 'satisfied',
     priority: 'low',
     status: 'closed',
-    category: 'Product Quality',
+    category: 'pricing',
     channel: 'Email',
     assignedTo: 'agent-1',
     companyId: 'company-1',
@@ -160,10 +162,10 @@ export const mockFeedback: Feedback[] = [
     customerEmail: 'nour@example.com',
     content: 'The app crashed multiple times during my session. Very frustrating experience. Please fix ASAP.',
     sentiment: 'negative',
-    emotion: 'frustrated',
+    emotion: 'disgusted',
     priority: 'high',
     status: 'open',
-    category: 'Service Quality',
+    category: 'service_quality',
     channel: 'Web Form',
     companyId: 'company-1',
     createdAt: '2026-02-25T07:00:00Z',
@@ -175,10 +177,10 @@ export const mockFeedback: Feedback[] = [
     customerEmail: 'layla@example.com',
     content: 'The new update is fantastic! The interface is much cleaner and responsive now.',
     sentiment: 'positive',
-    emotion: 'happy',
+    emotion: 'satisfied',
     priority: 'low',
     status: 'resolved',
-    category: 'Service Quality',
+    category: 'service_quality',
     channel: 'Email',
     assignedTo: 'agent-1',
     companyId: 'company-1',
@@ -191,10 +193,10 @@ export const mockFeedback: Feedback[] = [
     customerEmail: 'hassan@example.com',
     content: 'Billing issue. I was charged twice for the same order. Waiting for refund for 5 days now.',
     sentiment: 'negative',
-    emotion: 'angry',
+    emotion: 'neutral',
     priority: 'high',
     status: 'inProgress',
-    category: 'Customer Support',
+    category: 'pricing',
     channel: 'Phone',
     assignedTo: 'agent-2',
     companyId: 'company-1',
@@ -210,7 +212,7 @@ export const mockFeedback: Feedback[] = [
     emotion: 'satisfied',
     priority: 'low',
     status: 'closed',
-    category: 'Delivery',
+    category: 'delivery_issues',
     channel: 'WhatsApp',
     assignedTo: 'agent-1',
     companyId: 'company-1',
@@ -223,10 +225,10 @@ export const mockFeedback: Feedback[] = [
     customerEmail: 'yousef@example.com',
     content: 'Product arrived damaged. The box was crushed and the item inside is broken. Need replacement.',
     sentiment: 'negative',
-    emotion: 'disappointed',
+    emotion: 'disgusted',
     priority: 'high',
     status: 'open',
-    category: 'Delivery',
+    category: 'delivery_issues',
     channel: 'Email',
     companyId: 'company-1',
     createdAt: '2026-02-25T10:30:00Z',
@@ -241,7 +243,7 @@ export const mockFeedback: Feedback[] = [
     emotion: 'satisfied',
     priority: 'medium',
     status: 'resolved',
-    category: 'Customer Support',
+    category: 'service_quality',
     channel: 'Web Form',
     assignedTo: 'agent-2',
     companyId: 'company-1',
@@ -254,10 +256,10 @@ export const mockFeedback: Feedback[] = [
     customerEmail: 'tariq@example.com',
     content: 'Absolutely love the loyalty program. The rewards are generous and easy to redeem.',
     sentiment: 'positive',
-    emotion: 'happy',
+    emotion: 'satisfied',
     priority: 'low',
     status: 'closed',
-    category: 'Service Quality',
+    category: 'menu',
     channel: 'Email',
     assignedTo: 'agent-1',
     companyId: 'company-2',
@@ -315,7 +317,8 @@ export const mockDomains: Domain[] = [
 export const mockUsers: User[] = [
   {
     id: 'user-1',
-    name: 'Ahmed Al-Mansour',
+    firstName: 'Ahmed',
+    lastName: 'Al-Mansour',
     email: 'ahmed@company.com',
     role: 'companyAdmin',
     companyId: 'company-1',
@@ -324,7 +327,8 @@ export const mockUsers: User[] = [
   },
   {
     id: 'user-2',
-    name: 'Sarah Williams',
+    firstName: 'Sarah',
+    lastName: 'Williams',
     email: 'sarah@company.com',
     role: 'manager',
     companyId: 'company-1',
@@ -333,7 +337,8 @@ export const mockUsers: User[] = [
   },
   {
     id: 'user-3',
-    name: 'Layla Mansour',
+    firstName: 'Layla',
+    lastName: 'Mansour',
     email: 'layla@company.com',
     role: 'manager',
     companyId: 'company-1',
@@ -342,7 +347,8 @@ export const mockUsers: User[] = [
   },
   {
     id: 'agent-1',
-    name: 'Omar Hussein',
+    firstName: 'Omar',
+    lastName: 'Hussein',
     email: 'omar@company.com',
     role: 'agent',
     companyId: 'company-1',
@@ -351,7 +357,8 @@ export const mockUsers: User[] = [
   },
   {
     id: 'agent-2',
-    name: 'Fatima Ahmed',
+    firstName: 'Fatima',
+    lastName: 'Ahmed',
     email: 'fatima@company.com',
     role: 'agent',
     companyId: 'company-1',
@@ -360,7 +367,8 @@ export const mockUsers: User[] = [
   },
   {
     id: 'agent-3',
-    name: 'Khalid Nasser',
+    firstName: 'Khalid',
+    lastName: 'Nasser',
     email: 'khalid@company.com',
     role: 'agent',
     companyId: 'company-1',
@@ -409,31 +417,67 @@ export const mockIntegrations: Integration[] = [
 export const mockCategories: Category[] = [
   {
     id: 'cat-1',
+    slug: 'service_quality',
     name: 'Service Quality',
-    domain: 'Technology',
+    domain: 'Restaurant',
     companyId: 'company-1',
     feedbackCount: 324,
   },
   {
     id: 'cat-2',
-    name: 'Product Quality',
-    domain: 'Technology',
+    slug: 'food_quality',
+    name: 'Food Quality',
+    domain: 'Restaurant',
     companyId: 'company-1',
-    feedbackCount: 456,
+    feedbackCount: 210,
   },
   {
     id: 'cat-3',
-    name: 'Customer Support',
-    domain: 'Technology',
+    slug: 'order_accuracy',
+    name: 'Order Accuracy',
+    domain: 'Restaurant',
     companyId: 'company-1',
-    feedbackCount: 287,
+    feedbackCount: 180,
   },
   {
     id: 'cat-4',
-    name: 'Delivery',
-    domain: 'Technology',
+    slug: 'delivery_issues',
+    name: 'Delivery Issues',
+    domain: 'Restaurant',
     companyId: 'company-1',
-    feedbackCount: 180,
+    feedbackCount: 140,
+  },
+  {
+    id: 'cat-5',
+    slug: 'pricing',
+    name: 'Pricing',
+    domain: 'Restaurant',
+    companyId: 'company-1',
+    feedbackCount: 98,
+  },
+  {
+    id: 'cat-6',
+    slug: 'hygiene',
+    name: 'Hygiene',
+    domain: 'Restaurant',
+    companyId: 'company-1',
+    feedbackCount: 75,
+  },
+  {
+    id: 'cat-7',
+    slug: 'bad_atmosphere',
+    name: 'Bad Atmosphere',
+    domain: 'Restaurant',
+    companyId: 'company-1',
+    feedbackCount: 60,
+  },
+  {
+    id: 'cat-8',
+    slug: 'menu',
+    name: 'Menu',
+    domain: 'Restaurant',
+    companyId: 'company-1',
+    feedbackCount: 45,
   },
 ];
 

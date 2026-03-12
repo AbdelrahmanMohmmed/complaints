@@ -1,4 +1,4 @@
-// we cab remove this page
+// we can  remove this page
 // NOTE: This page currently uses MOCK log data for demo and layout purposes.
 // TODO: Replace `mockLogs` with real `/api/v1/logs` data from the FastAPI backend.
 

@@ -132,7 +132,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
               </div>
               <div className="hidden lg:flex flex-col items-start">
                 <span className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">
-                  {user?.name}
+                  {user?.firstName} {user?.lastName}
                 </span>
                 <span className={cn('text-[10px] px-1.5 py-0.5 rounded-full font-semibold', badgeClass)}>
                   {t(`role.${user?.role}`)}
@@ -145,11 +145,11 @@ export function TopBar({ onMenuClick }: TopBarProps) {
               <div className="flex items-center gap-3 py-1">
                 <div className={cn('w-10 h-10 rounded-full bg-gradient-to-br flex items-center justify-center flex-shrink-0', gradientClass)}>
                   <span className="text-white text-sm font-bold">
-                    {user?.name?.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                    {`${user?.firstName} ${user?.lastName}`.split(' ').map(n => n[0]).join('').slice(0, 2)}
                   </span>
                 </div>
                 <div className="flex flex-col min-w-0">
-                  <span className="font-semibold text-gray-900 dark:text-white truncate">{user?.name}</span>
+                  <span className="font-semibold text-gray-900 dark:text-white truncate">{user?.firstName} {user?.lastName}</span>
                   <span className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</span>
                   <span className={cn('text-[10px] px-1.5 py-0.5 rounded-full font-semibold mt-1 w-fit', badgeClass)}>
                     {t(`role.${user?.role}`)}

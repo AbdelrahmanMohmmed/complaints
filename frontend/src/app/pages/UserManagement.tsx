@@ -188,9 +188,17 @@ const updateUser = async () => {
 
               <div className="space-y-2">
 
-                <Label htmlFor="userName">{t('common.name')}</Label>
+                <Label htmlFor="userFirstName">First Name</Label>
 
-                <Input id="userName" placeholder="Enter full name" />
+                <Input id="userFirstName" placeholder="ALi " />
+
+              </div>
+
+              <div className="space-y-2">
+
+                <Label htmlFor="userLastName">Last Name</Label>
+
+                <Input id="userLastName" placeholder="Ahmed" />
 
               </div>
 
@@ -216,7 +224,7 @@ const updateUser = async () => {
 
                   <SelectContent>
 
-                    <SelectItem value="companyAdmin">{t('role.companyAdmin')}</SelectItem>
+                    {/* <SelectItem value="companyAdmin">{t('role.companyAdmin')}</SelectItem> */}
 
                     <SelectItem value="manager">{t('role.manager')}</SelectItem>
 
@@ -362,14 +370,24 @@ const updateUser = async () => {
 
                         <span className="text-white font-medium text-sm">
 
+<<<<<<< HEAD:frontend/src/app/pages/UserManagement.tsx
                             {user.f_name[0]}{user.l_name[0]}
+=======
+                          {`${user.firstName} ${user.lastName}`.split(' ').map(n => n[0]).join('')}
+
+>>>>>>> origin/frontend:src/app/pages/UserManagement.tsx
                         </span>
 
                       </div>
 
                       <div className="font-medium text-gray-900 dark:text-white">
 
+<<<<<<< HEAD:frontend/src/app/pages/UserManagement.tsx
                           {user.f_name} {user.l_name}
+=======
+                        {user.firstName} {user.lastName}
+
+>>>>>>> origin/frontend:src/app/pages/UserManagement.tsx
                       </div>
 
                     </div>
@@ -457,6 +475,7 @@ const updateUser = async () => {
 
             <div className="space-y-4 py-4">
 
+<<<<<<< HEAD:frontend/src/app/pages/UserManagement.tsx
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label>First Name</Label>
@@ -472,6 +491,38 @@ const updateUser = async () => {
                     onChange={(e) => setEditingUser({ ...editingUser, l_name: e.target.value })}
                   />
                 </div>
+=======
+              <div className="space-y-2">
+
+                <Label>First Name</Label>
+
+                <Input
+
+                  defaultValue={editingUser.firstName}
+
+                  onChange={(e) =>
+                    setEditingUser({ ...editingUser, firstName: e.target.value })
+                  }
+
+                />
+
+              </div>
+
+              <div className="space-y-2">
+
+                <Label>Last Name</Label>
+
+                <Input
+
+                  defaultValue={editingUser.lastName}
+
+                  onChange={(e) =>
+                    setEditingUser({ ...editingUser, lastName: e.target.value })
+                  }
+
+                />
+
+>>>>>>> origin/frontend:src/app/pages/UserManagement.tsx
               </div>
 
               <div className="space-y-2">

@@ -92,7 +92,7 @@ export function FeedbackDetails() {
     if (newNote.trim()) {
       setNotes(prev => [...prev, {
         text: newNote.trim(),
-        author: user?.name || 'Unknown',
+        author: user ? `${user.firstName} ${user.lastName}` : 'Unknown',
         time: new Date().toLocaleString(isAr ? 'ar-SA' : 'en-US'),
       }]);
       setNewNote('');
@@ -159,25 +159,7 @@ export function FeedbackDetails() {
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Status Change - All roles */}
-              <div>
-                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">
-                  {t('feedback.changeStatus')}
-                </label>
-                <Select
-                  value={status}
-                  onValueChange={(value) => setStatus(value as typeof status)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="open">{t('status.open')}</SelectItem>
-                    <SelectItem value="inProgress">{t('status.inProgress')}</SelectItem>
-                    <SelectItem value="resolved">{t('status.resolved')}</SelectItem>
-                    <SelectItem value="closed">{t('status.closed')}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+         
 
               {/* Priority - Manager/Admin only */}
               {canSetPriority && (
@@ -219,7 +201,7 @@ export function FeedbackDetails() {
                     <SelectContent>
                       {agents.map((agent) => (
                         <SelectItem key={agent.id} value={agent.id}>
-                          {agent.name}
+                          {agent.firstName} {agent.lastName}
                         </SelectItem>
                       ))}
                     </SelectContent>
