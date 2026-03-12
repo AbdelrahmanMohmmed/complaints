@@ -153,7 +153,7 @@ export function MyFeedback() {
           </div>
           <h1 className="text-2xl sm:text-3xl font-black mb-1">{t('agent.myFeedback')}</h1>
           <p className="text-orange-200 text-sm">
-            {isAr ? `مرحباً ${user?.name}! هذه قائمة الشكاوى المُسندة إليك` : `Welcome, ${user?.name}! Here are all feedback items assigned to you`}
+            {isAr ? `مرحباً ${user?.firstName} ${user?.lastName}! هذه قائمة الشكاوى المُسندة إليك` : `Welcome, ${user?.firstName} ${user?.lastName}! Here are all feedback items assigned to you`}
           </p>
         </div>
       </div>

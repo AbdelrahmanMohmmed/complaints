@@ -133,9 +133,17 @@ export function UserManagement() {
 
               <div className="space-y-2">
 
-                <Label htmlFor="userName">{t('common.name')}</Label>
+                <Label htmlFor="userFirstName">First Name</Label>
 
-                <Input id="userName" placeholder="Enter full name" />
+                <Input id="userFirstName" placeholder="ALi " />
+
+              </div>
+
+              <div className="space-y-2">
+
+                <Label htmlFor="userLastName">Last Name</Label>
+
+                <Input id="userLastName" placeholder="Ahmed" />
 
               </div>
 
@@ -161,7 +169,7 @@ export function UserManagement() {
 
                   <SelectContent>
 
-                    <SelectItem value="companyAdmin">{t('role.companyAdmin')}</SelectItem>
+                    {/* <SelectItem value="companyAdmin">{t('role.companyAdmin')}</SelectItem> */}
 
                     <SelectItem value="manager">{t('role.manager')}</SelectItem>
 
@@ -309,7 +317,7 @@ export function UserManagement() {
 
                         <span className="text-white font-medium text-sm">
 
-                          {user.name.split(' ').map(n => n[0]).join('')}
+                          {`${user.firstName} ${user.lastName}`.split(' ').map(n => n[0]).join('')}
 
                         </span>
 
@@ -317,7 +325,7 @@ export function UserManagement() {
 
                       <div className="font-medium text-gray-900 dark:text-white">
 
-                        {user.name}
+                        {user.firstName} {user.lastName}
 
                       </div>
 
@@ -441,14 +449,30 @@ export function UserManagement() {
 
               <div className="space-y-2">
 
-                <Label>Name</Label>
+                <Label>First Name</Label>
 
                 <Input
 
-                  defaultValue={editingUser.name}
+                  defaultValue={editingUser.firstName}
 
                   onChange={(e) =>
-                    setEditingUser({ ...editingUser, name: e.target.value })
+                    setEditingUser({ ...editingUser, firstName: e.target.value })
+                  }
+
+                />
+
+              </div>
+
+              <div className="space-y-2">
+
+                <Label>Last Name</Label>
+
+                <Input
+
+                  defaultValue={editingUser.lastName}
+
+                  onChange={(e) =>
+                    setEditingUser({ ...editingUser, lastName: e.target.value })
                   }
 
                 />

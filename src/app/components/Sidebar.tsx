@@ -96,7 +96,7 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
       {
         items: [
           { name: t('nav.dashboard'), href: '/app', icon: LayoutDashboard },
-          // { name: t('nav.feedback'), href: '/app/feedback', icon: MessageSquare },
+          { name: t('nav.allComplaints'), href: '/app/feedback', icon: MessageSquare },
           // { name: t('nav.categories'), href: '/app/categories', icon: Tag },
           // { name: t('nav.apis'), href: '/app/integrations', icon: Plug },
           { name: t('nav.users'), href: '/app/users', icon: Users },
@@ -263,7 +263,7 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-gray-900 dark:text-white truncate leading-tight">
-                {user?.name}
+                {user?.firstName} {user?.lastName}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                 {user?.email}

@@ -5,7 +5,7 @@ import React, { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
-import { mockFeedback, mockUsers, Feedback } from '../data/mockData';
+import { mockFeedback, mockUsers, Feedback, mockCategories } from '../data/mockData';
 import { Card, CardContent } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
@@ -58,6 +58,17 @@ export function FeedbackList() {
   const [feedbackPriorities, setFeedbackPriorities] = useState<
     Record<string, Feedback['priority']>
   >({});
+  const [feedbackCategories, setFeedbackCategories] = useState<
+    Record<string, string>
+  >({});
+
+  const [feedbackSentiments, setFeedbackSentiments] = useState<
+    Record<string, Feedback['sentiment']>
+  >({});
+
+  const [feedbackEmotions, setFeedbackEmotions] = useState<
+    Record<string, Feedback['emotion']>
+  >({});
   const [assignmentMap, setAssignmentMap] = useState<Record<string, string>>({});
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [selectedFeedback, setSelectedFeedback] = useState<Feedback | null>(null);
@@ -75,8 +86,10 @@ export function FeedbackList() {
 
   const feedbackList: Feedback[] = mockFeedback.map((fb) => ({
     ...fb,
-    status: feedbackStatuses[fb.id] || fb.status,
     priority: feedbackPriorities[fb.id] || fb.priority,
+    category: feedbackCategories[fb.id] || fb.category,
+    sentiment: feedbackSentiments[fb.id] || fb.sentiment,
+    emotion: feedbackEmotions[fb.id] || fb.emotion,
     assignedTo: assignmentMap[fb.id] || fb.assignedTo,
   }));
 
@@ -101,7 +114,7 @@ export function FeedbackList() {
   const getAgentName = (agentId?: string) => {
     if (!agentId) return isAr ? 'غير مُسند' : 'Unassigned';
     const agent = mockUsers.find(u => u.id === agentId);
-    return agent?.name || agentId;
+    return agent ? `${agent.firstName} ${agent.lastName}` : agentId;
   };
 
   const openAssignDialog = (fb: Feedback, e: React.MouseEvent) => {
@@ -134,6 +147,20 @@ export function FeedbackList() {
   ) => {
     setFeedbackPriorities((prev) => ({ ...prev, [feedbackId]: newPriority }));
   };
+  const handleCategoryChange = (id: string, value: string) => {
+    setFeedbackCategories((prev) => ({ ...prev, [id]: value }));
+  };
+
+  const handleSentimentChange = (
+    id: string,
+    value: Feedback['sentiment']
+  ) => {
+    setFeedbackSentiments((prev) => ({ ...prev, [id]: value }));
+  };
+
+  const handleEmotionChange = (id: string, value: Feedback['emotion']) => {
+    setFeedbackEmotions((prev) => ({ ...prev, [id]: value }));
+  };
 
   const pageTitle = isSuperAdmin
     ? t('nav.allFeedback')
@@ -142,8 +169,8 @@ export function FeedbackList() {
   const pageSubtitle = isSuperAdmin
     ? (isAr ? 'عرض جميع الشكاوى عبر النظام' : 'System-wide feedback from all companies')
     : isManager
-    ? (isAr ? 'إدارة شكاوى فريقك وتوزيعها' : 'Manage and assign your team\'s feedback')
-    : (isAr ? 'عرض وإدارة شكاوى شركتك' : 'View and manage your company\'s feedback');
+      ? (isAr ? 'إدارة شكاوى فريقك وتوزيعها' : 'Manage and assign your team\'s feedback')
+      : (isAr ? 'عرض وإدارة شكاوى شركتك' : 'View and manage your company\'s feedback');
 
   return (
     <div className="space-y-6">
@@ -266,7 +293,6 @@ export function FeedbackList() {
                 <TableHead className="font-semibold">{t('feedback.sentiment')}</TableHead>
                 <TableHead className="hidden xl:table-cell font-semibold">{t('feedback.emotion')}</TableHead>
                 <TableHead className="hidden lg:table-cell font-semibold">{t('feedback.priority')}</TableHead>
-                <TableHead className="font-semibold">{t('common.status')}</TableHead>
                 {(isManager || isCompanyAdmin) && (
                   <TableHead className="hidden xl:table-cell font-semibold">{t('feedback.assignedTo')}</TableHead>
                 )}
@@ -274,7 +300,7 @@ export function FeedbackList() {
                   <TableHead className="hidden xl:table-cell font-semibold">{isAr ? 'الشركة' : 'Company'}</TableHead>
                 )}
                 <TableHead className="hidden sm:table-cell font-semibold">{t('common.date')}</TableHead>
-                {(isManager) && (
+                {(isManager || isCompanyAdmin) && (
                   <TableHead className="font-semibold">{t('common.actions')}</TableHead>
                 )}
               </TableRow>
@@ -301,21 +327,69 @@ export function FeedbackList() {
                       <div className="truncate text-sm text-gray-600 dark:text-gray-400">{fb.content}</div>
                     </TableCell>
                     <TableCell className="hidden lg:table-cell">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">{fb.category}</span>
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <Select
+                          value={feedbackCategories[fb.id] || fb.category}
+                          onValueChange={(val) => handleCategoryChange(fb.id, val)}
+                        >
+                          <SelectTrigger className="h-7 w-[140px] text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+
+                          <SelectContent>
+                            {mockCategories.map((cat) => (
+                              <SelectItem key={cat.id} value={cat.slug}>
+                                {cat.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+
+                        </Select>
+                      </div>
                     </TableCell>
                     <TableCell className="hidden xl:table-cell">
                       <span className="text-sm text-gray-600 dark:text-gray-400">{fb.channel}</span>
                     </TableCell>
                     <TableCell>
-                      <Badge className={cn('capitalize text-xs', sentimentColors[fb.sentiment])}>
-                        {t(`sentiment.${fb.sentiment}`)}
-                      </Badge>
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <Select
+                          value={fb.sentiment}
+                          onValueChange={(val) =>
+                            handleSentimentChange(fb.id, val as Feedback['sentiment'])
+                          }
+                        >
+                          <SelectTrigger className="h-7 w-[110px] text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="positive">{t('sentiment.positive')}</SelectItem>
+                            <SelectItem value="neutral">{t('sentiment.neutral')}</SelectItem>
+                            <SelectItem value="negative">{t('sentiment.negative')}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </TableCell>
                     <TableCell className="hidden xl:table-cell">
-                      <span className="text-xs capitalize text-gray-600 dark:text-gray-400">{fb.emotion}</span>
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <Select
+                          value={fb.emotion}
+                          onValueChange={(val) => handleEmotionChange(fb.id, val as Feedback['emotion'])}
+                        >
+                          <SelectTrigger className="h-7 w-[120px] text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {/* <SelectItem value="happy">Happy</SelectItem> */}
+                            <SelectItem value="satisfied">Satisfied</SelectItem>
+                            <SelectItem value="frustrated">Frustrated</SelectItem>
+                            <SelectItem value="disgusted">Disgusted</SelectItem>
+                            <SelectItem value="neutral">Neutral</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </TableCell>
                     <TableCell className="hidden lg:table-cell">
-                      {isManager ? (
+                      {(isManager || isCompanyAdmin) ? (
                         <div onClick={(e) => e.stopPropagation()}>
                           <Select
                             value={fb.priority}
@@ -339,32 +413,7 @@ export function FeedbackList() {
                         </Badge>
                       )}
                     </TableCell>
-                    <TableCell>
-                      {isManager ? (
-                        <div onClick={(e) => e.stopPropagation()}>
-                          <Select
-                            value={fb.status}
-                            onValueChange={(val) =>
-                              handleStatusChange(fb.id, val as Feedback['status'])
-                            }
-                          >
-                            <SelectTrigger className="h-7 w-[120px] text-xs">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="open" className="text-xs">{t('status.open')}</SelectItem>
-                              <SelectItem value="inProgress" className="text-xs">{t('status.inProgress')}</SelectItem>
-                              <SelectItem value="resolved" className="text-xs">{t('status.resolved')}</SelectItem>
-                              <SelectItem value="closed" className="text-xs">{t('status.closed')}</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      ) : (
-                        <Badge className={cn('capitalize text-xs', statusColors[fb.status])}>
-                          {t(`status.${fb.status}`)}
-                        </Badge>
-                      )}
-                    </TableCell>
+
                     {(isManager || isCompanyAdmin) && (
                       <TableCell className="hidden xl:table-cell">
                         <span className={cn('text-xs', currentAssignee ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400 italic')}>
@@ -382,7 +431,7 @@ export function FeedbackList() {
                     <TableCell className="hidden sm:table-cell">
                       <span className="text-xs text-gray-500 dark:text-gray-400">{formatDate(fb.createdAt)}</span>
                     </TableCell>
-                    {isManager && (
+                    {(isManager || isCompanyAdmin) && (
                       <TableCell>
                         <Button
                           size="sm"
@@ -451,10 +500,10 @@ export function FeedbackList() {
                       )}
                     >
                       <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0">
-                        <span className="text-white text-xs font-bold">{agent.name.split(' ').map(n => n[0]).join('')}</span>
+                        <span className="text-white text-xs font-bold">{`${agent.firstName} ${agent.lastName}`.split(' ').map(n => n[0]).join('')}</span>
                       </div>
                       <div>
-                        <p className="text-sm font-medium">{agent.name}</p>
+                        <p className="text-sm font-medium">{agent.firstName} {agent.lastName}</p>
                         <p className="text-xs text-gray-400">{agent.email}</p>
                       </div>
                       {selectedAgentId === agent.id && (

@@ -30,7 +30,8 @@ export type UserRole = 'superAdmin' | 'companyAdmin' | 'manager' | 'agent';
  */
 export interface User {
   id: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   role: UserRole;
   companyId?: string;
@@ -83,6 +84,7 @@ export interface SignupRequest {
   name: string;
   email: string;
   company: string;
+  phone: string;
   password: string;
   /** Selected domain id (required) */
   domainId: string;

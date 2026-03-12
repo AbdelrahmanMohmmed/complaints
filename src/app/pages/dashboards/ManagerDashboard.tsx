@@ -50,7 +50,7 @@ export function ManagerDashboard() {
   ];
 
   const agentWorkload = agents.map(agent => ({
-    name: agent.name.split(' ')[0],
+    name: agent.firstName || agent.id,
     assigned: Math.floor(Math.random() * 20) + 5,
     resolved: Math.floor(Math.random() * 18) + 3,
   }));
@@ -290,7 +290,7 @@ export function ManagerDashboard() {
                   <SelectContent>
                     {agents.map(agent => (
                       <SelectItem key={agent.id} value={agent.id} className="text-xs">
-                        {agent.name}
+                        {agent.firstName || agent.id}
                       </SelectItem>
                     ))}
                   </SelectContent>

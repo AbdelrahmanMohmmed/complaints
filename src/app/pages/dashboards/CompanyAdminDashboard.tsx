@@ -81,27 +81,27 @@ export function CompanyAdminDashboard() {
       color: 'text-blue-600',
       bg: 'bg-blue-50'
     },
-    {
-      label: 'Open',
-      value: openCount,
-      icon: AlertCircle,
-      color: 'text-sky-600',
-      bg: 'bg-sky-50'
-    },
-    {
-      label: 'In Progress',
-      value: inProgressCount,
-      icon: Clock,
-      color: 'text-amber-600',
-      bg: 'bg-amber-50'
-    },
-    {
-      label: 'Resolved',
-      value: resolvedCount,
-      icon: CheckCircle,
-      color: 'text-green-600',
-      bg: 'bg-green-50'
-    },
+    // {
+    //   label: 'Open',
+    //   value: openCount,
+    //   icon: AlertCircle,
+    //   color: 'text-sky-600',
+    //   bg: 'bg-sky-50'
+    // },
+    // {
+    //   label: 'In Progress',
+    //   value: inProgressCount,
+    //   icon: Clock,
+    //   color: 'text-amber-600',
+    //   bg: 'bg-amber-50'
+    // },
+    // {
+    //   label: 'Resolved',
+    //   value: resolvedCount,
+    //   icon: CheckCircle,
+    //   color: 'text-green-600',
+    //   bg: 'bg-green-50'
+    // },
     {
       label: 'High Priority',
       value: highPriorityCount,

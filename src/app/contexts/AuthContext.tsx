@@ -13,7 +13,8 @@ export type UserRole = 'superAdmin' | 'companyAdmin' | 'manager' | 'agent';
  */
 export interface User {
   id: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   role: UserRole;
   companyId?: string;

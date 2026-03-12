@@ -1,6 +1,6 @@
 // NOTE: This super admin dashboard uses aggregated MOCK domain and company metrics.
 // TODO: Replace `mockDomains` and static arrays with real analytics endpoints.
-
+// Optional Role we can add later
 import React from 'react';
 import { Link } from 'react-router';
 import { useLanguage } from '../../contexts/LanguageContext';

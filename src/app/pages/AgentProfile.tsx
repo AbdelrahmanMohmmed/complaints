@@ -11,6 +11,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Separator } from '../components/ui/separator';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
 import {
   User, Mail, Phone, Building2, CheckCircle2, Clock,
   MessageSquare, Star, Edit3, Save, X, Shield, Bell, Moon,
@@ -24,9 +25,15 @@ export function AgentProfile() {
   const { theme, toggleTheme } = useTheme();
   const isAr = language === 'ar';
   const [isEditing, setIsEditing] = useState(false);
-  const [name, setName] = useState(user?.name || '');
-  const [phone, setPhone] = useState('+966 50 123 4567');
+  const [firstName, setFirstName] = useState(user?.firstName || '');
+  const [lastName, setLastName] = useState(user?.lastName || '');
   const [notifications, setNotifications] = useState(true);
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [is2FADialogOpen, setIs2FADialogOpen] = useState(false);
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
 
   // Agent's assigned feedback
   const myFeedback = mockFeedback.filter(fb => fb.assignedTo === 'agent-1' || fb.status === 'open' || fb.status === 'inProgress');
@@ -69,7 +76,7 @@ export function AgentProfile() {
     setIsEditing(false);
   };
 
-  const initials = user?.name?.split(' ').map(n => n[0]).join('') || 'AG';
+  const initials = `${user?.firstName} ${user?.lastName}`.split(' ').map(n => n[0]).join('') || 'AG';
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
@@ -99,7 +106,7 @@ export function AgentProfile() {
 
             {/* Info */}
             <div className="flex-1 min-w-0">
-              <h2 className="text-xl font-black text-gray-900 dark:text-white">{user?.name}</h2>
+              <h2 className="text-xl font-black text-gray-900 dark:text-white">{firstName} {lastName}</h2>
               <p className="text-sm text-gray-500 dark:text-gray-400">{user?.email}</p>
               <div className="flex flex-wrap gap-2 mt-2">
                 <Badge className="bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 text-xs">
@@ -167,11 +174,19 @@ export function AgentProfile() {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label className="text-sm text-gray-600 dark:text-gray-400">{isAr ? 'الاسم الكامل' : 'Full Name'}</Label>
+              <Label className="text-sm text-gray-600 dark:text-gray-400">{isAr ? 'الاسم الأول' : 'First Name'}</Label>
               {isEditing ? (
-                <Input value={name} onChange={(e) => setName(e.target.value)} />
+                <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} />
               ) : (
-                <p className="text-sm font-medium text-gray-900 dark:text-white py-2">{user?.name}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white py-2">{firstName}</p>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm text-gray-600 dark:text-gray-400">{isAr ? 'الاسم الأخير' : 'Last Name'}</Label>
+              {isEditing ? (
+                <Input value={lastName} onChange={(e) => setLastName(e.target.value)} />
+              ) : (
+                <p className="text-sm font-medium text-gray-900 dark:text-white py-2">{lastName}</p>
               )}
             </div>
             <div className="space-y-1.5">
@@ -180,17 +195,6 @@ export function AgentProfile() {
                 <Mail className="w-4 h-4 text-gray-400" />
                 {user?.email}
               </p>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-sm text-gray-600 dark:text-gray-400">{isAr ? 'رقم الهاتف' : 'Phone Number'}</Label>
-              {isEditing ? (
-                <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
-              ) : (
-                <p className="text-sm font-medium text-gray-900 dark:text-white py-2 flex items-center gap-2">
-                  <Phone className="w-4 h-4 text-gray-400" />
-                  {phone}
-                </p>
-              )}
             </div>
             <div className="space-y-1.5">
               <Label className="text-sm text-gray-600 dark:text-gray-400">{isAr ? 'الشركة' : 'Company'}</Label>
@@ -204,16 +208,16 @@ export function AgentProfile() {
       </Card>
 
       {/* Preferences */}
-      <Card>
-        <CardHeader className="pb-3">
+      {/* <Card> */}
+        {/* <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <Shield className="w-4 h-4 text-gray-400" />
             {isAr ? 'التفضيلات' : 'Preferences'}
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4"> */}
           {/* Language */}
-          <div className="flex items-center justify-between py-2">
+          {/* <div className="flex items-center justify-between py-2">
             <div>
               <p className="text-sm font-medium text-gray-900 dark:text-white">{isAr ? 'اللغة' : 'Language'}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400">{isAr ? 'تبديل بين العربية والإنجليزية' : 'Switch between Arabic and English'}</p>
@@ -221,11 +225,11 @@ export function AgentProfile() {
             <Button variant="outline" size="sm" onClick={toggleLanguage} className="gap-2">
               🌐 {language === 'ar' ? 'English' : 'العربية'}
             </Button>
-          </div>
+          </div> */}
           <Separator />
 
           {/* Theme */}
-          <div className="flex items-center justify-between py-2">
+          {/* <div className="flex items-center justify-between py-2">
             <div>
               <p className="text-sm font-medium text-gray-900 dark:text-white">{isAr ? 'المظهر' : 'Theme'}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400">{isAr ? 'تبديل بين الوضع الفاتح والداكن' : 'Toggle between light and dark mode'}</p>
@@ -235,10 +239,10 @@ export function AgentProfile() {
               {theme === 'dark' ? (isAr ? 'فاتح' : 'Light') : (isAr ? 'داكن' : 'Dark')}
             </Button>
           </div>
-          <Separator />
+          <Separator /> */}
 
           {/* Notifications */}
-          <div className="flex items-center justify-between py-2">
+          {/* <div className="flex items-center justify-between py-2">
             <div>
               <p className="text-sm font-medium text-gray-900 dark:text-white">{isAr ? 'الإشعارات' : 'Notifications'}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400">{isAr ? 'تنبيهات الشكاوى الجديدة' : 'Receive alerts for new assigned complaints'}</p>
@@ -256,7 +260,7 @@ export function AgentProfile() {
             </button>
           </div>
         </CardContent>
-      </Card>
+      </Card> */}
 
       {/* Security */}
       <Card>
@@ -272,14 +276,113 @@ export function AgentProfile() {
               <p className="text-sm font-medium text-gray-900 dark:text-white">{isAr ? 'كلمة المرور' : 'Password'}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400">{isAr ? 'آخر تغيير منذ 30 يوماً' : 'Last changed 30 days ago'}</p>
             </div>
-            <Button variant="outline" size="sm">{isAr ? 'تغيير' : 'Change'}</Button>
+            <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">{isAr ? 'تغيير' : 'Change'}</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>{isAr ? 'تغيير كلمة المرور' : 'Change Password'}</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>{isAr ? 'كلمة المرور الحالية' : 'Current Password'}</Label>
+                    <Input
+                      type="password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{isAr ? 'كلمة المرور الجديدة' : 'New Password'}</Label>
+                    <Input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{isAr ? 'تأكيد كلمة المرور الجديدة' : 'Confirm New Password'}</Label>
+                    <Input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setIsPasswordDialogOpen(false)}>
+                      {isAr ? 'إلغاء' : 'Cancel'}
+                    </Button>
+                    <Button
+                      className="bg-orange-500 hover:bg-orange-600 text-white"
+                      onClick={() => {
+                        // TODO: Implement password change logic
+                        setIsPasswordDialogOpen(false);
+                        setCurrentPassword('');
+                        setNewPassword('');
+                        setConfirmPassword('');
+                      }}
+                    >
+                      {isAr ? 'حفظ' : 'Save'}
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
           <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
             <div>
               <p className="text-sm font-medium text-gray-900 dark:text-white">{isAr ? 'المصادقة الثنائية' : 'Two-Factor Auth'}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{isAr ? 'غير مُفعّلة' : 'Not enabled'}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                {twoFactorEnabled ? (isAr ? 'مُفعّلة' : 'Enabled') : (isAr ? 'غير مُفعّلة' : 'Not enabled')}
+              </p>
             </div>
-            <Button size="sm" className="bg-orange-500 hover:bg-orange-600 text-white">{isAr ? 'تفعيل' : 'Enable'}</Button>
+            <Dialog open={is2FADialogOpen} onOpenChange={setIs2FADialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="bg-orange-500 hover:bg-orange-600 text-white">
+                  {twoFactorEnabled ? (isAr ? 'تعطيل' : 'Disable') : (isAr ? 'تفعيل' : 'Enable')}
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>
+                    {twoFactorEnabled ? (isAr ? 'تعطيل المصادقة الثنائية' : 'Disable Two-Factor Auth') : (isAr ? 'تفعيل المصادقة الثنائية' : 'Enable Two-Factor Auth')}
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  {twoFactorEnabled ? (
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {isAr ? 'هل أنت متأكد من تعطيل المصادقة الثنائية؟ هذا قد يجعل حسابك أقل أماناً.' : 'Are you sure you want to disable two-factor authentication? This will make your account less secure.'}
+                    </p>
+                  ) : (
+                    <div className="space-y-4">
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {isAr ? 'سيتم إرسال رمز التحقق إلى بريدك الإلكتروني لتفعيل المصادقة الثنائية.' : 'A verification code will be sent to your email to enable two-factor authentication.'}
+                      </p>
+                      <div className="space-y-2">
+                        <Label>{isAr ? 'رمز التحقق' : 'Verification Code'}</Label>
+                        <Input placeholder={isAr ? 'أدخل الرمز' : 'Enter code'} />
+                      </div>
+                    </div>
+                  )}
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setIs2FADialogOpen(false)}>
+                      {isAr ? 'إلغاء' : 'Cancel'}
+                    </Button>
+                    <Button
+                      className="bg-orange-500 hover:bg-orange-600 text-white"
+                      onClick={() => {
+                        // TODO: Implement 2FA toggle logic
+                        setTwoFactorEnabled(!twoFactorEnabled);
+                        setIs2FADialogOpen(false);
+                      }}
+                    >
+                      {twoFactorEnabled ? (isAr ? 'تعطيل' : 'Disable') : (isAr ? 'تفعيل' : 'Enable')}
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         </CardContent>
       </Card>

@@ -77,14 +77,14 @@ export function Settings() {
           {/* Name Fields */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Name</Label>
-              <Input defaultValue={user?.name || ""} />
+              <Label>First Name</Label>
+              <Input defaultValue={user?.firstName || ""} />
             </div>
 
-            {/* <div className="space-y-2">
+            <div className="space-y-2">
               <Label>Last Name</Label>
               <Input defaultValue={user?.lastName || ""} />
-            </div> */}
+            </div>
           </div>
 
           {/* Email */}
