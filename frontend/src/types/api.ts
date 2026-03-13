@@ -87,7 +87,6 @@ export interface SignupRequest {
   company: string;
   phone: string;
   password: string;
-  phone: string;        // ← add this
   domainId: number;
   domainLabel?: string;
   apis: { facebook: boolean; whatsapp: boolean; x: boolean; email: boolean };

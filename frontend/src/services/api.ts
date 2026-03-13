@@ -109,34 +109,31 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
     const isJson = contentType?.includes('application/json');
 
     if (!response.ok) {
-      let errorData: ApiErrorResponse;
+  let errorData: ApiErrorResponse;
+  if (isJson) {
+    errorData = await response.json();
+  } else {
+    errorData = {
+      detail: `HTTP ${response.status}: ${response.statusText}`,
+      status: response.status,
+    };
+  }
+  if (response.status === 401) {
+    // TODO: Trigger token refresh
+  }
+  throw new ApiError(errorData.detail || 'Unknown error', response.status, errorData);
+}
 
-      if (isJson) {
-        errorData = await response.json();
-      } else {
-        errorData = {
-          detail: `HTTP ${response.status}: ${response.statusText}`,
-          status: response.status,
-        };
-      }
+// ← 204 check goes HERE, after the error block
+if (response.status === 204) return null as T;
 
-      // 401 indicates token expired; frontend should attempt refresh
-      if (response.status === 401) {
-        // TODO: Trigger token refresh middleware here if available
-        // globalAuthService.handleUnauthorized();
-      }
-
-      throw new ApiError(errorData.detail || 'Unknown error', response.status, errorData);
-    }
-
-    // Success: parse JSON response
-    if (isJson) {
-      const data: T = await response.json();
-      return data;
-    } else {
-      // Return empty object if no JSON body (e.g., 204 No Content)
-      return {} as T;
-    }
+// Success: parse JSON response
+if (isJson) {
+  const data: T = await response.json();
+  return data;
+} else {
+  return {} as T;
+}
   } catch (error) {
     // Network or parsing error
     if (error instanceof ApiError) {

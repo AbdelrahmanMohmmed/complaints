@@ -50,19 +50,13 @@ export function SignupPage() {
 
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
-<<<<<<< HEAD:frontend/src/app/pages/SignupPage.tsx
     f_name: '',
     l_name: '',
-=======
-    firstName: '',
-    lastName: '',
->>>>>>> origin/frontend:src/app/pages/SignupPage.tsx
     email: '',
     company: '',
     phone: '',
     password: '',
     confirmPassword: '',
-      phone: '',   // ← add this
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -92,13 +86,8 @@ export function SignupPage() {
   // const displayDomainLabel = domainLabel.trim() || selectedDomain?.name || '';
 
   const canProceedStep1 =
-<<<<<<< HEAD:frontend/src/app/pages/SignupPage.tsx
     form.f_name.trim() &&
     form.l_name.trim() &&
-=======
-    form.firstName.trim() &&
-    form.lastName.trim() &&
->>>>>>> origin/frontend:src/app/pages/SignupPage.tsx
     form.company.trim() &&
     form.phone.trim() &&
     form.email.trim() &&
@@ -137,18 +126,12 @@ export function SignupPage() {
 
     setIsLoading(true);
     const payload: SignupRequest = {
-<<<<<<< HEAD:frontend/src/app/pages/SignupPage.tsx
       f_name: form.f_name.trim(),
       l_name: form.l_name.trim(),
         email: form.email.trim(),
-=======
-      name: `${form.firstName.trim()} ${form.lastName.trim()}`,
-      email: form.email.trim(),
->>>>>>> origin/frontend:src/app/pages/SignupPage.tsx
       company: form.company.trim(),
       phone: form.phone.trim(),
       password: form.password,
-      phone: form.phone.trim(),   // ← add this
       domainId: Number(selectedDomain.id),
       domainLabel: domainLabel.trim() || undefined,
       apis: { ...apis },
@@ -272,41 +255,23 @@ export function SignupPage() {
                       <input
                         type="text"
                         required
-<<<<<<< HEAD:frontend/src/app/pages/SignupPage.tsx
                         value={form.f_name}
                         onChange={(e) => setForm({ ...form, f_name: e.target.value })}
                         className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                         placeholder={isAr ? 'الاسم الأول' : 'John'}
-=======
-                        value={form.firstName}
-                        onChange={(e) => setForm({ ...form, firstName: e.target.value })}
-                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                        placeholder={isAr ? 'اسمك الأول' : 'John'}
->>>>>>> origin/frontend:src/app/pages/SignupPage.tsx
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-<<<<<<< HEAD:frontend/src/app/pages/SignupPage.tsx
                         {isAr ? 'اسم العائلة' : 'Last Name'} <span className="text-red-500">*</span>
-=======
-                        {isAr ? 'الاسم الأخير' : 'Last Name'} <span className="text-red-500">*</span>
->>>>>>> origin/frontend:src/app/pages/SignupPage.tsx
                       </label>
                       <input
                         type="text"
                         required
-<<<<<<< HEAD:frontend/src/app/pages/SignupPage.tsx
                         value={form.l_name}
                         onChange={(e) => setForm({ ...form, l_name: e.target.value })}
                         className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                         placeholder={isAr ? 'اسم العائلة' : 'Smith'}
-=======
-                        value={form.lastName}
-                        onChange={(e) => setForm({ ...form, lastName: e.target.value })}
-                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                        placeholder={isAr ? 'اسمك الأخير' : 'Smith'}
->>>>>>> origin/frontend:src/app/pages/SignupPage.tsx
                       />
                     </div>
                     <div>
@@ -351,20 +316,7 @@ export function SignupPage() {
                       dir="ltr"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                      {isAr ? 'رقم الهاتف' : 'Phone Number'} <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="tel"
-                      required
-                      value={form.phone}
-                      onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                      placeholder="01xxxxxxxxx"
-                      dir="ltr"
-                    />
-                  </div>
+                  
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                       {isAr ? 'كلمة المرور' : 'Password'} <span className="text-red-500">*</span>

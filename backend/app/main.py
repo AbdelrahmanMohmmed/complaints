@@ -5,7 +5,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 import asyncio
 from . import models , database
-from .routers import  user, auth , company, integration ,feedback
+from .routers import  user, auth , company, integration ,feedback , categories , dashboard
 from .services.feedback_ingestion import ingest_feedback
 
 # Configure logging
@@ -36,6 +36,9 @@ app.include_router(auth.router,prefix="/api/v1")
 app.include_router(company.router,prefix="/api/v1")
 app.include_router(integration.router,prefix="/api/v1")
 app.include_router(feedback.router, prefix="/api/v1")
+app.include_router(categories.router, prefix="/api/v1")
+app.include_router(dashboard.router, prefix="/api/v1")
+
 
 def scheduled_feedback_ingestion():
     """Wrapper function to run the async feedback ingestion job."""

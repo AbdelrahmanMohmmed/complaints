@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
+from pydantic import BaseModel as PydanticBase
 
 class FeedbackOut(BaseModel):
     feedback_id: int
@@ -8,6 +9,7 @@ class FeedbackOut(BaseModel):
     api_id: Optional[int] = None  # ← change from int to Optional[int]
     category_id: Optional[int] = None
     customer_name: Optional[str] = None
+    category_name: Optional[str] = None  # ← add this
     feedback_context: Optional[str] = None
     status: Optional[str] = None
     sentiment: Optional[str] = None
@@ -17,3 +19,8 @@ class FeedbackOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class FeedbackDetailsUpdate(PydanticBase):
+    priority: Optional[str] = None
+    category_id: Optional[int] = None

@@ -40,3 +40,11 @@ class UserMe(BaseModel):
     class Config:
         from_attributes = True
 
+class UserProfileUpdate(BaseModel):
+    f_name: str
+    l_name: str
+    email: EmailStr
+
+class UserPasswordUpdate(BaseModel):
+    current_password: str
+    new_password: str

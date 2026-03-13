@@ -21,6 +21,7 @@ import {
   Tag,
   UserCircle,
   UsersRound,
+  Plug,
 } from 'lucide-react';
 import { cn } from '../components/ui/utils';
 
@@ -110,7 +111,7 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
         items: [
           { name: t('nav.dashboard'), href: '/app', icon: LayoutDashboard },
           { name: t('nav.allComplaints'), href: '/app/feedback', icon: MessageSquare },
-          { name: t('nav.teamPerformance'), href: '/app/team-performance', icon: BarChart3 },
+          // { name: t('nav.teamPerformance'), href: '/app/team-performance', icon: BarChart3 },
           { name: t('nav.reports'), href: '/app/reports', icon: Activity },
           { name: t('nav.settings'), href: '/app/settings', icon: Settings },
 
@@ -120,8 +121,11 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
     agent: [
       {
         items: [
-          { name: t('nav.myFeedback'), href: '/app/my-feedback', icon: Inbox },
-          { name: t('nav.profile'), href: '/app/profile', icon: UserCircle },
+          // { name: t('nav.myFeedback'), href: '/app/my-feedback', icon: Inbox },
+                    { name: t('nav.profile'), href: '/app/profile', icon: UserCircle },
+                { name: t('nav.integrations'), href: '/app/integrations', icon: Plug },
+          // { name: t('nav.settings'), href: '/app/settings', icon: Settings },
+
         ],
       },
     ],

@@ -5,12 +5,8 @@ import React, { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
-<<<<<<< HEAD:frontend/src/app/pages/FeedbackList.tsx
 import { useEffect, useState as _ } from 'react';
 import { request } from '../../services/api';
-=======
-import { mockFeedback, mockUsers, Feedback, mockCategories } from '../data/mockData';
->>>>>>> origin/frontend:src/app/pages/FeedbackList.tsx
 import { Card, CardContent } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
@@ -32,6 +28,7 @@ interface BackendFeedback {
   api_id: number | null; 
   category_id: number | null;
   customer_name: string | null;
+  category_name: string | null;  // ← add this
   feedback_context: string | null;
   status: string;
   sentiment: string | null;
@@ -69,7 +66,6 @@ export function FeedbackList() {
   const [sentimentFilter, setSentimentFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [companyFilter, setCompanyFilter] = useState('all');
-<<<<<<< HEAD:frontend/src/app/pages/FeedbackList.tsx
 const [feedbackList, setFeedbackList] = useState<BackendFeedback[]>([]);
 const [isLoading, setIsLoading] = useState(true);
 const [feedbackStatuses, setFeedbackStatuses] = useState<Record<number, string>>({});
@@ -77,28 +73,6 @@ const [feedbackPriorities, setFeedbackPriorities] = useState<Record<number, stri
 const [assignDialogOpen, setAssignDialogOpen] = useState(false);
 const [selectedFeedback, setSelectedFeedback] = useState<BackendFeedback | null>(null);
 
-=======
-  const [feedbackStatuses, setFeedbackStatuses] = useState<
-    Record<string, Feedback['status']>
-  >({});
-  const [feedbackPriorities, setFeedbackPriorities] = useState<
-    Record<string, Feedback['priority']>
-  >({});
-  const [feedbackCategories, setFeedbackCategories] = useState<
-    Record<string, string>
-  >({});
-
-  const [feedbackSentiments, setFeedbackSentiments] = useState<
-    Record<string, Feedback['sentiment']>
-  >({});
-
-  const [feedbackEmotions, setFeedbackEmotions] = useState<
-    Record<string, Feedback['emotion']>
-  >({});
-  const [assignmentMap, setAssignmentMap] = useState<Record<string, string>>({});
-  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
-  const [selectedFeedback, setSelectedFeedback] = useState<Feedback | null>(null);
->>>>>>> origin/frontend:src/app/pages/FeedbackList.tsx
   const [selectedAgentId, setSelectedAgentId] = useState('');
 
   // Agents are redirected to their own page
@@ -112,7 +86,6 @@ const agents: any[] = []; // TODO: fetch from /users/ when needed
   const isCompanyAdmin = user?.role === 'companyAdmin';
 const [fetchError, setFetchError] = useState('');
 
-<<<<<<< HEAD:frontend/src/app/pages/FeedbackList.tsx
 useEffect(() => {
   const fetchFeedback = async () => {
     try {
@@ -141,28 +114,6 @@ const filteredFeedback = feedbackList.filter((fb) => {
   const matchesPriority = priorityFilter === 'all' || currentPriority === priorityFilter;
   return matchesSearch && matchesStatus && matchesSentiment && matchesPriority;
 });
-=======
-  const feedbackList: Feedback[] = mockFeedback.map((fb) => ({
-    ...fb,
-    priority: feedbackPriorities[fb.id] || fb.priority,
-    category: feedbackCategories[fb.id] || fb.category,
-    sentiment: feedbackSentiments[fb.id] || fb.sentiment,
-    emotion: feedbackEmotions[fb.id] || fb.emotion,
-    assignedTo: assignmentMap[fb.id] || fb.assignedTo,
-  }));
-
-  const filteredFeedback = feedbackList.filter((fb) => {
-    const matchesSearch =
-      fb.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      fb.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      fb.category.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || fb.status === statusFilter;
-    const matchesSentiment = sentimentFilter === 'all' || fb.sentiment === sentimentFilter;
-    const matchesPriority = priorityFilter === 'all' || fb.priority === priorityFilter;
-    const matchesCompany = companyFilter === 'all' || fb.companyId === companyFilter;
-    return matchesSearch && matchesStatus && matchesSentiment && matchesPriority && matchesCompany;
-  });
->>>>>>> origin/frontend:src/app/pages/FeedbackList.tsx
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString(isAr ? 'ar-SA' : 'en-US', {
@@ -170,15 +121,29 @@ const filteredFeedback = feedbackList.filter((fb) => {
     });
   };
 
-<<<<<<< HEAD:frontend/src/app/pages/FeedbackList.tsx
-=======
-  const getAgentName = (agentId?: string) => {
-    if (!agentId) return isAr ? 'غير مُسند' : 'Unassigned';
-    const agent = mockUsers.find(u => u.id === agentId);
-    return agent ? `${agent.firstName} ${agent.lastName}` : agentId;
-  };
->>>>>>> origin/frontend:src/app/pages/FeedbackList.tsx
+const exportToCSV = () => {
+  const headers = ['ID', 'Customer', 'Feedback', 'Category', 'Sentiment', 'Emotion', 'Priority', 'Status', 'Date'];
+  const rows = feedbackList.map(fb => [
+    fb.feedback_id,
+    fb.customer_name || 'Unknown',
+    `"${(fb.feedback_context || '').replace(/"/g, '""')}"`,
+    fb.category_name || '—',
+    fb.sentiment || '—',
+    fb.emotion || '—',
+    fb.priority || '—',
+    feedbackStatuses[fb.feedback_id] || fb.status,
+    new Date(fb.created_at).toLocaleDateString('en-US'),
+  ]);
 
+  const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `feedback_export_${new Date().toISOString().split('T')[0]}.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
+};
 
 const handleAssignConfirm = () => {
   if (selectedFeedback && selectedAgentId) {
@@ -201,32 +166,9 @@ const handleStatusChange = async (feedbackId: number, newStatus: string) => {
   }
 };
 
-<<<<<<< HEAD:frontend/src/app/pages/FeedbackList.tsx
   const handlePriorityChange = async (feedbackId: number, newPriority: string) => {
   setFeedbackPriorities(prev => ({ ...prev, [feedbackId]: newPriority }));
 };
-=======
-  const handlePriorityChange = (
-    feedbackId: string,
-    newPriority: Feedback['priority'],
-  ) => {
-    setFeedbackPriorities((prev) => ({ ...prev, [feedbackId]: newPriority }));
-  };
-  const handleCategoryChange = (id: string, value: string) => {
-    setFeedbackCategories((prev) => ({ ...prev, [id]: value }));
-  };
-
-  const handleSentimentChange = (
-    id: string,
-    value: Feedback['sentiment']
-  ) => {
-    setFeedbackSentiments((prev) => ({ ...prev, [id]: value }));
-  };
-
-  const handleEmotionChange = (id: string, value: Feedback['emotion']) => {
-    setFeedbackEmotions((prev) => ({ ...prev, [id]: value }));
-  };
->>>>>>> origin/frontend:src/app/pages/FeedbackList.tsx
 
   const pageTitle = isSuperAdmin
     ? t('nav.allFeedback')
@@ -250,10 +192,10 @@ const handleStatusChange = async (feedbackId: number, newStatus: string) => {
         </div>
         <div className="flex gap-2">
           {(isSuperAdmin || isCompanyAdmin) && (
-            <Button variant="outline" size="sm" className="gap-2">
-              <Download className="w-4 h-4" />
-              {t('common.export')}
-            </Button>
+            <Button variant="outline" size="sm" className="gap-2" onClick={exportToCSV}>
+  <Download className="w-4 h-4" />
+  {t('common.export')}
+</Button>
           )}
         </div>
       </div>
@@ -359,14 +301,8 @@ const handleStatusChange = async (feedbackId: number, newStatus: string) => {
                 <TableHead className="font-semibold">{t('feedback.sentiment')}</TableHead>
                 <TableHead className="hidden xl:table-cell font-semibold">{t('feedback.emotion')}</TableHead>
                 <TableHead className="hidden lg:table-cell font-semibold">{t('feedback.priority')}</TableHead>
-<<<<<<< HEAD:frontend/src/app/pages/FeedbackList.tsx
                 <TableHead className="font-semibold">{t('common.status')}</TableHead>
                 
-=======
-                {(isManager || isCompanyAdmin) && (
-                  <TableHead className="hidden xl:table-cell font-semibold">{t('feedback.assignedTo')}</TableHead>
-                )}
->>>>>>> origin/frontend:src/app/pages/FeedbackList.tsx
                 {isSuperAdmin && (
                   <TableHead className="hidden xl:table-cell font-semibold">{isAr ? 'الشركة' : 'Company'}</TableHead>
                 )}
@@ -378,7 +314,6 @@ const handleStatusChange = async (feedbackId: number, newStatus: string) => {
             </TableHeader>
             <TableBody>
               {filteredFeedback.map((fb) => {
-<<<<<<< HEAD:frontend/src/app/pages/FeedbackList.tsx
   const currentStatus = feedbackStatuses[fb.feedback_id] || fb.status;
   const currentPriority = feedbackPriorities[fb.feedback_id] || fb.priority || 'low';
   return (
@@ -397,7 +332,7 @@ const handleStatusChange = async (feedbackId: number, newStatus: string) => {
         <div className="truncate text-sm text-gray-600 dark:text-gray-400">{fb.feedback_context || '—'}</div>
       </TableCell>
       <TableCell className="hidden lg:table-cell">
-        <span className="text-sm text-gray-600 dark:text-gray-400">—</span>
+        <span className="text-sm text-gray-600 dark:text-gray-400">  {fb.category_name || '—'}</span>
       </TableCell>
       <TableCell className="hidden xl:table-cell">
         <span className="text-sm text-gray-600 dark:text-gray-400">—</span>
@@ -468,148 +403,6 @@ const handleStatusChange = async (feedbackId: number, newStatus: string) => {
     </TableRow>
   );
 })}
-=======
-                const currentAssignee = assignmentMap[fb.id] || fb.assignedTo;
-                return (
-                  <TableRow
-                    key={fb.id}
-                    className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors"
-                    onClick={() => navigate(`/app/feedback/${fb.id}`)}
-                  >
-                    <TableCell className="hidden sm:table-cell">
-                      <span className="text-xs font-mono text-gray-400">{fb.id}</span>
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <div className="font-semibold text-gray-900 dark:text-white text-sm">{fb.customerName}</div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">{fb.customerEmail}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell max-w-xs">
-                      <div className="truncate text-sm text-gray-600 dark:text-gray-400">{fb.content}</div>
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell">
-                      <div onClick={(e) => e.stopPropagation()}>
-                        <Select
-                          value={feedbackCategories[fb.id] || fb.category}
-                          onValueChange={(val) => handleCategoryChange(fb.id, val)}
-                        >
-                          <SelectTrigger className="h-7 w-[140px] text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-
-                          <SelectContent>
-                            {mockCategories.map((cat) => (
-                              <SelectItem key={cat.id} value={cat.slug}>
-                                {cat.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-
-                        </Select>
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden xl:table-cell">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">{fb.channel}</span>
-                    </TableCell>
-                    <TableCell>
-                      <div onClick={(e) => e.stopPropagation()}>
-                        <Select
-                          value={fb.sentiment}
-                          onValueChange={(val) =>
-                            handleSentimentChange(fb.id, val as Feedback['sentiment'])
-                          }
-                        >
-                          <SelectTrigger className="h-7 w-[110px] text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="positive">{t('sentiment.positive')}</SelectItem>
-                            <SelectItem value="neutral">{t('sentiment.neutral')}</SelectItem>
-                            <SelectItem value="negative">{t('sentiment.negative')}</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden xl:table-cell">
-                      <div onClick={(e) => e.stopPropagation()}>
-                        <Select
-                          value={fb.emotion}
-                          onValueChange={(val) => handleEmotionChange(fb.id, val as Feedback['emotion'])}
-                        >
-                          <SelectTrigger className="h-7 w-[120px] text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {/* <SelectItem value="happy">Happy</SelectItem> */}
-                            <SelectItem value="satisfied">Satisfied</SelectItem>
-                            <SelectItem value="frustrated">Frustrated</SelectItem>
-                            <SelectItem value="disgusted">Disgusted</SelectItem>
-                            <SelectItem value="neutral">Neutral</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell">
-                      {(isManager || isCompanyAdmin) ? (
-                        <div onClick={(e) => e.stopPropagation()}>
-                          <Select
-                            value={fb.priority}
-                            onValueChange={(val) =>
-                              handlePriorityChange(fb.id, val as Feedback['priority'])
-                            }
-                          >
-                            <SelectTrigger className="h-7 w-[100px] text-xs">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="low" className="text-xs">{t('priority.low')}</SelectItem>
-                              <SelectItem value="medium" className="text-xs">{t('priority.medium')}</SelectItem>
-                              <SelectItem value="high" className="text-xs">{t('priority.high')}</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      ) : (
-                        <Badge className={cn('capitalize text-xs', priorityColors[fb.priority])}>
-                          {t(`priority.${fb.priority}`)}
-                        </Badge>
-                      )}
-                    </TableCell>
-
-                    {(isManager || isCompanyAdmin) && (
-                      <TableCell className="hidden xl:table-cell">
-                        <span className={cn('text-xs', currentAssignee ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400 italic')}>
-                          {getAgentName(currentAssignee)}
-                        </span>
-                      </TableCell>
-                    )}
-                    {isSuperAdmin && (
-                      <TableCell className="hidden xl:table-cell">
-                        <span className="text-xs text-gray-600 dark:text-gray-400">
-                          {fb.companyId === 'company-1' ? 'TechCorp' : fb.companyId === 'company-2' ? 'Healthcare+' : 'Retail World'}
-                        </span>
-                      </TableCell>
-                    )}
-                    <TableCell className="hidden sm:table-cell">
-                      <span className="text-xs text-gray-500 dark:text-gray-400">{formatDate(fb.createdAt)}</span>
-                    </TableCell>
-                    {(isManager || isCompanyAdmin) && (
-                      <TableCell>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 text-xs gap-1"
-                          onClick={(e) => openAssignDialog(fb, e)}
-                        >
-                          <UserCheck className="w-3 h-3" />
-                          {isAr ? 'إسناد' : 'Assign'}
-                        </Button>
-                      </TableCell>
-                    )}
-                  </TableRow>
-                );
-              })}
->>>>>>> origin/frontend:src/app/pages/FeedbackList.tsx
               {filteredFeedback.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={10} className="text-center py-12 text-gray-400">
@@ -662,14 +455,9 @@ const handleStatusChange = async (feedbackId: number, newStatus: string) => {
                       )}
                     >
                       <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0">
-<<<<<<< HEAD:frontend/src/app/pages/FeedbackList.tsx
 <span className="text-white text-xs font-bold">
   {agent.name.split(' ').map((n: string) => n[0]).join('')}
 </span>                      </div>
-=======
-                        <span className="text-white text-xs font-bold">{`${agent.firstName} ${agent.lastName}`.split(' ').map(n => n[0]).join('')}</span>
-                      </div>
->>>>>>> origin/frontend:src/app/pages/FeedbackList.tsx
                       <div>
                         <p className="text-sm font-medium">{agent.firstName} {agent.lastName}</p>
                         <p className="text-xs text-gray-400">{agent.email}</p>

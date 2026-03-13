@@ -86,6 +86,25 @@ def toggle_user_status(
     db.refresh(user)
     return user
 
+@router.put("/me", response_model=schemas.UserOut)
+def update_me(
+    user_data: schemas.UserProfileUpdate,
+    db: Session = Depends(database.get_db),
+    current_user_id: int = Depends(oauth2.get_current_user)
+):
+    user = db.query(models.User).filter(models.User.user_id == current_user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.f_name = user_data.f_name
+    user.l_name = user_data.l_name
+    user.email = user_data.email
+    try:
+        db.commit()
+        db.refresh(user)
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Email already in use")
+    return user
 
 @router.put("/{user_id}", response_model=schemas.UserOut)
 def update_user(
@@ -135,3 +154,17 @@ def delete_user(
     db.delete(user)
     db.commit()
     
+
+@router.put("/me/password", status_code=status.HTTP_204_NO_CONTENT)
+def change_password(
+    pwd_data: schemas.UserPasswordUpdate,
+    db: Session = Depends(database.get_db),
+    current_user_id: int = Depends(oauth2.get_current_user)
+):
+    user = db.query(models.User).filter(models.User.user_id == current_user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if not utils.verify(pwd_data.current_password, user.password_hash):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+    user.password_hash = utils.hash(pwd_data.new_password)
+    db.commit()

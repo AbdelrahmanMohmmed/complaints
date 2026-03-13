@@ -185,70 +185,77 @@ const updateUser = async () => {
             </DialogHeader>
 
             <div className="space-y-4 py-4">
+  <div className="grid grid-cols-2 gap-3">
+    <div className="space-y-2">
+      <Label htmlFor="userFirstName">First Name</Label>
+      <Input
+        id="userFirstName"
+        placeholder="Ali"
+        value={newUser.f_name}
+        onChange={(e) => setNewUser({ ...newUser, f_name: e.target.value })}
+      />
+    </div>
+    <div className="space-y-2">
+      <Label htmlFor="userLastName">Last Name</Label>
+      <Input
+        id="userLastName"
+        placeholder="Ahmed"
+        value={newUser.l_name}
+        onChange={(e) => setNewUser({ ...newUser, l_name: e.target.value })}
+      />
+    </div>
+  </div>
 
-              <div className="space-y-2">
+  <div className="space-y-2">
+    <Label htmlFor="userEmail">{t('common.email')}</Label>
+    <Input
+      id="userEmail"
+      type="email"
+      placeholder="user@example.com"
+      value={newUser.email}
+      onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+    />
+  </div>
 
-                <Label htmlFor="userFirstName">First Name</Label>
+  <div className="space-y-2">
+    <Label htmlFor="userPassword">Password</Label>
+    <Input
+      id="userPassword"
+      type="password"
+      placeholder="Enter password"
+      value={newUser.password}
+      onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+    />
+  </div>
 
-                <Input id="userFirstName" placeholder="ALi " />
+  <div className="space-y-2">
+    <Label htmlFor="userRole">{t('common.role')}</Label>
+    <Select
+      value={newUser.role_id}
+      onValueChange={(v) => setNewUser({ ...newUser, role_id: v })}
+    >
+      <SelectTrigger id="userRole">
+        <SelectValue placeholder="Select role..." />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="2">{t('role.manager')}</SelectItem>
+        <SelectItem value="3">{t('role.agent')}</SelectItem>
+      </SelectContent>
+    </Select>
+  </div>
 
-              </div>
+  {addError && <p className="text-sm text-red-500">{addError}</p>}
+</div>
 
-              <div className="space-y-2">
+<div className="flex justify-end gap-2">
+  <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+    {t('common.cancel')}
+  </Button>
+  <Button onClick={handleAddUser} disabled={addLoading}>
+    {addLoading ? 'Creating...' : t('common.save')}
+  </Button>
+</div>
 
-                <Label htmlFor="userLastName">Last Name</Label>
-
-                <Input id="userLastName" placeholder="Ahmed" />
-
-              </div>
-
-              <div className="space-y-2">
-
-                <Label htmlFor="userEmail">{t('common.email')}</Label>
-
-                <Input id="userEmail" type="email" placeholder="user@example.com" />
-
-              </div>
-
-              <div className="space-y-2">
-
-                <Label htmlFor="userRole">{t('common.role')}</Label>
-
-                <Select>
-
-                  <SelectTrigger id="userRole">
-
-                    <SelectValue placeholder="Select role..." />
-
-                  </SelectTrigger>
-
-                  <SelectContent>
-
-                    {/* <SelectItem value="companyAdmin">{t('role.companyAdmin')}</SelectItem> */}
-
-                    <SelectItem value="manager">{t('role.manager')}</SelectItem>
-
-                    <SelectItem value="agent">{t('role.agent')}</SelectItem>
-
-                  </SelectContent>
-
-                </Select>
-
-              </div>
-
-            </div>
-
-            <div className="flex justify-end gap-2">
-
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                {t('common.cancel')}
-              </Button>
-
-              <Button onClick={updateUser}>
-                {t('common.save')}
-              </Button>
-
-            </div>
 
           </DialogContent>
 
@@ -370,24 +377,14 @@ const updateUser = async () => {
 
                         <span className="text-white font-medium text-sm">
 
-<<<<<<< HEAD:frontend/src/app/pages/UserManagement.tsx
                             {user.f_name[0]}{user.l_name[0]}
-=======
-                          {`${user.firstName} ${user.lastName}`.split(' ').map(n => n[0]).join('')}
-
->>>>>>> origin/frontend:src/app/pages/UserManagement.tsx
                         </span>
 
                       </div>
 
                       <div className="font-medium text-gray-900 dark:text-white">
 
-<<<<<<< HEAD:frontend/src/app/pages/UserManagement.tsx
                           {user.f_name} {user.l_name}
-=======
-                        {user.firstName} {user.lastName}
-
->>>>>>> origin/frontend:src/app/pages/UserManagement.tsx
                       </div>
 
                     </div>
@@ -475,7 +472,6 @@ const updateUser = async () => {
 
             <div className="space-y-4 py-4">
 
-<<<<<<< HEAD:frontend/src/app/pages/UserManagement.tsx
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label>First Name</Label>
@@ -491,38 +487,6 @@ const updateUser = async () => {
                     onChange={(e) => setEditingUser({ ...editingUser, l_name: e.target.value })}
                   />
                 </div>
-=======
-              <div className="space-y-2">
-
-                <Label>First Name</Label>
-
-                <Input
-
-                  defaultValue={editingUser.firstName}
-
-                  onChange={(e) =>
-                    setEditingUser({ ...editingUser, firstName: e.target.value })
-                  }
-
-                />
-
-              </div>
-
-              <div className="space-y-2">
-
-                <Label>Last Name</Label>
-
-                <Input
-
-                  defaultValue={editingUser.lastName}
-
-                  onChange={(e) =>
-                    setEditingUser({ ...editingUser, lastName: e.target.value })
-                  }
-
-                />
-
->>>>>>> origin/frontend:src/app/pages/UserManagement.tsx
               </div>
 
               <div className="space-y-2">

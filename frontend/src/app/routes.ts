@@ -167,7 +167,7 @@ const routes = [
         path: 'integrations',
         name: 'Integration Settings',
         Component: IntegrationSettings,
-        allowedRoles: ['companyAdmin'],
+        allowedRoles: ['companyAdmin','agent' /* TODO: Remove agent access to integrations after testing */],
       },
       {
         path: 'categories',
