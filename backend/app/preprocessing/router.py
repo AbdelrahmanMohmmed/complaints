@@ -22,7 +22,7 @@ ARABIZI_PATTERNS = [
         "sa7", "tamam", "mazboot",
         "7aga7elwa", "a7la","mshhelw", "wa7esh", "say2",
         "mshmazboot", "mshkwayes","mshlazem", "3ady", "msh7elw",
-        "7ar", "7ar2", "masale7","sokar", "meleh", "7amdy",
+        "7ar", "7ar2", "masale7","sokar", "male7",
         "ta3mo7elw", "ta3mokwayes","nashf", "tayeb", "mestawe",
         "m3aga", "sa5en", "sa2e3","ratb", "na3em","saraha", "gdn", "awii",
         "shwaya", "keda", "bas","lakn", "y3ni", "ba2a"
