@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router';
+import { Link, useSearchParams, useLocation } from 'react-router';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import * as authService from '../../services/authService';
@@ -8,30 +8,21 @@ import { CheckCircle2, AlertCircle, ArrowLeft, ArrowRight, Moon, Sun, Languages 
 export function VerifyEmail() {
   const { theme, toggleTheme } = useTheme();
   const { language, toggleLanguage } = useLanguage();
-  const [searchParams] = useSearchParams();
-  const token = searchParams.get('token') || '';
   const isAr = language === 'ar';
 
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [errorMessage, setErrorMessage] = useState('');
-
-  useEffect(() => {
-    if (!token) {
-      setStatus('error');
-      setErrorMessage(isAr ? 'رابط التحقق غير صالح أو منتهي.' : 'Invalid or expired verification link.');
-      return;
-    }
-    authService
-      .verifyEmail(token)
-      .then((result) => {
-        setStatus(result.success ? 'success' : 'error');
-        if (!result.success) setErrorMessage(result.error || 'Verification failed');
-      })
-      .catch(() => {
-        setStatus('error');
-        setErrorMessage(isAr ? 'فشل التحقق. حاول مرة أخرى.' : 'Verification failed. Please try again.');
-      });
-  }, [token, isAr]);
+  const location = useLocation();
+  // Replace the useEffect entirely — no token needed anymore, just read state
+useEffect(() => {
+  const success = (location.state as { success?: boolean })?.success;
+  if (success) {
+    setStatus('success');
+  } else {
+    setStatus('error');
+    setErrorMessage(isAr ? 'لم يتم التحقق بعد.' : 'Verification not completed.');
+  }
+}, []);
 
   return (
     <div

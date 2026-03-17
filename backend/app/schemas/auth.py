@@ -11,3 +11,18 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     """Schema for token payload data"""
     id: Optional[str] = None
+
+class VerifyEmailRequest(BaseModel):
+    email: str
+    code: str
+
+class ResendRequest(BaseModel):
+    email: str
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+class ResetPasswordRequest(BaseModel):
+    email: str
+    code: str
+    new_password: str

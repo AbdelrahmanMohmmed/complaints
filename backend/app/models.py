@@ -54,6 +54,9 @@ class User(Base):
     email = Column(String(100), nullable=False, unique=True)
     password_hash = Column(String, nullable=False)   
     is_active = Column(Boolean, default=True)
+    is_verified = Column(Boolean, default=False)               # ← new
+    verification_code = Column(String(6), nullable=True)       # ← new
+    verification_expires_at = Column(DateTime(timezone=True), nullable=True) 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships

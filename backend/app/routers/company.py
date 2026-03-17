@@ -1,28 +1,38 @@
-from fastapi import APIRouter, status, HTTPException, Depends
+from fastapi import APIRouter, status, HTTPException, Depends, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
+from datetime import datetime, timedelta
 from .. import models, utils, database
 from ..schemas import company
 
 router = APIRouter(prefix="/companies", tags=['Companies'])
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=company.CompanyOut)
-def create_company(signup: company.CompanySignup, db: Session = Depends(database.get_db)):
-    # 1. Check domain exists
+def create_company(
+    signup: company.CompanySignup,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(database.get_db)
+):
     domain = db.query(models.Domain).filter(models.Domain.domain_id == signup.domain_id).first()
     if not domain:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Domain with ID {signup.domain_id} does not exist."
-        )
+        raise HTTPException(status_code=400, detail=f"Domain with ID {signup.domain_id} does not exist.")
 
-    # 2. Check email not already used
     existing = db.query(models.User).filter(models.User.email == signup.email).first()
     if existing:
+        if not existing.is_verified:
+        # Resend code instead of blocking
+            code = utils.generate_verification_code()
+            existing.verification_code = code
+            existing.verification_expires_at = datetime.utcnow() + timedelta(minutes=15)
+            db.commit()
+            background_tasks.add_task(utils.send_verification_email, signup.email, code, existing.f_name)
+            raise HTTPException(
+                status_code=400,
+                detail="EMAIL_NOT_VERIFIED"  # frontend will redirect to verify page
+            )
         raise HTTPException(status_code=400, detail="Email already registered")
 
     try:
-        # 3. Create company
         new_company = models.Company(
             company_name=signup.company_name,
             email=signup.email,
@@ -30,20 +40,33 @@ def create_company(signup: company.CompanySignup, db: Session = Depends(database
             domain_id=signup.domain_id,
         )
         db.add(new_company)
-        db.flush()  # get company_id without committing yet
+        db.flush()
 
-        # 4. Create admin user (role_id=1) linked to company
+        code = utils.generate_verification_code()
+        expires_at = datetime.utcnow() + timedelta(minutes=15)
+
         new_user = models.User(
             company_id=new_company.company_id,
-            role_id=1,  # Admin
+            role_id=1,
             f_name=signup.f_name,
             l_name=signup.l_name,
             email=signup.email,
             password_hash=utils.hash(signup.password),
+            is_verified=False,
+            verification_code=code,
+            verification_expires_at=expires_at,
         )
         db.add(new_user)
         db.commit()
         db.refresh(new_company)
+
+        # Send email in background so signup doesn't wait
+        background_tasks.add_task(
+            utils.send_verification_email,
+            to_email=signup.email,
+            code=code,
+            name=signup.f_name,
+        )
 
     except IntegrityError:
         db.rollback()
@@ -52,8 +75,6 @@ def create_company(signup: company.CompanySignup, db: Session = Depends(database
     return new_company
 
 
-# This route may be benefit for superadmin (Us)  
 @router.get("/", response_model=list[company.CompanyOut])
 def get_companies(db: Session = Depends(database.get_db)):
     return db.query(models.Company).all()
-

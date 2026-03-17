@@ -28,20 +28,22 @@ export function LoginPage() {
   const isAr = language === 'ar';
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/app';
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setIsLoading(true);
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setError('');
+  setIsLoading(true);
 
-    const result = await login(email, password);
-    setIsLoading(false);
+  const result = await login(email, password);
+  setIsLoading(false);
 
-if (result.success) {
-  navigate('/app', { replace: true });
-} else {
-  setError(result.error || 'Login failed');
-}
-  };
+  if (result.success) {
+    navigate('/app', { replace: true });
+  } else if (result.error === 'EMAIL_NOT_VERIFIED') {
+    navigate('/verify-email/sent', { state: { email } });
+  } else {
+    setError(result.error || (isAr ? 'فشل تسجيل الدخول' : 'Login failed'));
+  }
+};
 
   const handleDemoLogin = (demoEmail: string) => {
     setEmail(demoEmail);

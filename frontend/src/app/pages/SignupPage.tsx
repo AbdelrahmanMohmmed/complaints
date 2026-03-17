@@ -69,7 +69,34 @@ export function SignupPage() {
 
   // Step 3: At least one of Facebook, WhatsApp, X; Email optional
   const [apis, setApis] = useState({ facebook: false, whatsapp: false, x: false, email: false });
-
+  const validateStep1 = (): string => {
+  const phoneClean = form.phone.replace(/[\s\-\(\)]/g, '');
+  if (!form.f_name.trim() || !form.l_name.trim() || !form.company.trim()) {
+    return isAr ? 'جميع الحقول مطلوبة' : 'All fields are required';
+  }
+  if (!/^\+?[0-9]{7,15}$/.test(phoneClean)) {
+    return isAr ? 'رقم الهاتف غير صالح' : 'Invalid phone number (7-15 digits, optionally starting with +)';
+  }
+  if (form.password.length < 8) {
+    return isAr ? 'كلمة المرور يجب أن تكون 8 أحرف على الأقل' : 'Password must be at least 8 characters';
+  }
+  if (!/[A-Z]/.test(form.password)) {
+    return isAr ? 'كلمة المرور يجب أن تحتوي على حرف كبير' : 'Password must contain at least one uppercase letter';
+  }
+  if (!/[a-z]/.test(form.password)) {
+    return isAr ? 'كلمة المرور يجب أن تحتوي على حرف صغير' : 'Password must contain at least one lowercase letter';
+  }
+  if (!/[0-9]/.test(form.password)) {
+    return isAr ? 'كلمة المرور يجب أن تحتوي على رقم' : 'Password must contain at least one number';
+  }
+  if (!/[!@#$%^&*(),.?":{}|<>_\-\[\]\/\\]/.test(form.password)) {
+    return isAr ? 'كلمة المرور يجب أن تحتوي على رمز خاص' : 'Password must contain at least one special character';
+  }
+  if (form.password !== form.confirmPassword) {
+    return isAr ? 'كلمتا المرور غير متطابقتين' : 'Passwords do not match';
+  }
+  return '';
+};
   const passwordStrength = (() => {
     if (!form.password) return 0;
     let score = 0;
@@ -85,35 +112,30 @@ export function SignupPage() {
   const atLeastOneApi = apis.facebook || apis.whatsapp || apis.x;
   // const displayDomainLabel = domainLabel.trim() || selectedDomain?.name || '';
 
-  const canProceedStep1 =
-    form.f_name.trim() &&
-    form.l_name.trim() &&
-    form.company.trim() &&
-    form.phone.trim() &&
-    form.email.trim() &&
-    form.phone.trim() &&   // ← add this
-    form.password.length >= 6 &&
-    form.password === form.confirmPassword;
+
   const canProceedStep2 = !!selectedDomain;
   const canProceedStep3 = atLeastOneApi;
 
-  const handleNext = () => {
-    setError('');
-    if (step === 1 && !canProceedStep1) {
-      setError(isAr ? 'يرجى تعبئة جميع الحقول وتطابق كلمة المرور' : 'Please fill all fields and match passwords');
+const handleNext = () => {
+  setError('');
+  if (step === 1) {
+    const validationError = validateStep1();
+    if (validationError) {
+      setError(validationError);
       return;
     }
-    if (step === 2 && !canProceedStep2) {
-      setError(isAr ? 'يجب اختيار مجال واحد على الأقل' : 'You must select a domain');
-      return;
-    }
-    if (step === 3 && !canProceedStep3) {
-      setError(isAr ? 'يجب تفعيل واجهة واحدة على الأقل (فيسبوك، واتساب، أو إكس)' : 'Select at least one API (Facebook, WhatsApp, or X)');
-      return;
-    }
-    if (step < 3) setStep(step + 1);
-    else if (step === 3) handleSubmit();
-  };
+  }
+  if (step === 2 && !canProceedStep2) {
+    setError(isAr ? 'يجب اختيار مجال واحد على الأقل' : 'You must select a domain');
+    return;
+  }
+  if (step === 3 && !canProceedStep3) {
+    setError(isAr ? 'يجب تفعيل واجهة واحدة على الأقل' : 'Select at least one API');
+    return;
+  }
+  if (step < 3) setStep(step + 1);
+  else handleSubmit();
+};
 
   const handleBack = () => {
     setError('');
@@ -136,12 +158,13 @@ export function SignupPage() {
       domainLabel: domainLabel.trim() || undefined,
       apis: { ...apis },
     };
+    
 
     try {
       const result = await authService.signup(payload);
       setIsLoading(false);
       if (result.success) {
-        navigate('/verify-email/sent', { replace: true, state: { email: form.email } });
+        navigate('/verify-email/sent', { state: { email: form.email } });
       } else {
         setError(result.message || (isAr ? 'فشل التسجيل' : 'Signup failed'));
       }
