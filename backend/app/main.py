@@ -7,6 +7,7 @@ import asyncio
 from . import models , database
 from .routers import  user, auth , company, integration ,feedback , categories , dashboard
 from .services.feedback_ingestion import ingest_feedback
+from .services.preprocessing import preprocess_feedback_service
 
 # Configure logging
 logging.basicConfig(
@@ -65,8 +66,17 @@ async def startup_event():
             replace_existing=True
         )
         
+        # Schedule the preprocessing job to run every hour (shortly after ingestion)
+        scheduler.add_job(
+            preprocess_feedback_service,
+            trigger=IntervalTrigger(minutes = 1),
+            id='feedback_preprocessing_job',
+            name='Feedback Preprocessing Job',
+            replace_existing=True
+        )
+        
         scheduler.start()
-        logger.info("Feedback ingestion scheduler started - runs every hour")
+        logger.info("Feedback ingestion and preprocessing schedulers started")
         
     except Exception as e:
         logger.error(f"Failed to start scheduler: {str(e)}", exc_info=True)
