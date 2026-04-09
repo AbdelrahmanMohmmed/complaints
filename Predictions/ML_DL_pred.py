@@ -13,9 +13,9 @@ S_id2label = {0: "Negative", 1: "Neutral", 2: "Positive"}
 E_id2label = {0: "Frustrated", 1: "Satisfied", 2: "Disgusted", 3: "Neutral"}
 
 
-def pred (model_location: str, embedded_text, type = "S", for_ML = True):
+def predict (model_location: str, embedded_text, type = "S", for_ML = True, prob = False):
     """
-     Docstring for pred function: 
+     Docstring for predict function: 
         1. Load the pretrained model whether it's ML or DL (GRU, Bi-LSTM only).
         2. Checking the right classification type (emotion, sentiment or problem type).
         3. Convert the predcited class id into the approperate label.
@@ -25,20 +25,28 @@ def pred (model_location: str, embedded_text, type = "S", for_ML = True):
         embedded_text: the incoming feedback or comment after vectorization or embedding.
         type: the type of classification ("S" for sentiment, "E" for emotion and "P" for problem type) (str).
         for_ML: if you want to predict using either ML "True" or DL (GRU, Bi-LSTM only) "False" (bool).
+        prob: if you want to predict the probabilities of the classes (bool, default "False").
 
     Return Values:
-        The final prediction label.
+        The final prediction label or labels' probabilities.
     """
     # Choosing whether to use ML or DL (GRU, Bi-LSTM only)
     if for_ML:
         with open(model_location, "rb") as f:
             model = pickle.load(f)
-        pred_id = model.predict(embedded_text)[0]
+        if prob:
+            pred_probs = model.predict_proba(embedded_text)
+            return pred_probs
+        else:
+            pred_id = model.predict(embedded_text)[0]
     else:
         model = load_model(model_location)
         probs = model.predict(embedded_text)
-        # convert probabilities → class id
-        pred_id = int(np.argmax(probs, axis=1)[0])
+        if prob:
+            return probs
+        else:
+            # convert probabilities → class id
+            pred_id = int(np.argmax(probs, axis=1)[0])
 
     # Choosing the correct the classifciation type whether it's (sentiment, emotion or problem type)
     if type == "S":
