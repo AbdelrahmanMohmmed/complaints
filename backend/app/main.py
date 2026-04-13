@@ -8,12 +8,21 @@ from . import models , database
 from .routers import  user, auth , company, integration
 from .services.feedback_ingestion import ingest_feedback
 from .services.preprocessing import preprocess_feedback_service
+from .services.ai_analysis import ai_analysis_service
+from .ai import load_models
 
-# Configure logging
+# Configure logging with better formatting
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.DEBUG,  # Changed from INFO to DEBUG to see all messages
+    format='%(asctime)s | %(levelname)-8s | %(name)s:%(funcName)s | %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
 )
+
+# Configure specific loggers for better visibility
+logging.getLogger("app.ai").setLevel(logging.DEBUG)
+logging.getLogger("app.services").setLevel(logging.DEBUG)
+logging.getLogger("app.preprocessing").setLevel(logging.DEBUG)
+
 logger = logging.getLogger(__name__)
 
 models.Base.metadata.create_all(bind=database.engine)
@@ -52,6 +61,11 @@ async def startup_event():
     global scheduler
     
     try:
+        # Load AI models at startup
+        logger.info("Loading AI models...")
+        load_models()
+        logger.info("AI models loaded successfully")
+        
         scheduler = BackgroundScheduler()
         
         # Schedule the feedback ingestion job to run every hour
@@ -72,8 +86,17 @@ async def startup_event():
             replace_existing=True
         )
         
+        # Schedule the AI analysis job to run after preprocessing
+        scheduler.add_job(
+            ai_analysis_service,
+            trigger=IntervalTrigger(minutes = 1),
+            id='feedback_ai_job',
+            name='Feedback AI Analysis Job',
+            replace_existing=True
+        )
+        
         scheduler.start()
-        logger.info("Feedback ingestion and preprocessing schedulers started")
+        logger.info("Feedback ingestion, preprocessing, and AI analysis schedulers started")
         
     except Exception as e:
         logger.error(f"Failed to start scheduler: {str(e)}", exc_info=True)

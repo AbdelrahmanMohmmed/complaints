@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, Text, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, Text, DateTime, ForeignKey, Index
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship, declarative_base
 
@@ -91,6 +91,9 @@ class FeedbackCategory(Base):
 
 class Feedback(Base):
     __tablename__ = "feedback"
+    __table_args__ = (
+        Index("idx_api_id", "api_id"),
+    )
 
     feedback_id = Column(Integer, primary_key=True, autoincrement=True)
     company_id = Column(Integer, ForeignKey("companies.company_id"), nullable=False)  

@@ -23,6 +23,45 @@ PLATFORM_URLS = {
 API_TIMEOUT = 10
 
 
+def add_feedback_safe(db: Session, company_id: int, api_id: int, feedback_text: str, 
+                     created_at: datetime, customer_name: Optional[str] = None) -> bool:
+    """
+    Safely add feedback to database and handle duplicates.
+    Checks if feedback with same api_id + feedback_context already exists.
+    Returns True if feedback was added, False if it was a duplicate.
+    """
+    try:
+        # Check if exact same feedback text from same API already exists
+        existing = db.query(models.Feedback).filter(
+            and_(
+                models.Feedback.api_id == api_id,
+                models.Feedback.feedback_context == feedback_text
+            )
+        ).first()
+        
+        if existing:
+            logger.debug(f"Skipped duplicate feedback text from integration {api_id}")
+            return False
+        
+        # Add new feedback
+        new_feedback = models.Feedback(
+            company_id=company_id,
+            api_id=api_id,
+            feedback_context=feedback_text,
+            status="unprocessed",
+            created_at=created_at,
+            customer_name=customer_name
+        )
+        db.add(new_feedback)
+        db.commit()
+        logger.info(f"Added new feedback from integration {api_id}")
+        return True
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error adding feedback: {str(e)}", exc_info=True)
+        return False
+
+
 async def fetch_facebook_comments(api_key: str, api_base_url: str, db: Session, 
                                   integration_id: int, company_id: int) -> int:
     """
@@ -74,31 +113,17 @@ async def fetch_facebook_comments(api_key: str, api_base_url: str, db: Session,
                     except (ValueError, AttributeError):
                         created_at = datetime.utcnow()
                     
-                    # Deduplicate: check if feedback already exists
-                    existing = db.query(models.Feedback).filter(
-                        and_(
-                            models.Feedback.api_id == integration_id,
-                            models.Feedback.created_at == created_at,
-                            models.Feedback.feedback_context == feedback_text
-                        )
-                    ).first()
-                    
-                    if existing:
-                        continue
-                    
-                    # Create new feedback record
-                    new_feedback = models.Feedback(
+                    # Add feedback and track if it was new
+                    if add_feedback_safe(
+                        db,
                         company_id=company_id,
                         api_id=integration_id,
-                        feedback_context=feedback_text,
-                        status="unprocessed",
+                        feedback_text=feedback_text,
                         created_at=created_at,
                         customer_name=comment.get("from", {}).get("name")
-                    )
-                    db.add(new_feedback)
-                    comments_added += 1
+                    ):
+                        comments_added += 1
             
-            db.commit()
             logger.info(f"Facebook: Added {comments_added} new comments for integration {integration_id}")
             
     except httpx.TimeoutException:
@@ -174,32 +199,18 @@ async def fetch_twitter_comments(api_key: str, api_base_url: str, db: Session,
                 except (ValueError, AttributeError):
                     created_at = datetime.utcnow()
                 
-                # Deduplicate
-                existing = db.query(models.Feedback).filter(
-                    and_(
-                        models.Feedback.api_id == integration_id,
-                        models.Feedback.created_at == created_at,
-                        models.Feedback.feedback_context == feedback_text
-                    )
-                ).first()
-                
-                if existing:
-                    continue
-                
-                # Create new feedback record
+                # Add feedback and track if it was new
                 author_name = user_map.get(tweet.get("author_id"), "")
-                new_feedback = models.Feedback(
+                if add_feedback_safe(
+                    db,
                     company_id=company_id,
                     api_id=integration_id,
-                    feedback_context=feedback_text,
-                    status="unprocessed",
+                    feedback_text=feedback_text,
                     created_at=created_at,
                     customer_name=author_name
-                )
-                db.add(new_feedback)
-                comments_added += 1
+                ):
+                    comments_added += 1
             
-            db.commit()
             logger.info(f"Twitter: Added {comments_added} new mentions for integration {integration_id}")
             
     except httpx.TimeoutException:
@@ -261,31 +272,17 @@ async def fetch_whatsapp_messages(api_key: str, api_base_url: str, db: Session,
                     except (ValueError, TypeError):
                         created_at = datetime.utcnow()
                 
-                # Deduplicate
-                existing = db.query(models.Feedback).filter(
-                    and_(
-                        models.Feedback.api_id == integration_id,
-                        models.Feedback.created_at == created_at,
-                        models.Feedback.feedback_context == feedback_text
-                    )
-                ).first()
-                
-                if existing:
-                    continue
-                
-                # Create new feedback record
-                new_feedback = models.Feedback(
+                # Add feedback and track if it was new
+                if add_feedback_safe(
+                    db,
                     company_id=company_id,
                     api_id=integration_id,
-                    feedback_context=feedback_text,
-                    status="unprocessed",
+                    feedback_text=feedback_text,
                     created_at=created_at,
                     customer_name=message.get("from", {}).get("name")
-                )
-                db.add(new_feedback)
-                comments_added += 1
+                ):
+                    comments_added += 1
             
-            db.commit()
             logger.info(f"WhatsApp: Added {comments_added} new messages for integration {integration_id}")
             
     except httpx.TimeoutException:
