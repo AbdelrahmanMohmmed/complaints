@@ -1,65 +1,125 @@
-"""
-Feedback ingestion service for fetching comments from social media platforms.
+"""Feedback ingestion service for fetching feedback from social media platforms.
+
 Runs as a scheduled task every hour via APScheduler.
+Supports Facebook, Twitter/X, and WhatsApp as feedback sources.
+Handles API credential validation, deduplication, and error recovery.
 """
+
 import logging
 from datetime import datetime, timedelta
 from typing import Optional
+
 import httpx
-from sqlalchemy.orm import Session
 from sqlalchemy import and_
-from .. import models, utils, database
+from sqlalchemy.orm import Session
+
+from .. import database, models, utils
 
 logger = logging.getLogger(__name__)
 
-# Platform base URLs
+
+# ============================================================================
+# Configuration
+# ============================================================================
+
+# Platform API base URLs
 PLATFORM_URLS = {
     "facebook": "https://graph.facebook.com",
     "twitter": "https://api.twitter.com/2",
-    "whatsapp": "https://graph.facebook.com/v17.0"
+    "whatsapp": "https://graph.facebook.com/v17.0",
 }
 
-# Timeout for API calls (in seconds)
+# API request timeout in seconds
 API_TIMEOUT = 10
 
 
-def add_feedback_safe(db: Session, company_id: int, api_id: int, feedback_text: str, 
-                     created_at: datetime, customer_name: Optional[str] = None) -> bool:
-    """
-    Safely add feedback to database and handle duplicates.
-    Checks if feedback with same api_id + feedback_context already exists.
-    Returns True if feedback was added, False if it was a duplicate.
+# ============================================================================
+# Helper Functions
+# ============================================================================
+
+
+def add_feedback_safe(
+    db: Session,
+    company_id: int,
+    api_id: int,
+    feedback_text: str,
+    created_at: datetime,
+    customer_name: Optional[str] = None,
+) -> bool:
+    """Safely add feedback to database with deduplication.
+
+    Checks if feedback with same api_id + feedback_context already exists
+    to prevent duplicates. Returns True if feedback was added, False if duplicate.
+
+    Args:
+        db: Database session
+        company_id: Company ID
+        api_id: Integration API ID
+        feedback_text: Raw feedback text
+        created_at: Feedback creation timestamp
+        customer_name: Customer name (optional)
+
+    Returns:
+        True if feedback added, False if duplicate
+
     """
     try:
-        # Check if exact same feedback text from same API already exists
+        # Check for duplicate feedback (same API + same text)
         existing = db.query(models.Feedback).filter(
             and_(
                 models.Feedback.api_id == api_id,
-                models.Feedback.feedback_context == feedback_text
+                models.Feedback.feedback_context == feedback_text,
             )
         ).first()
-        
+
         if existing:
-            logger.debug(f"Skipped duplicate feedback text from integration {api_id}")
+            logger.debug(f"Skipped duplicate feedback from integration {api_id}")
             return False
-        
-        # Add new feedback
+
+        # Create new feedback record
         new_feedback = models.Feedback(
             company_id=company_id,
             api_id=api_id,
             feedback_context=feedback_text,
             status="unprocessed",
             created_at=created_at,
-            customer_name=customer_name
+            customer_name=customer_name,
         )
         db.add(new_feedback)
         db.commit()
-        logger.info(f"Added new feedback from integration {api_id}")
+        logger.debug(f"Added new feedback from integration {api_id}")
         return True
+
     except Exception as e:
         db.rollback()
         logger.error(f"Error adding feedback: {str(e)}", exc_info=True)
         return False
+
+
+def mark_integration_expired(db: Session, integration_id: int) -> None:
+    """Mark integration as expired due to authentication failure.
+
+    Args:
+        db: Database session
+        integration_id: API integration ID
+
+    """
+    try:
+        integration = db.query(models.Api).filter(
+            models.Api.api_id == integration_id
+        ).first()
+        if integration:
+            integration.status = "expired"
+            db.commit()
+            logger.warning(f"Integration {integration_id} marked as expired")
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error marking integration as expired: {str(e)}")
+
+
+# ============================================================================
+# Platform-Specific Fetch Functions
+# ============================================================================
 
 
 async def fetch_facebook_comments(api_key: str, api_base_url: str, db: Session, 
@@ -296,80 +356,96 @@ async def fetch_whatsapp_messages(api_key: str, api_base_url: str, db: Session,
     return comments_added
 
 
-def mark_integration_expired(db: Session, integration_id: int):
-    """Mark an integration as expired due to authentication failure."""
-    try:
-        integration = db.query(models.Api).filter(models.Api.api_id == integration_id).first()
-        if integration:
-            integration.status = "expired"
-            db.commit()
-            logger.info(f"Integration {integration_id} marked as expired")
-    except Exception as e:
-        logger.error(f"Error marking integration {integration_id} as expired: {str(e)}")
-        db.rollback()
+# ============================================================================
+# Main Ingestion Job
+# ============================================================================
 
 
-async def ingest_feedback():
-    """
-    Main cron job function that fetches comments from all active integrations.
-    Runs every hour.
+async def ingest_feedback() -> None:
+    """Main feedback ingestion job for all active integrations.
+
+    Fetches feedback from Facebook, Twitter/X, and WhatsApp APIs.
+    Processes each active integration and stores feedback with deduplication.
+    Marks integrations as expired on authentication failure.
+
+    Runs every hour via APScheduler.
     """
     logger.info("Starting feedback ingestion job...")
     db = database.SessionLocal()
     total_comments = 0
-    
+
     try:
         # Get all active integrations
         active_integrations = db.query(models.Api).filter(
             models.Api.status == "active"
         ).all()
-        
+
         logger.info(f"Found {len(active_integrations)} active integrations")
-        
+
+        # Process each integration
         for integration in active_integrations:
             try:
                 # Decrypt API key
                 try:
                     decrypted_key = utils.decrypt_api_key(integration.api_key)
                 except Exception as e:
-                    logger.error(f"Failed to decrypt API key for integration {integration.api_id}: {str(e)}")
+                    logger.error(
+                        f"Failed to decrypt API key for integration {integration.api_id}: {str(e)}"
+                    )
                     continue
-                
+
                 channel_name = integration.channel_name.lower()
                 api_base_url = integration.api_base_url or PLATFORM_URLS.get(channel_name)
-                
+
                 if not api_base_url:
-                    logger.warning(f"No base URL found for channel {channel_name}")
+                    logger.warning(f"No base URL for channel {channel_name}")
                     continue
-                
-                logger.info(f"Processing integration {integration.api_id} ({channel_name}) for company {integration.company_id}")
-                
-                # Call the appropriate platform API
+
+                logger.info(
+                    f"Processing {channel_name} integration {integration.api_id} "
+                    f"for company {integration.company_id}"
+                )
+
+                # Fetch feedback from appropriate platform
                 comments_added = 0
                 if channel_name == "facebook":
                     comments_added = await fetch_facebook_comments(
-                        decrypted_key, api_base_url, db, integration.api_id, integration.company_id
+                        decrypted_key,
+                        api_base_url,
+                        db,
+                        integration.api_id,
+                        integration.company_id,
                     )
                 elif channel_name == "twitter":
                     comments_added = await fetch_twitter_comments(
-                        decrypted_key, api_base_url, db, integration.api_id, integration.company_id
+                        decrypted_key,
+                        api_base_url,
+                        db,
+                        integration.api_id,
+                        integration.company_id,
                     )
                 elif channel_name == "whatsapp":
                     comments_added = await fetch_whatsapp_messages(
-                        decrypted_key, api_base_url, db, integration.api_id, integration.company_id
+                        decrypted_key,
+                        api_base_url,
+                        db,
+                        integration.api_id,
+                        integration.company_id,
                     )
                 else:
-                    logger.warning(f"Unknown channel name: {channel_name} for integration {integration.api_id}")
+                    logger.warning(f"Unknown channel: {channel_name} for integration {integration.api_id}")
                     continue
-                
+
                 total_comments += comments_added
-                
+
             except Exception as e:
-                logger.error(f"Error processing integration {integration.api_id}: {str(e)}", exc_info=True)
-                continue
-        
+                logger.error(
+                    f"Error processing integration {integration.api_id}: {str(e)}",
+                    exc_info=True,
+                )
+
         logger.info(f"Feedback ingestion job completed. Total comments added: {total_comments}")
-        
+
     except Exception as e:
         logger.error(f"Fatal error in feedback ingestion job: {str(e)}", exc_info=True)
     finally:

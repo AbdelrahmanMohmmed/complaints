@@ -1,54 +1,80 @@
-from fastapi import FastAPI 
-from fastapi.middleware.cors import CORSMiddleware
+"""Main FastAPI application with middleware, routes, and background schedulers."""
+
+import asyncio
 import logging
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
-import asyncio
-from . import models , database
-from .routers import  user, auth , company, integration
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from . import database, models
+from .ai import load_models
+from .config import settings
+from .routers import auth, company, integration, user
+from .services.ai_analysis import ai_analysis_service
 from .services.feedback_ingestion import ingest_feedback
 from .services.preprocessing import preprocess_feedback_service
-from .services.ai_analysis import ai_analysis_service
-from .ai import load_models
 
-# Configure logging with better formatting
+
+# ============================================================================
+# Logging Configuration
+# ============================================================================
+
 logging.basicConfig(
-    level=logging.DEBUG,  # Changed from INFO to DEBUG to see all messages
+    level=logging.DEBUG,
     format='%(asctime)s | %(levelname)-8s | %(name)s:%(funcName)s | %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S'
 )
 
-# Configure specific loggers for better visibility
+# Configure module-specific loggers
 logging.getLogger("app.ai").setLevel(logging.DEBUG)
 logging.getLogger("app.services").setLevel(logging.DEBUG)
 logging.getLogger("app.preprocessing").setLevel(logging.DEBUG)
 
 logger = logging.getLogger(__name__)
 
-models.Base.metadata.create_all(bind=database.engine)
 
-app = FastAPI()
+# ============================================================================
+# Database & Application Setup
+# ============================================================================
+
+models.Base.metadata.create_all(bind=database.engine)
+app = FastAPI(title="Complaints Management System", version="1.0.0")
 
 # Global scheduler instance
 scheduler = None
 
-origins = ["*"]
+
+# ============================================================================
+# Middleware Configuration
+# ============================================================================
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.include_router(user.router,prefix="/api/v1")
-app.include_router(auth.router,prefix="/api/v1")
-app.include_router(company.router,prefix="/api/v1")
-app.include_router(integration.router,prefix="/api/v1")
 
 
-def scheduled_feedback_ingestion():
-    """Wrapper function to run the async feedback ingestion job."""
+# ============================================================================
+# Router Registration
+# ============================================================================
+
+app.include_router(user.router, prefix="/api/v1")
+app.include_router(auth.router, prefix="/api/v1")
+app.include_router(company.router, prefix="/api/v1")
+app.include_router(integration.router, prefix="/api/v1")
+
+
+# ============================================================================
+# Scheduled Background Jobs
+# ============================================================================
+
+
+def scheduled_feedback_ingestion() -> None:
+    """Wrapper to run async feedback ingestion job synchronously."""
     try:
         asyncio.run(ingest_feedback())
     except Exception as e:
@@ -56,65 +82,100 @@ def scheduled_feedback_ingestion():
 
 
 @app.on_event("startup")
-async def startup_event():
-    """Initialize and start the APScheduler on app startup."""
-    global scheduler
+async def startup_event() -> None:
+    """Initialize and start background schedulers on application startup.
     
+    Tasks:
+    - Load pre-trained AI models from configured paths
+    - Initialize APScheduler for feedback pipeline
+    - Schedule three periodic jobs: ingestion, preprocessing, AI analysis
+    """
+    global scheduler
+
     try:
-        # Load AI models at startup
-        logger.info("Loading AI models...")
-        load_models()
-        logger.info("AI models loaded successfully")
-        
+        # Load AI models from configured paths
+        logger.info("Loading AI models from configured paths...")
+        models_loaded = load_models(
+            sentiment_model_path=settings.SENTIMENT_MODEL_PATH,
+            emotion_model_path=settings.EMOTION_MODEL_PATH,
+            fasttext_model_path=settings.FASTTEXT_MODEL_PATH,
+            bert_model_path=settings.BERT_MODEL_PATH,
+            roberta_model_path=settings.ROBERTA_MODEL_PATH,
+        )
+
+        if models_loaded:
+            logger.info("AI models loaded successfully")
+        else:
+            logger.warning("Some or all AI models could not be loaded. Check .env paths.")
+
+        # Initialize scheduler
         scheduler = BackgroundScheduler()
-        
-        # Schedule the feedback ingestion job to run every hour
+
+        # Schedule feedback ingestion (fetch from APIs)
         scheduler.add_job(
             scheduled_feedback_ingestion,
-            trigger=IntervalTrigger(minutes = 1),
-            id='feedback_ingestion_job',
-            name='Feedback Ingestion Job',
-            replace_existing=True
+            trigger=IntervalTrigger(minutes=1),
+            id="feedback_ingestion_job",
+            name="Feedback Ingestion Job",
+            replace_existing=True,
         )
-        
-        # Schedule the preprocessing job to run every hour (shortly after ingestion)
+
+        # Schedule text preprocessing
         scheduler.add_job(
             preprocess_feedback_service,
-            trigger=IntervalTrigger(minutes = 1),
-            id='feedback_preprocessing_job',
-            name='Feedback Preprocessing Job',
-            replace_existing=True
+            trigger=IntervalTrigger(minutes=1),
+            id="feedback_preprocessing_job",
+            name="Feedback Preprocessing Job",
+            replace_existing=True,
         )
-        
-        # Schedule the AI analysis job to run after preprocessing
+
+        # Schedule ML analysis (sentiment, emotion, priority scoring)
         scheduler.add_job(
             ai_analysis_service,
-            trigger=IntervalTrigger(minutes = 1),
-            id='feedback_ai_job',
-            name='Feedback AI Analysis Job',
-            replace_existing=True
+            trigger=IntervalTrigger(minutes=1),
+            id="feedback_ai_job",
+            name="Feedback AI Analysis Job",
+            replace_existing=True,
         )
-        
+
         scheduler.start()
-        logger.info("Feedback ingestion, preprocessing, and AI analysis schedulers started")
-        
+        logger.info("All background schedulers started successfully")
+
     except Exception as e:
         logger.error(f"Failed to start scheduler: {str(e)}", exc_info=True)
+        raise
 
 
 @app.on_event("shutdown")
-async def shutdown_event():
-    """Gracefully shutdown the APScheduler."""
+async def shutdown_event() -> None:
+    """Gracefully shutdown background schedulers on application shutdown."""
     global scheduler
-    
+
     if scheduler and scheduler.running:
         try:
             scheduler.shutdown(wait=True)
-            logger.info("Feedback ingestion scheduler shut down gracefully")
+            logger.info("Schedulers shut down gracefully")
         except Exception as e:
             logger.error(f"Error shutting down scheduler: {str(e)}", exc_info=True)
 
 
-@app.get("/")
-def get_message():
-    return {"message":"Hello CMS"}
+
+# ============================================================================
+# Health Check Endpoints
+# ============================================================================
+
+
+@app.get("/", tags=["Health"])
+def health_check() -> dict:
+    """Root health check endpoint."""
+    return {"status": "healthy", "message": "Complaints Management System API"}
+
+
+@app.get("/health", tags=["Health"])
+def health_status() -> dict:
+    """Detailed health check endpoint."""
+    return {
+        "status": "healthy",
+        "service": "complaints-api",
+        "version": "1.0.0",
+    }
