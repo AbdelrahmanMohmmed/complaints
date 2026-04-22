@@ -31,14 +31,14 @@ const roleGradients: Record<string, string> = {
   superAdmin: 'from-violet-600 to-purple-700',
   companyAdmin: 'from-blue-600 to-indigo-700',
   manager: 'from-emerald-500 to-teal-600',
-  agent: 'from-orange-500 to-amber-600',
+  websiteConfigurator: 'from-orange-500 to-amber-600',
 };
 
 const roleBadgeColors: Record<string, string> = {
   superAdmin: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300',
   companyAdmin: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
   manager: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
-  agent: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
+  websiteConfigurator: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
 };
 
 interface TopBarProps {
@@ -59,6 +59,8 @@ export function TopBar({ onMenuClick }: TopBarProps) {
 
   const gradientClass = user?.role ? (roleGradients[user.role] || 'from-blue-600 to-purple-600') : 'from-blue-600 to-purple-600';
   const badgeClass = user?.role ? (roleBadgeColors[user.role] || '') : '';
+  const displayName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.email || 'User';
+  const initials = `${user?.firstName?.[0] || ''}${user?.lastName?.[0] || ''}`.toUpperCase() || displayName.slice(0, 2).toUpperCase();
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 px-4 sm:px-6">
@@ -127,12 +129,12 @@ export function TopBar({ onMenuClick }: TopBarProps) {
             <Button variant="ghost" className="gap-2 px-2 h-10">
               <div className={cn('w-8 h-8 rounded-full bg-gradient-to-br flex items-center justify-center flex-shrink-0', gradientClass)}>
                 <span className="text-white text-xs font-bold">
-                  {user?.name?.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                  {initials}
                 </span>
               </div>
               <div className="hidden lg:flex flex-col items-start">
                 <span className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">
-                  {user?.firstName} {user?.lastName}
+                  {displayName}
                 </span>
                 <span className={cn('text-[10px] px-1.5 py-0.5 rounded-full font-semibold', badgeClass)}>
                   {t(`role.${user?.role}`)}
@@ -145,11 +147,11 @@ export function TopBar({ onMenuClick }: TopBarProps) {
               <div className="flex items-center gap-3 py-1">
                 <div className={cn('w-10 h-10 rounded-full bg-gradient-to-br flex items-center justify-center flex-shrink-0', gradientClass)}>
                   <span className="text-white text-sm font-bold">
-                    {`${user?.firstName} ${user?.lastName}`.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                    {initials}
                   </span>
                 </div>
                 <div className="flex flex-col min-w-0">
-                  <span className="font-semibold text-gray-900 dark:text-white truncate">{user?.firstName} {user?.lastName}</span>
+                  <span className="font-semibold text-gray-900 dark:text-white truncate">{displayName}</span>
                   <span className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</span>
                   <span className={cn('text-[10px] px-1.5 py-0.5 rounded-full font-semibold mt-1 w-fit', badgeClass)}>
                     {t(`role.${user?.role}`)}

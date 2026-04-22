@@ -82,7 +82,7 @@ export function FeedbackDetails() {
   const [showNoteInput, setShowNoteInput] = useState(false);
 
   const canEdit = user?.role === 'manager' || user?.role === 'companyAdmin' || user?.role === 'superAdmin';
-  const isAgent = user?.role === 'agent';
+  const isAgent = user?.role === 'websiteConfigurator';
 
   useEffect(() => {
     const fetchData = async () => {
@@ -155,7 +155,7 @@ export function FeedbackDetails() {
   if (notFound || !feedback) return (
     <div className="text-center py-12">
       <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-        {isAr ? 'الشكوى غير موجودة' : 'Feedback not found'}
+        {isAr ? 'التعليق غير موجود' : 'Feedback not found'}
       </h2>
       <Button onClick={() => navigate(-1)} className="mt-4">{isAr ? 'العودة' : 'Go Back'}</Button>
     </div>
@@ -273,7 +273,7 @@ export function FeedbackDetails() {
               {saveSuccess && <p className="text-sm text-green-500">{saveSuccess}</p>}
 
               <Button className="w-full" onClick={handleSave} disabled={saveLoading}>
-                {saveLoading ? 'Saving...' : t('common.save')}
+                {saveLoading ? 'جارٍ الحفظ...' : t('common.save')}
               </Button>
             </CardContent>
           </Card>
@@ -368,7 +368,7 @@ export function FeedbackDetails() {
           {/* Attributes */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">{isAr ? 'خصائص الشكوى' : 'Attributes'}</CardTitle>
+              <CardTitle className="text-base">{isAr ? 'خصائص التعليق' : 'Attributes'}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {[

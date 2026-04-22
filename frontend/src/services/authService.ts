@@ -61,56 +61,6 @@ const tokenStorage = {
 };
 
 /**
- * Mock user data for demo purposes
- * 
- * TODO (Backend - FastAPI):
- * - Remove this entire block; users come from database
- * - Implement proper user storage with hashed passwords
- * - Use industry-standard auth libraries (passlib, python-jose, etc.)
- */
-const MOCK_USERS: Record<string, { password: string; user: User }> = {
-  'superadmin@ara2kom.ai': {
-    password: 'password',
-    user: {
-      id: '1',
-      name: 'Sara Hassan',
-      email: 'superadmin@ara2kom.ai',
-      role: 'superAdmin',
-    },
-  },
-  'admin@ara2kom.ai': {
-    password: 'password',
-    user: {
-      id: '2',
-      name: 'Ahmed Al-Rashid',
-      email: 'admin@ara2kom.ai',
-      role: 'companyAdmin',
-      companyId: 'company-1',
-    },
-  },
-  'manager@ara2kom.ai': {
-    password: 'password',
-    user: {
-      id: '3',
-      name: 'Layla Mansour',
-      email: 'manager@ara2kom.ai',
-      role: 'manager',
-      companyId: 'company-1',
-    },
-  },
-  'agent@ara2kom.ai': {
-    password: 'password',
-    user: {
-      id: '4',
-      name: 'Omar Khalil',
-      email: 'agent@ara2kom.ai',
-      role: 'agent',
-      companyId: 'company-1',
-    },
-  },
-};
-
-/**
  * Signup Function
  *
  * Registers a new company admin. Backend sends verification email.
@@ -141,7 +91,7 @@ export async function signup(data: SignupRequest): Promise<SignupResponse> {
 }
 
 /**
- * Verify Email (called when user clicks link in email)
+ * التحقق من البريد الإلكتروني (called when user clicks link in email)
  * TODO (Backend - FastAPI): GET/POST /api/v1/auth/verify-email?token=...
  */
 export async function verifyEmail(token: string): Promise<{ success: boolean; error?: string }> {
@@ -150,6 +100,54 @@ export async function verifyEmail(token: string): Promise<{ success: boolean; er
     return { success: false, error: 'Invalid or expired verification link' };
   }
   return { success: true };
+}
+
+export async function forgotPassword(email: string): Promise<{ success: boolean; message?: string; error?: string }> {
+  try {
+    const response = await request<{ message: string }>('/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+      skipAuth: true,
+    });
+    return { success: true, message: response.message };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to send reset code',
+    };
+  }
+}
+
+export async function verifyResetCode(email: string, code: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    await request('/verify-reset-code', {
+      method: 'POST',
+      body: JSON.stringify({ email, code }),
+      skipAuth: true,
+    });
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Invalid reset code',
+    };
+  }
+}
+
+export async function resetPassword(email: string, code: string, newPassword: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    await request('/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ email, code, new_password: newPassword }),
+      skipAuth: true,
+    });
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to reset password',
+    };
+  }
 }
 
 /**
@@ -203,7 +201,8 @@ export async function login(email: string, password: string): Promise<LoginRespo
 
   const user: User = {
     id: String(me.user_id),
-    name: `${me.f_name} ${me.l_name}`,
+    firstName: me.f_name,
+    lastName: me.l_name,
     email: me.email,
     role: mapRoleIdToRole(me.role_id),   // ← converts 1,2,3 to role string
     companyId: String(me.company_id),
@@ -224,8 +223,8 @@ function mapRoleIdToRole(role_id: number): UserRole {
   switch (role_id) {
     case 1: return 'companyAdmin';
     case 2: return 'manager';
-    case 3: return 'agent';
-    default: return 'agent';
+    case 3: return 'websiteConfigurator';
+    default: return 'websiteConfigurator';
   }
 }
 /**
@@ -377,7 +376,15 @@ export function initializeAuth(): { user: User | null; tokens: boolean } {
 
   if (storedUser && storedToken) {
     try {
-      const user = JSON.parse(storedUser) as User;
+      const parsed = JSON.parse(storedUser) as User & { name?: string };
+
+      // Backward compatibility for previously stored users with `name` only.
+      const user: User = {
+        ...parsed,
+        firstName: parsed.firstName || parsed.name?.split(' ')[0] || '',
+        lastName: parsed.lastName || parsed.name?.split(' ').slice(1).join(' ') || '',
+      };
+
       tokenStorage.setTokens(storedToken, undefined, user);
       return { user, tokens: true };
     } catch {

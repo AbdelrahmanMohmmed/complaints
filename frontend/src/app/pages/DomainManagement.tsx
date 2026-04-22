@@ -125,7 +125,7 @@ export function DomainManagement() {
 
                 <Label htmlFor="name">Domain Name</Label>
 
-                <Input id="name" placeholder="e.g., Technology" />
+                <Input id="name" placeholder="مثال: التقنية" />
 
               </div>
 
@@ -219,7 +219,7 @@ export function DomainManagement() {
             <div>
 
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                Total Feedback
+                إجمالي التعليقات
               </p>
 
               <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">
@@ -260,7 +260,7 @@ export function DomainManagement() {
                 <TableHead>Companies</TableHead>
 
                 <TableHead className="hidden lg:table-cell">
-                  Total Feedback
+                  إجمالي التعليقات
                 </TableHead>
 
                 <TableHead className="hidden sm:table-cell">

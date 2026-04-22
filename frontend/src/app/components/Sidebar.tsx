@@ -53,14 +53,14 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
     superAdmin: 'from-violet-600 to-purple-700',
     companyAdmin: 'from-blue-600 to-indigo-700',
     manager: 'from-emerald-500 to-teal-600',
-    agent: 'from-orange-500 to-amber-600',
+    websiteConfigurator: 'from-orange-500 to-amber-600',
   };
 
   const roleBadgeColors: Record<string, string> = {
     superAdmin: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300',
     companyAdmin: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
     manager: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
-    agent: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
+    websiteConfigurator: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
   };
 
   const navigationByRole: Record<string, NavSection[]> = {
@@ -118,7 +118,7 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
         ],
       },
     ],
-    agent: [
+    websiteConfigurator: [
       {
         items: [
           // { name: t('nav.myFeedback'), href: '/app/my-feedback', icon: Inbox },
@@ -147,7 +147,7 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
     superAdmin: Shield,
     companyAdmin: Building2,
     manager: UserCog,
-    agent: Users,
+    websiteConfigurator: Users,
   };
 
   const RoleIcon = user?.role ? (roleIcon[user.role] || Users) : Users;

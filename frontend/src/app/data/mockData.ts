@@ -41,7 +41,7 @@ export interface User {
   firstName: string;
   lastName: string;
   email: string;
-  role: 'superAdmin' | 'companyAdmin' | 'manager' | 'agent';
+  role: 'superAdmin' | 'companyAdmin' | 'manager' | 'websiteConfigurator';
   companyId?: string;
   isActive: boolean;
   createdAt: string;
@@ -350,7 +350,7 @@ export const mockUsers: User[] = [
     firstName: 'Omar',
     lastName: 'Hussein',
     email: 'omar@company.com',
-    role: 'agent',
+    role: 'websiteConfigurator',
     companyId: 'company-1',
     isActive: true,
     createdAt: '2025-08-01T00:00:00Z',
@@ -360,7 +360,7 @@ export const mockUsers: User[] = [
     firstName: 'Fatima',
     lastName: 'Ahmed',
     email: 'fatima@company.com',
-    role: 'agent',
+    role: 'websiteConfigurator',
     companyId: 'company-1',
     isActive: true,
     createdAt: '2025-08-01T00:00:00Z',
@@ -370,7 +370,7 @@ export const mockUsers: User[] = [
     firstName: 'Khalid',
     lastName: 'Nasser',
     email: 'khalid@company.com',
-    role: 'agent',
+    role: 'websiteConfigurator',
     companyId: 'company-1',
     isActive: false,
     createdAt: '2025-10-15T00:00:00Z',

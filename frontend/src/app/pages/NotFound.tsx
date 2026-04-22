@@ -11,7 +11,7 @@ export function NotFound() {
           <span className="text-4xl font-bold text-blue-600 dark:text-blue-400">404</span>
         </div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          Page Not Found
+          Page غير موجود
         </h1>
         <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-md">
           The page you're looking for doesn't exist or has been moved.

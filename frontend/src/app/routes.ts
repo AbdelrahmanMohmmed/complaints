@@ -5,6 +5,8 @@ import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
 import { VerifyEmailSent } from './pages/VerifyEmailSent';
 import { VerifyEmail } from './pages/VerifyEmail';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { Dashboard } from './pages/Dashboard';
 import { FeedbackList } from './pages/FeedbackList';
 import { FeedbackDetails } from './pages/FeedbackDetails';
@@ -53,8 +55,10 @@ const routes = [
   { path: '/', name: 'Landing', Component: LandingPage },
   { path: '/login', name: 'Login', Component: LoginPage },
   { path: '/signup', name: 'Signup', Component: SignupPage },
-  { path: '/verify-email/sent', name: 'Verify Email Sent', Component: VerifyEmailSent },
-  { path: '/verify-email', name: 'Verify Email', Component: VerifyEmail },
+  { path: '/forgot-password', name: 'نسيت كلمة المرور', Component: ForgotPasswordPage },
+  { path: '/reset-password', name: 'إعادة تعيين كلمة المرور', Component: ResetPasswordPage },
+  { path: '/verify-email/sent', name: 'تم إرسال التحقق من البريد الإلكتروني', Component: VerifyEmailSent },
+  { path: '/verify-email', name: 'التحقق من البريد الإلكتروني', Component: VerifyEmail },
 
   // Protected app routes
   // TODO (Backend - FastAPI):
@@ -65,7 +69,7 @@ const routes = [
   // - Return 403 if role not in allowedRoles
   {
     path: '/app',
-    name: 'App Layout',
+    name: 'تخطيط التطبيق',
     Component: Layout,
     children: [
       {
@@ -76,7 +80,7 @@ const routes = [
          * Dashboard accessible by all authenticated roles
          * Each role sees different dashboard variant (handled by page component)
          */
-        allowedRoles: ['superAdmin', 'companyAdmin', 'manager', 'agent'],
+        allowedRoles: ['superAdmin', 'companyAdmin', 'manager', 'websiteConfigurator'],
       },
 
       /**
@@ -86,13 +90,13 @@ const routes = [
        */
       {
         path: 'feedback',
-        name: 'Feedback List',
+        name: 'قائمة التعليقات',
         Component: FeedbackList,
         allowedRoles: ['superAdmin', 'companyAdmin', 'manager'],
       },
       {
         path: 'feedback/:id',
-        name: 'Feedback Details',
+        name: 'تفاصيل التعليقات',
         Component: FeedbackDetails,
         allowedRoles: ['superAdmin', 'companyAdmin', 'manager'],
       },
@@ -102,15 +106,15 @@ const routes = [
        */
       {
         path: 'my-feedback',
-        name: 'My Feedback',
+        name: 'تعليقاتي',
         Component: MyFeedback,
-        allowedRoles: ['agent'],
+        allowedRoles: ['websiteConfigurator'],
       },
       {
         path: 'profile',
-        name: 'Agent Profile',
+        name: 'الملف الشخصي للموظف',
         Component: AgentProfile,
-        allowedRoles: ['agent'],
+        allowedRoles: ['websiteConfigurator'],
       },
 
       /**
@@ -125,7 +129,7 @@ const routes = [
       },
       {
         path: 'team-performance',
-        name: 'Team Performance',
+        name: 'أداء الفريق',
         Component: TeamPerformance,
         allowedRoles: ['superAdmin', 'companyAdmin', 'manager'],
       },
@@ -136,25 +140,25 @@ const routes = [
        */
       {
         path: 'domains',
-        name: 'Domain Management',
+        name: 'إدارة المجالات',
         Component: DomainManagement,
         allowedRoles: ['superAdmin'],
       },
       {
         path: 'companies',
-        name: 'Company Management',
+        name: 'إدارة الشركات',
         Component: CompanyManagement,
         allowedRoles: ['superAdmin'],
       },
       {
         path: 'system-analytics',
-        name: 'System Analytics',
+        name: 'تحليلات النظام',
         Component: SystemAnalytics,
         allowedRoles: ['superAdmin'],
       },
       {
         path: 'logs',
-        name: 'System Logs',
+        name: 'سجلات النظام',
         Component: SystemLogs,
         allowedRoles: ['superAdmin'],
       },
@@ -165,19 +169,19 @@ const routes = [
        */
       {
         path: 'integrations',
-        name: 'Integration Settings',
+        name: 'إعدادات التكامل',
         Component: IntegrationSettings,
-        allowedRoles: ['companyAdmin','agent' /* TODO: Remove agent access to integrations after testing */],
+        allowedRoles: ['companyAdmin','websiteConfigurator' /* TODO: Remove agent access to integrations after testing */],
       },
       {
         path: 'categories',
-        name: 'Category Management',
+        name: 'إدارة التصنيفات',
         Component: CategoryManagement,
         allowedRoles: ['companyAdmin'],
       },
       {
         path: 'users',
-        name: 'User Management',
+        name: 'إدارة المستخدمين',
         Component: UserManagement,
         allowedRoles: ['superAdmin', 'companyAdmin'],
       },
@@ -190,13 +194,13 @@ const routes = [
         path: 'settings',
         name: 'Settings',
         Component: Settings,
-        allowedRoles: ['superAdmin', 'companyAdmin', 'manager', 'agent'],
+        allowedRoles: ['superAdmin', 'companyAdmin', 'manager', 'websiteConfigurator'],
       },
     ],
   },
 
   // Catch-all 404
-  { path: '*', name: 'Not Found', Component: NotFound },
+  { path: '*', name: 'غير موجود', Component: NotFound },
 ] as unknown as RouteWithMeta[];
 
 export const router = createBrowserRouter(

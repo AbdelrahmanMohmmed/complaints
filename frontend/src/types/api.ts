@@ -18,7 +18,7 @@
  * - Do NOT trust role from client; decode from JWT token
  * - Implement role-to-permissions mapping server-side
  */
-export type UserRole = 'superAdmin' | 'companyAdmin' | 'manager' | 'agent';
+export type UserRole = 'superAdmin' | 'companyAdmin' | 'manager' | 'websiteConfigurator';
 
 /**
  * User Interface
@@ -90,7 +90,7 @@ export interface SignupRequest {
   domainId: number;
   domainLabel?: string;
   apis: { facebook: boolean; whatsapp: boolean; x: boolean; email: boolean };
-  extraUser?: { name: string; email: string; role: 'manager' | 'agent' };
+  extraUser?: { name: string; email: string; role: 'manager' | 'websiteConfigurator' };
 }
 
 /**

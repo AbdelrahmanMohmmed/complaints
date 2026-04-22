@@ -18,7 +18,7 @@ const roleConfig = {
       subtitle: 'You have full system access across all companies and domains.',
       features: [
         { bold: 'System Overview', text: 'Monitor KPIs across all companies and domains in real-time' },
-        { bold: 'Company Management', text: 'Activate, suspend, and configure any company on the platform' },
+        { bold: 'إدارة الشركات', text: 'Activate, suspend, and configure any company on the platform' },
         { bold: 'Domain Control', text: 'Create and manage industry domains for feedback categorization' },
         { bold: 'All Feedback', text: 'View every feedback item across the entire system with cross-company filters' },
       ],
@@ -29,8 +29,8 @@ const roleConfig = {
       features: [
         { bold: 'نظرة عامة على النظام', text: 'مراقبة مؤشرات الأداء عبر جميع الشركات في الوقت الفعلي' },
         { bold: 'إدارة الشركات', text: 'تفعيل وتعليق وإعداد أي شركة على المنصة' },
-        { bold: 'التحكم بالمجالات', text: 'إنشاء وإدارة مجالات الصناعة لتصنيف الشكاوى' },
-        { bold: 'جميع الشكاوى', text: 'عرض كل شكوى في النظام مع فلاتر متعددة الشركات' },
+        { bold: 'التحكم بالمجالات', text: 'إنشاء وإدارة مجالات الصناعة لتصنيف التعليقات' },
+        { bold: 'جميع التعليقات', text: 'عرض كل تعليق في النظام مع فلاتر متعددة الشركات' },
       ],
     },
   },
@@ -46,18 +46,18 @@ const roleConfig = {
       subtitle: 'Manage your company\'s feedback, users, and API integrations.',
       features: [
         { bold: 'Feedback Dashboard', text: 'Full sentiment and category analytics for your company' },
-        { bold: 'User Management', text: 'Add users, assign roles (Manager / Agent), and deactivate accounts' },
+        { bold: 'إدارة المستخدمين', text: 'Add users, assign roles (Manager / CSS), and deactivate accounts' },
         { bold: 'API Integrations', text: 'Connect WhatsApp, Email, Web Forms and other feedback channels' },
         { bold: 'Reports', text: 'Generate and export detailed performance reports' },
       ],
     },
     ar: {
       title: 'مرحباً، مدير الشركة!',
-      subtitle: 'إدارة شكاوى شركتك والمستخدمين وتكاملات API.',
+      subtitle: 'إدارة تعليقات شركتك والمستخدمين وتكاملات API.',
       features: [
-        { bold: 'لوحة الشكاوى', text: 'تحليلات كاملة للمشاعر والتصنيفات لشركتك' },
+        { bold: 'لوحة التعليقات', text: 'تحليلات كاملة للمشاعر والتصنيفات لشركتك' },
         { bold: 'إدارة المستخدمين', text: 'إضافة مستخدمين وتعيين الأدوار وتعطيل الحسابات' },
-        { bold: 'تكاملات API', text: 'ربط واتساب والبريد والنماذج الإلكترونية وقنوات الشكاوى الأخرى' },
+        { bold: 'تكاملات API', text: 'ربط واتساب والبريد والنماذج الإلكترونية وقنوات التعليقات الأخرى' },
         { bold: 'التقارير', text: 'إنشاء وتصدير تقارير أداء مفصّلة' },
       ],
     },
@@ -70,27 +70,27 @@ const roleConfig = {
     textColor: 'text-emerald-800 dark:text-emerald-200',
     dotColor: 'text-emerald-600 dark:text-emerald-400',
     en: {
-      title: 'Welcome, Manager!',
+      title: 'Welcome, Customer Service Supervisor (CSS)!',
       subtitle: 'Oversee your team\'s feedback handling and performance.',
       features: [
-        { bold: 'Assign Feedback', text: 'Distribute feedback to agents and monitor workload' },
+        { bold: 'Assign Feedback', text: 'Distribute feedback to CSSs and monitor workload' },
         { bold: 'Set Priority', text: 'Mark urgent feedback as high priority to ensure timely resolution' },
         { bold: 'Change Status', text: 'Update status from Open → In Progress → Resolved → Closed' },
-        { bold: 'Reports & Analytics', text: 'View team performance, agent metrics, and resolution trends' },
+        { bold: 'Reports & Analytics', text: 'View team performance, CSS metrics, and resolution trends' },
       ],
     },
     ar: {
-      title: 'مرحباً، المدير!',
-      subtitle: 'الإشراف على معالجة الشكاوى وأداء فريقك.',
+      title: 'مرحباً، مشرف خدمة العملاء (CSS)!',
+      subtitle: 'الإشراف على معالجة التعليقات وأداء فريقك.',
       features: [
-        { bold: 'إسناد الشكاوى', text: 'توزيع الشكاوى على الموظفين ومراقبة عبء العمل' },
-        { bold: 'تحديد الأولوية', text: 'تصنيف الشكاوى العاجلة بأولوية عالية لضمان الحل السريع' },
+        { bold: 'إسناد التعليقات', text: 'توزيع التعليقات على الموظفين ومراقبة عبء العمل' },
+        { bold: 'تحديد الأولوية', text: 'تصنيف التعليقات العاجلة بأولوية عالية لضمان الحل السريع' },
         { bold: 'تغيير الحالة', text: 'تحديث الحالة من مفتوح → قيد المعالجة → تم الحل → مغلق' },
         { bold: 'التقارير والتحليلات', text: 'عرض أداء الفريق ومقاييس الموظفين واتجاهات الحل' },
       ],
     },
   },
-  agent: {
+  websiteConfigurator: {
     icon: Users,
     gradient: 'from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20',
     border: 'border-orange-200 dark:border-orange-800',
@@ -98,10 +98,10 @@ const roleConfig = {
     textColor: 'text-orange-800 dark:text-orange-200',
     dotColor: 'text-orange-600 dark:text-orange-400',
     en: {
-      title: 'Welcome, Agent!',
+      title: 'Welcome, Website Configurator!',
       subtitle: 'View and manage the feedback items assigned to you.',
       features: [
-        { bold: 'My Feedback', text: 'See only the feedback items assigned specifically to you' },
+        { bold: 'تعليقاتي', text: 'See only the feedback items assigned specifically to you' },
         { bold: 'Update Status', text: 'Change status to track your progress on each item' },
         { bold: 'Add Notes', text: 'Leave internal notes and comments on feedback for context' },
         { bold: 'Expandable Cards', text: 'Click any feedback card to expand it and take action inline' },
@@ -109,11 +109,11 @@ const roleConfig = {
     },
     ar: {
       title: 'مرحباً، الموظف!',
-      subtitle: 'عرض وإدارة الشكاوى المُسندة إليك.',
+      subtitle: 'عرض وإدارة التعليقات المُسندة إليك.',
       features: [
-        { bold: 'شكاواي', text: 'عرض الشكاوى المُسندة إليك فقط' },
-        { bold: 'تحديث الحالة', text: 'تغيير الحالة لتتبع تقدمك في كل شكوى' },
-        { bold: 'إضافة ملاحظات', text: 'ترك ملاحظات داخلية وتعليقات على الشكاوى للسياق' },
+        { bold: 'تعليقاتي', text: 'عرض التعليقات المُسندة إليك فقط' },
+        { bold: 'تحديث الحالة', text: 'تغيير الحالة لتتبع تقدمك في كل تعليق' },
+        { bold: 'إضافة ملاحظات', text: 'ترك ملاحظات داخلية وتعليقات على التعليقات للسياق' },
         { bold: 'بطاقات قابلة للتوسيع', text: 'انقر على أي بطاقة لتوسيعها واتخاذ الإجراء مباشرةً' },
       ],
     },

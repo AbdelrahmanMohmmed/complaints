@@ -29,12 +29,12 @@ interface BackendUser {
   created_at: string;
 }
 
-const roleMap: Record<number, string> = { 1: 'companyAdmin', 2: 'manager', 3: 'agent' };
-const roleIdMap: Record<string, number> = { companyAdmin: 1, manager: 2, agent: 3 };
+const roleMap: Record<number, string> = { 1: 'companyAdmin', 2: 'manager', 3: 'websiteConfigurator' };
+const roleIdMap: Record<string, number> = { companyAdmin: 1, manager: 2, websiteConfigurator: 3 };
 const roleColors: Record<string, string> = {
   companyAdmin: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
   manager: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-  agent: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400',
+  websiteConfigurator: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400',
 };
 
 export function UserManagement() {
@@ -239,7 +239,7 @@ const updateUser = async () => {
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="2">{t('role.manager')}</SelectItem>
-        <SelectItem value="3">{t('role.agent')}</SelectItem>
+        <SelectItem value="3">{t('role.websiteConfigurator')}</SelectItem>
       </SelectContent>
     </Select>
   </div>
@@ -515,7 +515,7 @@ const updateUser = async () => {
                 >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="2">Manager</SelectItem>
+                    <SelectItem value="2">Customer Service Supervisor (CSS)</SelectItem>
                     <SelectItem value="3">Agent</SelectItem>
                   </SelectContent>
                 </Select>

@@ -3,7 +3,6 @@
 
 import React, { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { mockUsers, mockFeedback } from '../data/mockData';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -88,7 +87,7 @@ export function TeamPerformance() {
 
   const teamKpis = [
     {
-      label: isAr ? 'إجمالي الشكاوى المُسندة' : 'Total Assigned',
+      label: isAr ? 'إجمالي التعليقات المُسندة' : 'Total Assigned',
       value: '135',
       change: '+8.4%',
       trend: 'up',
@@ -144,16 +143,16 @@ export function TeamPerformance() {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <Zap className="w-5 h-5 text-emerald-200" />
-              <span className="text-emerald-200 text-sm font-medium">{isAr ? 'مدير' : 'Manager'}</span>
+              <span className="text-emerald-200 text-sm font-medium">{isAr ? 'مشرف خدمة العملاء (CSS)' : 'Customer Service Supervisor (CSS)'}</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black mb-1">{isAr ? 'أداء الفريق' : 'Team Performance'}</h1>
+            <h1 className="text-2xl sm:text-3xl font-black mb-1">{isAr ? 'أداء الفريق' : 'أداء الفريق'}</h1>
             <p className="text-emerald-200 text-sm">
-              {isAr ? 'تحليل شامل لأداء الموظفين ومعدلات حل الشكاوى' : 'Comprehensive analysis of agent performance and resolution metrics'}
+              {isAr ? 'تحليل شامل لأداء الموظفين ومعدلات حل التعليقات' : 'Comprehensive analysis of agent performance and resolution metrics'}
             </p>
           </div>
           <Button size="sm" className="bg-white/20 hover:bg-white/30 text-white border border-white/20 gap-1.5">
             <Download className="w-4 h-4" />
-            {isAr ? 'تصدير التقرير' : 'Export Report'}
+            {isAr ? 'تصدير التقرير' : 'تصدير التقرير'}
           </Button>
         </div>
       </div>
@@ -175,7 +174,7 @@ export function TeamPerformance() {
                     <span className={cn('text-xs font-semibold', kpi.trend === 'up' ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400')}>
                       {kpi.change}
                     </span>
-                    <span className="text-xs text-gray-400">{isAr ? 'الشهر الماضي' : 'vs last month'}</span>
+                    <span className="text-xs text-gray-400">{isAr ? 'الشهر الماضي' : 'مقارنة بالشهر الماضي'}</span>
                   </div>
                 </div>
                 <div className={cn('w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0', kpi.bg)}>
@@ -214,7 +213,7 @@ export function TeamPerformance() {
             {/* Weekly resolved per agent */}
             <Card className="lg:col-span-2">
               <CardHeader className="pb-2">
-                <CardTitle className="text-base">{isAr ? 'الشكاوى المُحلّة أسبوعياً لكل موظف' : 'Weekly Resolved by Agent'}</CardTitle>
+                <CardTitle className="text-base">{isAr ? 'التعليقات المُحلّة أسبوعياً لكل موظف' : 'Weekly Resolved by Agent'}</CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={240}>
@@ -235,7 +234,7 @@ export function TeamPerformance() {
             {/* Category Breakdown */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-base">{isAr ? 'الشكاوى حسب التصنيف' : 'Complaints by Category'}</CardTitle>
+                <CardTitle className="text-base">{isAr ? 'التعليقات حسب التصنيف' : 'Feedback by Category'}</CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={180}>
@@ -369,7 +368,7 @@ export function TeamPerformance() {
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">{isAr ? 'الشكاوى المُحلّة أسبوعياً' : 'Weekly Resolved Complaints'}</CardTitle>
+              <CardTitle className="text-base">{isAr ? 'التعليقات المُحلّة أسبوعياً' : 'Weekly Resolved Feedback'}</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={260}>

@@ -81,8 +81,6 @@ export function Reports() {
     { id: 'sentiment', label: isAr ? 'تحليل المشاعر' : 'Sentiment Analysis' },
     { id: 'category',  label: isAr ? 'التصنيفات' : 'Categories' },
     { id: 'channel',   label: isAr ? 'القنوات' : 'Channels' },
-    { id: 'agents',    label: isAr ? 'أداء الموظفين' : 'Agent Performance' },
-    { id: 'resolution',label: isAr ? 'معدل الحل' : 'Resolution Trends' },
   ];
 
   if (isLoading) return (
@@ -102,7 +100,7 @@ export function Reports() {
 
   const summaryKpis = [
     {
-      label: isAr ? 'إجمالي الشكاوى' : 'Total Feedback',
+      label: isAr ? 'إجمالي التعليقات' : 'إجمالي التعليقات',
       value: summary.total_feedback.toLocaleString(),
       change: summary.total_change,
       trend: summary.total_change.startsWith('+') ? 'up' : 'down',
@@ -129,7 +127,7 @@ export function Reports() {
       bg: 'bg-violet-50 dark:bg-violet-900/20',
     },
     {
-      label: isAr ? 'شكاوى سلبية' : 'Negative Feedback',
+      label: isAr ? 'تعليقات سلبية' : 'Negative Feedback',
       value: summary.negative_count.toLocaleString(),
       change: '',
       trend: 'down',
@@ -149,7 +147,7 @@ export function Reports() {
             {t('reports.title')}
           </h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">
-            {isAr ? 'تحليلات شاملة وتقارير مفصّلة عن أداء الشكاوى' : 'Comprehensive analytics and detailed performance insights'}
+            {isAr ? 'تحليلات شاملة وتقارير مفصّلة عن أداء التعليقات' : 'Comprehensive analytics and detailed performance insights'}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -306,7 +304,7 @@ export function Reports() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">{isAr ? 'توزيع الشكاوى بالتصنيف' : 'Feedback by Category'}</CardTitle>
+              <CardTitle className="text-base">{isAr ? 'توزيع التعليقات بالتصنيف' : 'Feedback by Category'}</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
@@ -333,7 +331,7 @@ export function Reports() {
                   <div key={cat.name} className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-semibold text-gray-900 dark:text-white">{cat.name}</span>
-                      <Badge variant="outline" className="text-xs">{cat.total} {isAr ? 'شكوى' : 'items'}</Badge>
+                      <Badge variant="outline" className="text-xs">{cat.total} {isAr ? 'تعليقات' : 'items'}</Badge>
                     </div>
                     <div className="flex gap-1 h-2 rounded-full overflow-hidden">
                       <div className="bg-green-500" style={{ width: `${cat.total ? (cat.positive / cat.total) * 100 : 0}%` }} />
@@ -408,91 +406,6 @@ export function Reports() {
                     ));
                   })()
               }
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Agents Tab */}
-      {activeTab === 'agents' && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">{isAr ? 'تقرير أداء الموظفين' : 'Agent Performance Report'}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {data.agent_data.length === 0
-              ? <p className="text-center text-gray-400 text-sm py-8">No agents found</p>
-              : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-gray-100 dark:border-gray-800">
-                        {[isAr ? 'الموظف' : 'Agent', isAr ? 'تم الحل' : 'Resolved', isAr ? 'معدل الحل' : 'Rate'].map(h => (
-                          <th key={h} className="text-left pb-3 pr-4 font-semibold text-gray-500 text-xs uppercase tracking-wide">{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50 dark:divide-gray-800/50">
-                      {data.agent_data.map(agent => (
-                        <tr key={agent.name} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                          <td className="py-3 pr-4">
-                            <div className="flex items-center gap-2.5">
-                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center flex-shrink-0">
-                                <span className="text-white text-xs font-bold">{agent.name.split(' ').map(n => n[0]).join('')}</span>
-                              </div>
-                              <span className="font-medium text-gray-900 dark:text-white">{agent.name}</span>
-                            </div>
-                          </td>
-                          <td className="py-3 pr-4 text-gray-700 dark:text-gray-300">{agent.resolved}</td>
-                          <td className="py-3">
-                            <span className="text-xs font-semibold px-2 py-1 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                              {agent.satisfaction}%
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )
-            }
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Resolution Tab */}
-      {activeTab === 'resolution' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">{isAr ? 'الشكاوى المُحلّة أسبوعياً' : 'Weekly Resolved Feedback'}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={280}>
-                <BarChart data={data.resolution_trend}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
-                  <XAxis dataKey="week" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip />
-                  <Bar dataKey="resolved" fill="#3b82f6" radius={[6,6,0,0]} name={isAr ? 'تم الحل' : 'Resolved'} />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">{isAr ? 'عدد الشكاوى أسبوعياً' : 'Weekly Feedback Volume'}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={280}>
-                <LineChart data={data.resolution_trend}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
-                  <XAxis dataKey="week" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="resolved" stroke="#f59e0b" strokeWidth={2.5} dot={{ r: 4, fill: '#f59e0b' }} name={isAr ? 'محلولة' : 'Resolved'} />
-                </LineChart>
-              </ResponsiveContainer>
             </CardContent>
           </Card>
         </div>

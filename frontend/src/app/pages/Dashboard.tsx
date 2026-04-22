@@ -10,7 +10,7 @@ export function Dashboard() {
   const { user } = useAuth();
 
   // Agents have no dashboard — redirect to their personal feedback
-  if (user?.role === 'agent') {
+  if (user?.role === 'websiteConfigurator') {
     return <Navigate to="/app/my-feedback" replace />;
   }
 

@@ -22,13 +22,13 @@ const translations = {
     'nav.allFeedback': 'All Feedback',
     'nav.apis': 'APIs',
     'nav.reports': 'Reports',
-    'nav.myFeedback': 'My Feedback',
+    'nav.myFeedback': 'تعليقاتي',
     'nav.systemSettings': 'System Settings',
     'nav.systemOverview': 'System Overview',
-    'nav.systemAnalytics': 'System Analytics',
+    'nav.systemAnalytics': 'تحليلات النظام',
     'nav.logs': 'Logs',
-    'nav.allComplaints': 'All Complaints',
-    'nav.teamPerformance': 'Team Performance',
+    'nav.allComplaints': 'All Feedback',
+    'nav.teamPerformance': 'أداء الفريق',
     'nav.profile': 'My Profile',
     
     // Common
@@ -59,7 +59,7 @@ const translations = {
     
     // Dashboard
     'dashboard.title': 'Dashboard',
-    'dashboard.totalFeedback': 'Total Feedback',
+    'dashboard.totalFeedback': 'إجمالي التعليقات',
     'dashboard.positiveRatio': 'Positive Ratio',
     'dashboard.openFeedback': 'Open Feedback',
     'dashboard.highPriority': 'High Priority',
@@ -73,7 +73,7 @@ const translations = {
     'dashboard.systemFeedback': 'System Feedback',
     'dashboard.totalUsers': 'Total Users',
     'dashboard.activeUsers': 'Active Users',
-    'dashboard.feedbackByDomain': 'Feedback by Domain',
+    'dashboard.feedbackByDomain': 'التعليقات حسب المجال',
     'dashboard.companyOverview': 'Company Overview',
     'dashboard.teamFeedback': 'Team Feedback',
     'dashboard.pendingAssignment': 'Pending Assignment',
@@ -84,7 +84,7 @@ const translations = {
     'dashboard.recentActivity': 'Recent Activity',
     'dashboard.quickActions': 'Quick Actions',
     'dashboard.priorityDistribution': 'Priority Distribution',
-    'dashboard.teamPerformance': 'Team Performance',
+    'dashboard.teamPerformance': 'أداء الفريق',
     'dashboard.resolutionTrend': 'Resolution Trend',
     'dashboard.feedbackVolume': 'Feedback Volume',
     
@@ -99,7 +99,7 @@ const translations = {
     'feedback.channel': 'Channel',
     'feedback.assignedTo': 'Assigned To',
     'feedback.createdAt': 'Created At',
-    'feedback.details': 'Feedback Details',
+    'feedback.details': 'تفاصيل التعليقات',
     'feedback.assignAgent': 'Assign to Agent',
     'feedback.changeStatus': 'Change Status',
     'feedback.timeline': 'Timeline',
@@ -126,15 +126,15 @@ const translations = {
     'priority.high': 'High',
     
     // Users
-    'users.title': 'User Management',
+    'users.title': 'إدارة المستخدمين',
     'users.addUser': 'Add User',
     'users.editUser': 'Edit User',
     
     // Roles
     'role.superAdmin': 'Super Admin',
     'role.companyAdmin': 'Company Admin',
-    'role.manager': 'Manager',
-    'role.agent': 'Agent',
+    'role.manager': 'Customer Service Supervisor (CSS)',
+    'role.websiteConfigurator': 'Website Configurator',
     
     // Integrations / APIs
     'integrations.title': 'API Management',
@@ -144,12 +144,12 @@ const translations = {
     'integrations.disconnected': 'Disconnected',
     
     // Categories
-    'categories.title': 'Category Management',
+    'categories.title': 'إدارة التصنيفات',
     'categories.addCategory': 'Add Category',
     
     // Super Admin
-    'superadmin.domains': 'Domain Management',
-    'superadmin.companies': 'Company Management',
+    'superadmin.domains': 'إدارة المجالات',
+    'superadmin.companies': 'إدارة الشركات',
     'superadmin.systemStats': 'System Statistics',
     'superadmin.totalCompanies': 'Total Companies',
     'superadmin.totalDomains': 'Total Domains',
@@ -161,12 +161,12 @@ const translations = {
     
     // Manager
     'manager.assignFeedback': 'Assign Feedback',
-    'manager.teamPerformance': 'Team Performance',
+    'manager.teamPerformance': 'أداء الفريق',
     'manager.pendingAssignment': 'Pending Assignment',
     'manager.agentWorkload': 'Agent Workload',
     
     // Agent
-    'agent.myFeedback': 'My Feedback',
+    'agent.myFeedback': 'تعليقاتي',
     'agent.assignedToMe': 'Assigned to Me',
     'agent.updateStatus': 'Update Status',
     'agent.addNote': 'Add Note',
@@ -196,22 +196,22 @@ const translations = {
   ar: {
     // Navigation
     'nav.dashboard': 'لوحة التحكم',
-    'nav.feedback': 'الشكاوى',
+    'nav.feedback': 'التعليقات',
     'nav.users': 'المستخدمون',
     'nav.integrations': 'التكاملات',
     'nav.categories': 'التصنيفات',
     'nav.domains': 'المجالات',
     'nav.companies': 'الشركات',
     'nav.settings': 'الإعدادات',
-    'nav.allFeedback': 'جميع الشكاوى',
+    'nav.allFeedback': 'جميع التعليقات',
     'nav.apis': 'واجهات API',
     'nav.reports': 'التقارير',
-    'nav.myFeedback': 'شكاواي',
+    'nav.myFeedback': 'تعليقاتي',
     'nav.systemSettings': 'إعدادات النظام',
     'nav.systemOverview': 'نظرة عامة على النظام',
     'nav.systemAnalytics': 'تحليلات النظام',
     'nav.logs': 'السجلات',
-    'nav.allComplaints': 'جميع الشكاوى',
+    'nav.allComplaints': 'جميع التعليقات',
     'nav.teamPerformance': 'أداء الفريق',
     'nav.profile': 'ملفي الشخصي',
     
@@ -243,23 +243,23 @@ const translations = {
     
     // Dashboard
     'dashboard.title': 'لوحة التحكم',
-    'dashboard.totalFeedback': 'إجمالي الشكاوى',
+    'dashboard.totalFeedback': 'إجمالي التعليقات',
     'dashboard.positiveRatio': 'نسبة الإيجابية',
-    'dashboard.openFeedback': 'الشكاوى المفتوحة',
+    'dashboard.openFeedback': 'التعليقات المفتوحة',
     'dashboard.highPriority': 'أولوية عالية',
     'dashboard.sentimentDistribution': 'توزيع المشاعر',
-    'dashboard.monthlyTrend': 'الاتجاه الشهري للشكاوى',
+    'dashboard.monthlyTrend': 'الاتجاه الشهري للتعليقات',
     'dashboard.categoryDistribution': 'توزيع التصنيفات',
     'dashboard.emotionBreakdown': 'تفصيل العواطف',
     'dashboard.totalCompanies': 'إجمالي الشركات',
     'dashboard.activeCompanies': 'الشركات النشطة',
     'dashboard.totalDomains': 'إجمالي المجالات',
-    'dashboard.systemFeedback': 'شكاوى النظام',
+    'dashboard.systemFeedback': 'تعليقات النظام',
     'dashboard.totalUsers': 'إجمالي المستخدمين',
     'dashboard.activeUsers': 'المستخدمون النشطون',
-    'dashboard.feedbackByDomain': 'الشكاوى حسب المجال',
+    'dashboard.feedbackByDomain': 'التعليقات حسب المجال',
     'dashboard.companyOverview': 'نظرة عامة على الشركة',
-    'dashboard.teamFeedback': 'شكاوى الفريق',
+    'dashboard.teamFeedback': 'تعليقات الفريق',
     'dashboard.pendingAssignment': 'في انتظار الإسناد',
     'dashboard.resolvedThisMonth': 'تم حلها هذا الشهر',
     'dashboard.statusDistribution': 'توزيع الحالات',
@@ -270,10 +270,10 @@ const translations = {
     'dashboard.priorityDistribution': 'توزيع الأولويات',
     'dashboard.teamPerformance': 'أداء الفريق',
     'dashboard.resolutionTrend': 'اتجاه الحل',
-    'dashboard.feedbackVolume': 'حجم الشكاوى',
+    'dashboard.feedbackVolume': 'حجم التعليقات',
     
     // Feedback
-    'feedback.title': 'إدارة الشكاوى',
+    'feedback.title': 'إدارة التعليقات',
     'feedback.customer': 'العميل',
     'feedback.content': 'المحتوى',
     'feedback.sentiment': 'المشاعر',
@@ -283,7 +283,7 @@ const translations = {
     'feedback.channel': 'القناة',
     'feedback.assignedTo': 'مُعيّن إلى',
     'feedback.createdAt': 'تاريخ الإنشاء',
-    'feedback.details': 'تفاصيل الشكوى',
+    'feedback.details': 'تفاصيل التعليق',
     'feedback.assignAgent': 'تعيين إلى موظف',
     'feedback.changeStatus': 'تغيير الحالة',
     'feedback.timeline': 'الخط الزمني',
@@ -317,8 +317,8 @@ const translations = {
     // Roles
     'role.superAdmin': 'مدير النظام',
     'role.companyAdmin': 'مدير الشركة',
-    'role.manager': 'مدير',
-    'role.agent': 'موظف',
+    'role.manager': 'مشرف خدمة العملاء (CSS)',
+    'role.websiteConfigurator': 'مهيئ الموقع',
     
     // Integrations / APIs
     'integrations.title': 'إدارة واجهات API',
@@ -337,20 +337,20 @@ const translations = {
     'superadmin.systemStats': 'إحصائيات النظام',
     'superadmin.totalCompanies': 'إجمالي الشركات',
     'superadmin.totalDomains': 'إجمالي المجالات',
-    'superadmin.feedbackPerDomain': 'الشكاوى لكل مجال',
+    'superadmin.feedbackPerDomain': 'التعليقات لكل مجال',
     'superadmin.activateCompany': 'تفعيل',
     'superadmin.suspendCompany': 'تعليق',
     'superadmin.addDomain': 'إضافة مجال',
     'superadmin.addCompany': 'إضافة شركة',
     
     // Manager
-    'manager.assignFeedback': 'إسناد الشكوى',
+    'manager.assignFeedback': 'إسناد التعليقات',
     'manager.teamPerformance': 'أداء الفريق',
     'manager.pendingAssignment': 'في انتظار الإسناد',
     'manager.agentWorkload': 'عبء عمل الموظفين',
     
     // Agent
-    'agent.myFeedback': 'شكاواي',
+    'agent.myFeedback': 'تعليقاتي',
     'agent.assignedToMe': 'المُسندة إليّ',
     'agent.updateStatus': 'تحديث الحالة',
     'agent.addNote': 'إضافة ملاحظة',

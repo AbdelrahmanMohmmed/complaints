@@ -4,7 +4,7 @@
 import React from 'react';
 import { Link } from 'react-router';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { mockCompanies, mockDomains } from '../../data/mockData';
+import { mockDomains } from '../../data/mockData';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -41,7 +41,7 @@ export function SuperAdminDashboard() {
       icon: Building2,
       color: 'text-violet-600 dark:text-violet-400',
       bg: 'bg-violet-50 dark:bg-violet-900/20',
-      sub: isAr ? 'مقارنة بالشهر الماضي' : 'vs last month',
+      sub: isAr ? 'مقارنة بالشهر الماضي' : 'مقارنة بالشهر الماضي',
     },
     {
       label: t('dashboard.activeCompanies'),
@@ -64,7 +64,7 @@ export function SuperAdminDashboard() {
       sub: isAr ? 'عبر المنصة' : 'platform-wide',
     },
     {
-      label: isAr ? 'إجمالي الشكاوى' : 'Total Complaints',
+      label: isAr ? 'إجمالي التعليقات' : 'إجمالي التعليقات',
       value: '12,450',
       change: '+18.2%',
       trend: 'up',
@@ -111,7 +111,7 @@ export function SuperAdminDashboard() {
 
   const systemAlerts = [
     { type: 'warning', message: isAr ? 'انتهى اشتراك Retail World منذ 3 أيام' : 'Retail World subscription expired 3 days ago', time: isAr ? 'منذ ساعتين' : '2h ago' },
-    { type: 'info', message: isAr ? 'تجاوزت Healthcare Plus حد 500 شكوى يومياً' : 'Healthcare Plus exceeded 500 daily complaint limit', time: isAr ? 'منذ 5 ساعات' : '5h ago' },
+    { type: 'info', message: isAr ? 'تجاوزت Healthcare Plus حد 500 تعليق يومياً' : 'Healthcare Plus exceeded 500 daily feedback limit', time: isAr ? 'منذ 5 ساعات' : '5h ago' },
     { type: 'success', message: isAr ? 'تم إلحاق شركة "LogiTech Inc." بنجاح' : 'New company "LogiTech Inc." onboarded successfully', time: isAr ? 'منذ يوم' : '1d ago' },
   ];
 
@@ -146,7 +146,7 @@ export function SuperAdminDashboard() {
             </div>
             <h1 className="text-2xl sm:text-3xl font-black mb-1">{t('dashboard.systemOverview')}</h1>
             <p className="text-violet-200 text-sm">
-              {isAr ? 'نظرة شاملة على أداء النظام عبر جميع الشركات والمجالات' : 'Full visibility across all companies, domains and aggregated complaints'}
+              {isAr ? 'نظرة شاملة على أداء النظام عبر جميع الشركات والمجالات' : 'Full visibility across all companies, domains and aggregated feedback'}
             </p>
           </div>
           <div className="flex gap-2">
@@ -201,7 +201,7 @@ export function SuperAdminDashboard() {
         {/* Line Chart: Complaints Trend — aggregated only */}
         <Card className="lg:col-span-2">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">{isAr ? 'اتجاه الشكاوى (مجمّع)' : 'Complaints Trend (Aggregated)'}</CardTitle>
+            <CardTitle className="text-base">{isAr ? 'اتجاه التعليقات (مجمّع)' : 'Feedback Trend (Aggregated)'}</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={260}>
@@ -211,7 +211,7 @@ export function SuperAdminDashboard() {
                 <YAxis tick={{ fontSize: 11 }} />
                 <Tooltip contentStyle={{ backgroundColor: 'var(--background)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '12px' }} />
                 <Legend wrapperStyle={{ fontSize: '12px' }} />
-                <Line type="monotone" dataKey="complaints" stroke="#7c3aed" strokeWidth={2.5} dot={{ r: 3 }} name={isAr ? 'الشكاوى' : 'Complaints'} />
+                <Line type="monotone" dataKey="complaints" stroke="#7c3aed" strokeWidth={2.5} dot={{ r: 3 }} name={isAr ? 'التعليقات' : 'Feedback'} />
                 <Line type="monotone" dataKey="resolved" stroke="#059669" strokeWidth={2} dot={{ r: 3 }} strokeDasharray="5 5" name={isAr ? 'تم الحل' : 'Resolved'} />
               </LineChart>
             </ResponsiveContainer>
@@ -249,18 +249,28 @@ export function SuperAdminDashboard() {
         </Card>
       </div>
 
-      {/* Charts Row 2: Feedback by Domain + System Alerts */}
+      {/* Charts Row 2: التعليقات حسب المجال + System Alerts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Bar Chart: Feedback by Domain */}
+        {/* Bar Chart: التعليقات حسب المجال */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base">{t('dashboard.feedbackByDomain')}</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={feedbackByDomain} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart 
+                data={feedbackByDomain} 
+                margin={{ top: 5, right: 10, left: 0, bottom: isAr ? 80 : 40 }}
+              >
                 <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
-                <XAxis dataKey="name" className="text-xs" tick={{ fontSize: 11 }} />
+                <XAxis 
+                  dataKey="name" 
+                  angle={isAr ? -25 : 0}
+                  textAnchor={isAr ? "start" : "middle"}
+                  height={isAr ? 70 : 30}
+                  className="text-xs" 
+                  tick={{ fontSize: isAr ? 10 : 11 }} 
+                />
                 <YAxis className="text-xs" tick={{ fontSize: 11 }} />
                 <Tooltip contentStyle={{ backgroundColor: 'var(--background)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '12px' }} />
                 <Bar dataKey="feedback" radius={[6, 6, 0, 0]} label={false}>
@@ -303,7 +313,7 @@ export function SuperAdminDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-base">{isAr ? 'نظرة عامة على الشركات' : 'Companies Overview'}</CardTitle>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{isAr ? 'لا يشمل تفاصيل الشكاوى أو بيانات العملاء' : 'Aggregated data only — no complaint text or customer data'}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{isAr ? 'لا يشمل تفاصيل التعليقات أو بيانات العملاء' : 'Aggregated data only — no feedback text or customer data'}</p>
             </div>
             <Link to="/app/companies">
               <Button variant="ghost" size="sm" className="gap-1 text-xs">
@@ -321,7 +331,7 @@ export function SuperAdminDashboard() {
                   <th className="text-left pb-3 font-semibold text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide">{isAr ? 'الشركة' : 'Company Name'}</th>
                   <th className="text-left pb-3 font-semibold text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide">{isAr ? 'الحالة' : 'Status'}</th>
                   <th className="text-left pb-3 font-semibold text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide hidden md:table-cell">{isAr ? 'عدد المستخدمين' : 'Users'}</th>
-                  <th className="text-left pb-3 font-semibold text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide hidden lg:table-cell">{isAr ? 'الشكاوى' : 'Complaints'}</th>
+                  <th className="text-left pb-3 font-semibold text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide hidden lg:table-cell">{isAr ? 'التعليقات' : 'Feedback'}</th>
                   <th className="text-left pb-3 font-semibold text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide hidden lg:table-cell">{isAr ? 'تاريخ الإنشاء' : 'Created Date'}</th>
                   <th className="pb-3"></th>
                 </tr>

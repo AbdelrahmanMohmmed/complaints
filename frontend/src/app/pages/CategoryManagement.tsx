@@ -1,9 +1,6 @@
-// NOTE: Category management uses MOCK categories from `mockData.ts` for UI demo.
-// TODO: Replace `mockCategories` with real category endpoints (e.g. `/api/v1/categories`).
-
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { mockCategories, Category } from '../data/mockData';
+import { request } from '../../services/api';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -27,10 +24,44 @@ import {
 import { Label } from '../components/ui/label';
 import { Plus, FolderTree, Tag } from 'lucide-react';
 
+interface Category {
+  id: string;
+  name: string;
+  domain: string;
+  feedbackCount: number;
+}
+
+interface BackendCategory {
+  category_id: number;
+  category_name: string;
+}
+
 export function CategoryManagement() {
   const { t } = useLanguage();
-  const [categories, setCategories] = useState<Category[]>(mockCategories);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const data = await request<BackendCategory[]>('/categories/');
+        const mapped = data.map((c) => ({
+          id: String(c.category_id),
+          name: c.category_name,
+          domain: 'المجال الحالي',
+          feedbackCount: 0,
+        }));
+        setCategories(mapped);
+      } catch {
+        setCategories([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadCategories();
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -63,13 +94,13 @@ export function CategoryManagement() {
             <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <Label htmlFor="categoryName">Category Name</Label>
-                <Input id="categoryName" placeholder="e.g., Service Quality" />
+                <Input id="categoryName" placeholder="مثال: جودة الخدمة" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="categoryDomain">Domain</Label>
                 <Input
                   id="categoryDomain"
-                  placeholder="e.g., Technology"
+                  placeholder="مثال: التقنية"
                   defaultValue="Technology"
                   disabled
                 />
@@ -106,7 +137,7 @@ export function CategoryManagement() {
         <Card className="p-6">
           <div>
             <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-              Total Feedback
+              إجمالي التعليقات
             </p>
             <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">
               {categories.reduce((sum, c) => sum + c.feedbackCount, 0).toLocaleString()}
@@ -175,6 +206,14 @@ export function CategoryManagement() {
                   </TableCell>
                 </TableRow>
               ))}
+
+              {!isLoading && categories.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center text-gray-500 dark:text-gray-400 py-8">
+                    No categories found.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </div>

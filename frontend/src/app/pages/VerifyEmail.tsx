@@ -20,7 +20,7 @@ useEffect(() => {
     setStatus('success');
   } else {
     setStatus('error');
-    setErrorMessage(isAr ? 'لم يتم التحقق بعد.' : 'Verification not completed.');
+    setErrorMessage(isAr ? 'لم يتم التحقق بعد.' : 'لم تكتمل عملية التحقق.');
   }
 }, []);
 
@@ -35,7 +35,7 @@ useEffect(() => {
           className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
         >
           {isAr ? <ArrowRight className="w-4 h-4" /> : <ArrowLeft className="w-4 h-4" />}
-          <span>{isAr ? 'العودة للرئيسية' : 'Back to Home'}</span>
+          <span>{isAr ? 'العودة للرئيسية' : 'العودة إلى الرئيسية'}</span>
         </Link>
         <div className="flex items-center gap-2">
           <button
@@ -59,7 +59,7 @@ useEffect(() => {
             <>
               <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-6" />
               <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                {isAr ? 'جاري التحقق...' : 'Verifying your email...'}
+                {isAr ? 'جاري التحقق...' : 'جارٍ التحقق من بريدك الإلكتروني...'}
               </h1>
             </>
           )}
@@ -69,16 +69,16 @@ useEffect(() => {
                 <CheckCircle2 className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
               </div>
               <h1 className="text-2xl font-black text-gray-900 dark:text-white mb-2">
-                {isAr ? 'تم التحقق من بريدك' : 'Email Verified'}
+                {isAr ? 'تم التحقق من بريدك' : 'تم التحقق من البريد الإلكتروني'}
               </h1>
               <p className="text-gray-600 dark:text-gray-400 mb-6">
-                {isAr ? 'يمكنك الآن تسجيل الدخول إلى حسابك.' : 'You can now sign in to your account.'}
+                {isAr ? 'يمكنك الآن تسجيل الدخول إلى حسابك.' : 'يمكنك الآن تسجيل الدخول إلى حسابك.'}
               </p>
               <Link
                 to="/login"
                 className="inline-flex items-center justify-center gap-2 w-full py-3.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-blue-500/25 transition-all"
               >
-                {isAr ? 'تسجيل الدخول' : 'Sign In'}
+                {isAr ? 'تسجيل الدخول' : 'تسجيل الدخول'}
                 {isAr ? <ArrowLeft className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
               </Link>
             </>
@@ -89,14 +89,14 @@ useEffect(() => {
                 <AlertCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
               </div>
               <h1 className="text-2xl font-black text-gray-900 dark:text-white mb-2">
-                {isAr ? 'فشل التحقق' : 'Verification Failed'}
+                {isAr ? 'فشل التحقق' : 'فشل التحقق'}
               </h1>
               <p className="text-gray-600 dark:text-gray-400 mb-6">{errorMessage}</p>
               <Link
                 to="/login"
                 className="inline-flex items-center justify-center gap-2 w-full py-3.5 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-semibold rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
               >
-                {isAr ? 'الذهاب لتسجيل الدخول' : 'Go to Sign In'}
+                {isAr ? 'الذهاب لتسجيل الدخول' : 'Go to تسجيل الدخول'}
               </Link>
             </>
           )}

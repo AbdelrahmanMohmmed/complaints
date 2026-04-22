@@ -184,11 +184,11 @@ const [noteTarget, setNoteTarget] = useState<BackendFeedback | null>(null);
         <div className="relative">
           <div className="flex items-center gap-2 mb-2">
             <Inbox className="w-5 h-5 text-orange-200" />
-            <span className="text-orange-200 text-sm font-medium">{t('role.agent')}</span>
+            <span className="text-orange-200 text-sm font-medium">{t('role.websiteConfigurator')}</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black mb-1">{t('agent.myFeedback')}</h1>
           <p className="text-orange-200 text-sm">
-            {isAr ? `مرحباً ${user?.firstName} ${user?.lastName}! هذه قائمة الشكاوى المُسندة إليك` : `Welcome, ${user?.firstName} ${user?.lastName}! Here are all feedback items assigned to you`}
+            {isAr ? `مرحباً ${user?.firstName} ${user?.lastName}! هذه قائمة التعليقات المُسندة إليك` : `Welcome, ${user?.firstName} ${user?.lastName}! Here are all feedback items assigned to you`}
           </p>
         </div>
       </div>
@@ -240,7 +240,7 @@ const [noteTarget, setNoteTarget] = useState<BackendFeedback | null>(null);
 
       {/* Results */}
       <div className="text-xs text-gray-500 dark:text-gray-400">
-        {isAr ? `${filteredFeedback.length} شكوى من أصل ${myFeedback.length}` : `Showing ${filteredFeedback.length} of ${myFeedback.length} items`}
+        {isAr ? `${filteredFeedback.length} تعليق من أصل ${myFeedback.length}` : `Showing ${filteredFeedback.length} of ${myFeedback.length} items`}
       </div>
 
       {/* Feedback Cards */}
@@ -250,7 +250,7 @@ const [noteTarget, setNoteTarget] = useState<BackendFeedback | null>(null);
             <CardContent className="p-12 text-center">
               <Inbox className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
               <p className="text-gray-500 dark:text-gray-400 font-medium">
-                {isAr ? 'لا توجد شكاوى مُطابقة' : 'No feedback items match your filters'}
+                {isAr ? 'لا توجد تعليقات مطابقة' : 'No feedback items match your filters'}
               </p>
             </CardContent>
           </Card>
@@ -368,7 +368,7 @@ filteredFeedback.map((fb) => {
                         </div>
                       )}
 
-                      {/* Feedback Details */}
+                      {/* تفاصيل التعليقات */}
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         <div className="p-2.5 bg-white dark:bg-gray-700/50 rounded-lg">
                           <p className="text-xs text-gray-400 mb-1">{t('feedback.emotion')}</p>
@@ -391,7 +391,7 @@ filteredFeedback.map((fb) => {
                           <p className="text-xs text-gray-400 mb-1">{isAr ? 'آخر تحديث' : 'Last Updated'}</p>
 <p className="text-xs font-semibold text-gray-900 dark:text-white">{formatDate(fb.created_at)}</p>                        </div>
                         <div className="p-2.5 bg-white dark:bg-gray-700/50 rounded-lg">
-                          <p className="text-xs text-gray-400 mb-1">{isAr ? 'رقم الشكوى' : 'Feedback ID'}</p>
+                          <p className="text-xs text-gray-400 mb-1">{isAr ? 'رقم التعليق' : 'Feedback ID'}</p>
 <p className="text-xs font-mono font-semibold text-gray-900 dark:text-white">{fb.feedback_id}</p>                        </div>
                       </div>
                     </div>
@@ -409,7 +409,7 @@ filteredFeedback.map((fb) => {
           <DialogHeader>
             <DialogTitle>{t('feedback.addNote')}</DialogTitle>
             <DialogDescription>
-{isAr ? `إضافة ملاحظة على شكوى ${noteTarget?.customer_name}` : `Add a note to ${noteTarget?.customer_name}'s feedback`}            </DialogDescription>
+{isAr ? `إضافة ملاحظة على تعليق ${noteTarget?.customer_name}` : `Add a note to ${noteTarget?.customer_name}'s feedback`}            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <Textarea

@@ -1,23 +1,15 @@
 import React, { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import { Eye, EyeOff, Moon, Sun, Languages, AlertCircle, ArrowLeft, ArrowRight, Bot } from 'lucide-react';
-
-const DEMO_ACCOUNTS = [
-  { email: 'superadmin@ara2kom.ai', label: 'Super Admin', color: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300' },
-  { email: 'admin@ara2kom.ai', label: 'Company Admin', color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' },
-  { email: 'manager@ara2kom.ai', label: 'Manager', color: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300' },
-  { email: 'agent@ara2kom.ai', label: 'Agent', color: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300' },
-];
+import { Eye, EyeOff, Moon, Sun, Languages, AlertCircle, ArrowLeft, ArrowRight } from 'lucide-react';
 
 export function LoginPage() {
   const { login } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { language, toggleLanguage } = useLanguage();
   const navigate = useNavigate();
-  const location = useLocation();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -26,7 +18,6 @@ export function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   const isAr = language === 'ar';
-  const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/app';
 
 const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
@@ -41,15 +32,9 @@ const handleSubmit = async (e: React.FormEvent) => {
   } else if (result.error === 'EMAIL_NOT_VERIFIED') {
     navigate('/verify-email/sent', { state: { email } });
   } else {
-    setError(result.error || (isAr ? 'فشل تسجيل الدخول' : 'Login failed'));
+    setError(result.error || (isAr ? 'فشل تسجيل الدخول' : 'فشل تسجيل الدخول'));
   }
 };
-
-  const handleDemoLogin = (demoEmail: string) => {
-    setEmail(demoEmail);
-    setPassword('password');
-    setError('');
-  };
 
   return (
     <div
@@ -63,7 +48,7 @@ const handleSubmit = async (e: React.FormEvent) => {
           className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
         >
           {isAr ? <ArrowRight className="w-4 h-4" /> : <ArrowLeft className="w-4 h-4" />}
-          <span>{isAr ? 'العودة للرئيسية' : 'Back to Home'}</span>
+          <span>{isAr ? 'العودة للرئيسية' : 'العودة إلى الرئيسية'}</span>
         </Link>
         <div className="flex items-center gap-2">
           <button
@@ -90,10 +75,10 @@ const handleSubmit = async (e: React.FormEvent) => {
               <span className="text-white font-black text-xl">A2</span>
             </div>
             <h1 className="text-2xl font-black text-gray-900 dark:text-white">
-              {isAr ? 'مرحباً بعودتك' : 'Welcome Back'}
+              {isAr ? 'مرحباً بعودتك' : 'مرحبًا بعودتك'}
             </h1>
             <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">
-              {isAr ? 'سجّل دخولك للوصول إلى لوحة التحكم' : 'Sign in to access your dashboard'}
+              {isAr ? 'سجّل دخولك للوصول إلى لوحة التحكم' : 'سجّل دخولك للوصول إلى لوحة التحكم'}
             </p>
           </div>
 
@@ -111,7 +96,7 @@ const handleSubmit = async (e: React.FormEvent) => {
               {/* Email */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                  {isAr ? 'البريد الإلكتروني' : 'Email Address'}
+                  {isAr ? 'البريد الإلكتروني' : 'البريد الإلكتروني'}
                 </label>
                 <input
                   type="email"
@@ -130,9 +115,9 @@ const handleSubmit = async (e: React.FormEvent) => {
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                     {isAr ? 'كلمة المرور' : 'Password'}
                   </label>
-                  <a href="#" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">
+                  <Link to="/forgot-password" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">
                     {isAr ? 'نسيت كلمة المرور؟' : 'Forgot password?'}
-                  </a>
+                  </Link>
                 </div>
                 <div className="relative">
                   <input
@@ -141,7 +126,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className={`w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm ${isAr ? 'pr-4 pl-12' : 'pl-4 pr-12'}`}
-                    placeholder={isAr ? 'كلمة مرورك' : 'Your password'}
+                    placeholder={isAr ? 'كلمة مرورك' : 'كلمة المرور'}
                     dir="ltr"
                   />
                   <button
@@ -163,10 +148,10 @@ const handleSubmit = async (e: React.FormEvent) => {
                 {isLoading ? (
                   <>
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>{isAr ? 'جارٍ تسجيل الدخول...' : 'Signing in...'}</span>
+                    <span>{isAr ? 'جارٍ تسجيل الدخول...' : 'جارٍ تسجيل الدخول...'}</span>
                   </>
                 ) : (
-                  <span>{isAr ? 'تسجيل الدخول' : 'Sign In'}</span>
+                  <span>{isAr ? 'تسجيل الدخول' : 'تسجيل الدخول'}</span>
                 )}
               </button>
 
@@ -179,27 +164,6 @@ const handleSubmit = async (e: React.FormEvent) => {
               </p>
             </form>
           </div>
-
-          {/* Demo accounts */}
-          {/* <div className="mt-6 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
-            <div className={`flex items-center gap-2 mb-3 ${isAr ? 'flex-row-reverse' : ''}`}>
-              <Bot className="w-4 h-4 text-blue-500" />
-              <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">
-                {isAr ? 'حسابات تجريبية — كلمة المرور: password' : 'Demo accounts — Password: password'}
-              </p>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              {DEMO_ACCOUNTS.map((acc) => (
-                <button
-                  key={acc.email}
-                  onClick={() => handleDemoLogin(acc.email)}
-                  className={`text-xs px-3 py-2 rounded-lg ${acc.color} font-medium text-left transition-opacity hover:opacity-80`}
-                >
-                  {acc.label}
-                </button>
-              ))}
-            </div>
-          </div> */}
         </div>
       </div>
     </div>

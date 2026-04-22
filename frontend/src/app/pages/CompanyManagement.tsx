@@ -1,9 +1,6 @@
-// NOTE: Company management currently uses MOCK company data from `mockData.ts`.
-// TODO: Replace `mockCompanies` with real `/api/v1/companies` CRUD endpoints.
-
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { mockCompanies, Company } from '../data/mockData';
+import { request } from '../../services/api';
 
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -42,16 +39,56 @@ import {
 import { Plus, Building2 } from 'lucide-react';
 import { cn } from '../components/ui/utils';
 
+interface Company {
+  id: string;
+  name: string;
+  domain: string;
+  isActive: boolean;
+  totalFeedback: number;
+  createdAt: string;
+}
+
+interface BackendCompany {
+  company_id: number;
+  company_name: string;
+  domain_id: number;
+  created_at: string;
+}
+
 export function CompanyManagement() {
 
   const { t } = useLanguage();
 
-  const [companies, setCompanies] = useState<Company[]>(mockCompanies);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
+
+  useEffect(() => {
+    const loadCompanies = async () => {
+      try {
+        const data = await request<BackendCompany[]>('/companies/');
+        const mapped = data.map((c) => ({
+          id: String(c.company_id),
+          name: c.company_name,
+          domain: `Domain #${c.domain_id}`,
+          isActive: true,
+          totalFeedback: 0,
+          createdAt: c.created_at,
+        }));
+        setCompanies(mapped);
+      } catch {
+        setCompanies([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadCompanies();
+  }, []);
 
 
   const formatDate = (dateString: string) => {
@@ -292,7 +329,7 @@ export function CompanyManagement() {
           <div>
 
             <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-              Total Feedback
+              إجمالي التعليقات
             </p>
 
             <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">
@@ -329,7 +366,7 @@ export function CompanyManagement() {
                 <TableHead>Status</TableHead>
 
                 <TableHead className="hidden md:table-cell">
-                  Total Feedback
+                  إجمالي التعليقات
                 </TableHead>
 
                 <TableHead className="hidden xl:table-cell">
@@ -446,6 +483,14 @@ export function CompanyManagement() {
                 </TableRow>
 
               ))}
+
+              {!isLoading && companies.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-gray-500 dark:text-gray-400 py-8">
+                    No companies found.
+                  </TableCell>
+                </TableRow>
+              )}
 
             </TableBody>
 

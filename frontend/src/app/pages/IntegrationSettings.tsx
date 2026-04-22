@@ -20,9 +20,7 @@ import { cn } from '../components/ui/utils';
 
 interface BackendIntegration {
   api_id: number;
-  company_id: number;
   channel_name: string;
-  api_key: string;
   api_base_url: string;
   status: string;
 }
@@ -31,6 +29,7 @@ const channelIcons: Record<string, React.ComponentType<{ className?: string }>> 
   facebook: Facebook,
   twitter: Twitter,
   whatsapp: MessageSquare,
+  gmail: Mail,
   email: Mail,
   phone: Phone,
   web: Globe,
@@ -40,6 +39,7 @@ const channelColors: Record<string, string> = {
   facebook: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400',
   twitter: 'bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400',
   whatsapp: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400',
+  gmail: 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400',
   email: 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400',
   phone: 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400',
   web: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400',
@@ -55,6 +55,8 @@ export function IntegrationSettings() {
   // Add form state
   const [newChannelName, setNewChannelName] = useState('');
   const [newApiKey, setNewApiKey] = useState('');
+  const [newGmailUsername, setNewGmailUsername] = useState('');
+  const [newGmailPassword, setNewGmailPassword] = useState('');
   const [addError, setAddError] = useState('');
   const [addLoading, setAddLoading] = useState(false);
 
@@ -78,23 +80,48 @@ export function IntegrationSettings() {
   };
 
   const handleAddIntegration = async () => {
-    if (!newChannelName || !newApiKey.trim()) {
-      setAddError('Please select a channel and enter an API key.');
+    if (!newChannelName) {
+      setAddError('Please select a channel.');
       return;
     }
+
+    if (newChannelName === 'gmail') {
+      if (!newGmailUsername.trim() || !newGmailPassword.trim()) {
+        setAddError('Please enter Gmail username and Gmail app password.');
+        return;
+      }
+    } else if (!newApiKey.trim()) {
+      setAddError('Please enter an API key.');
+      return;
+    }
+
     setAddError('');
     setAddLoading(true);
     try {
+      const payload =
+        newChannelName === 'gmail'
+          ? {
+              channel_name: newChannelName,
+              gmail_username: newGmailUsername.trim(),
+              gmail_password: newGmailPassword.trim(),
+            }
+          : {
+              channel_name: newChannelName,
+              api_key: newApiKey.trim(),
+            };
+
       const created = await request<BackendIntegration>('/integrations/', {
         method: 'POST',
-        body: JSON.stringify({ channel_name: newChannelName, api_key: newApiKey.trim() }),
+        body: JSON.stringify(payload),
       });
       setIntegrations(prev => [...prev, created]);
       setIsDialogOpen(false);
       setNewChannelName('');
       setNewApiKey('');
+      setNewGmailUsername('');
+      setNewGmailPassword('');
     } catch (err: any) {
-      setAddError(err?.message || 'Failed to connect. Check your API key.');
+      setAddError(err?.message || 'Failed to connect. Check your credentials.');
     } finally {
       setAddLoading(false);
     }
@@ -167,23 +194,50 @@ export function IntegrationSettings() {
                     <SelectItem value="facebook">Facebook</SelectItem>
                     <SelectItem value="twitter">Twitter / X</SelectItem>
                     <SelectItem value="whatsapp">WhatsApp Business</SelectItem>
+                    <SelectItem value="gmail">Gmail</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label>{t('integrations.apiKey')}</Label>
-                <Input
-                  type="password"
-                  placeholder="Paste your API key or Bearer token..."
-                  value={newApiKey}
-                  onChange={(e) => setNewApiKey(e.target.value)}
-                />
-                <p className="text-xs text-gray-400">
-                  {newChannelName === 'facebook' && 'Use your Facebook Page Access Token'}
-                  {newChannelName === 'twitter' && 'Use your Twitter Bearer Token (app-only)'}
-                  {newChannelName === 'whatsapp' && 'Use your WhatsApp Cloud API Bearer Token'}
-                </p>
-              </div>
+              {newChannelName === 'gmail' ? (
+                <>
+                  <div className="space-y-2">
+                    <Label>Gmail Username</Label>
+                    <Input
+                      type="email"
+                      placeholder="your-account@gmail.com"
+                      value={newGmailUsername}
+                      onChange={(e) => setNewGmailUsername(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Gmail App Password</Label>
+                    <Input
+                      type="password"
+                      placeholder="Paste 16-character Gmail app password"
+                      value={newGmailPassword}
+                      onChange={(e) => setNewGmailPassword(e.target.value)}
+                    />
+                    <p className="text-xs text-gray-400">
+                      Use a Gmail App Password (not your regular Gmail password).
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <div className="space-y-2">
+                  <Label>{t('integrations.apiKey')}</Label>
+                  <Input
+                    type="password"
+                    placeholder="Paste your API key or Bearer token..."
+                    value={newApiKey}
+                    onChange={(e) => setNewApiKey(e.target.value)}
+                  />
+                  <p className="text-xs text-gray-400">
+                    {newChannelName === 'facebook' && 'Use your Facebook Page Access Token'}
+                    {newChannelName === 'twitter' && 'Use your Twitter Bearer Token (app-only)'}
+                    {newChannelName === 'whatsapp' && 'Use your WhatsApp Cloud API Bearer Token'}
+                  </p>
+                </div>
+              )}
               {addError && (
                 <p className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
                   {addError}
@@ -279,14 +333,12 @@ export function IntegrationSettings() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label className="text-sm text-gray-600 dark:text-gray-400">
-                      {t('integrations.apiKey')}
-                    </Label>
+                    <Label className="text-sm text-gray-600 dark:text-gray-400">Credentials</Label>
                     <Input
-                      value={integration.api_key}
-                      type="password"
+                      value="Configured securely"
+                      type="text"
                       readOnly
-                      className="bg-gray-50 dark:bg-gray-900 font-mono text-xs"
+                      className="bg-gray-50 dark:bg-gray-900 text-xs"
                     />
                   </div>
 

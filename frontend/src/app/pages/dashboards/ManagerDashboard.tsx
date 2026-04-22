@@ -29,6 +29,55 @@ interface DashboardStats {
 
 const SENTIMENT_COLORS = { positive: '#10b981', negative: '#ef4444', neutral: '#6b7280' };
 const BAR_COLORS = ['#3b82f6', '#ef4444', '#f59e0b', '#10b981', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
+const RADIAN = Math.PI / 180;
+
+type SentimentLabelProps = {
+  cx?: number;
+  cy?: number;
+  midAngle?: number;
+  outerRadius?: number;
+  name?: string;
+  value?: number | string;
+  percent?: number;
+};
+
+const renderSentimentLabel = ({
+  cx,
+  cy,
+  midAngle,
+  outerRadius,
+  name,
+  value,
+  percent,
+}: SentimentLabelProps) => {
+  if (
+    percent === undefined ||
+    percent < 0.03 ||
+    cx === undefined ||
+    cy === undefined ||
+    midAngle === undefined ||
+    outerRadius === undefined
+  ) {
+    return null;
+  }
+
+  const LABEL_OFFSET = 30;
+  const x = cx + (outerRadius + LABEL_OFFSET) * Math.cos(-midAngle * RADIAN);
+  const y = cy + (outerRadius + LABEL_OFFSET) * Math.sin(-midAngle * RADIAN);
+
+  return (
+    <text
+      x={x}
+      y={y}
+      textAnchor={x > cx ? 'start' : 'end'}
+      dominantBaseline="central"
+      fontSize={12}
+      fill="currentColor"
+    >
+      {`${name}: ${value}`}
+    </text>
+  );
+};
 
 export function ManagerDashboard() {
   const { t, language } = useLanguage();
@@ -70,7 +119,7 @@ export function ManagerDashboard() {
   ];
 
   const kpis = [
-    { label: isAr ? 'إجمالي الشكاوى' : 'Total Feedback',   value: stats.total_feedback,      icon: MessageSquare, color: 'text-blue-600',   bg: 'bg-blue-50 dark:bg-blue-900/20'   },
+    { label: isAr ? 'إجمالي التعليقات' : 'إجمالي التعليقات',   value: stats.total_feedback,      icon: MessageSquare, color: 'text-blue-600',   bg: 'bg-blue-50 dark:bg-blue-900/20'   },
     { label: isAr ? 'مفتوحة' : 'Open',                      value: stats.open_count,           icon: AlertCircle,   color: 'text-sky-600',    bg: 'bg-sky-50 dark:bg-sky-900/20'     },
     { label: isAr ? 'قيد المعالجة' : 'In Progress',         value: stats.in_progress_count,    icon: Clock,         color: 'text-amber-600',  bg: 'bg-amber-50 dark:bg-amber-900/20' },
     { label: isAr ? 'تم الحل' : 'Resolved',                 value: stats.resolved_count,       icon: CheckCircle,   color: 'text-green-600',  bg: 'bg-green-50 dark:bg-green-900/20' },
@@ -94,14 +143,14 @@ export function ManagerDashboard() {
             </div>
             <h1 className="text-2xl sm:text-3xl font-black mb-1">{t('dashboard.title')}</h1>
             <p className="text-emerald-200 text-sm">
-              {isAr ? 'إدارة فريقك وتوزيع الشكاوى بكفاءة' : 'Manage your team and distribute feedback efficiently'}
+              {isAr ? 'إدارة فريقك وتوزيع التعليقات بكفاءة' : 'Manage your team and distribute feedback efficiently'}
             </p>
           </div>
           <div className="flex gap-2">
             <Link to="/app/feedback">
               <Button size="sm" className="bg-white/20 hover:bg-white/30 text-white border border-white/20 gap-1.5">
                 <MessageSquare className="w-4 h-4" />
-                {isAr ? 'الشكاوى' : 'View Feedback'}
+                {isAr ? 'التعليقات' : 'View Feedback'}
               </Button>
             </Link>
             <Link to="/app/reports">
@@ -142,10 +191,16 @@ export function ManagerDashboard() {
             <CardTitle>{isAr ? 'توزيع المشاعر' : 'Sentiment Distribution'}</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
+            <ResponsiveContainer width="100%" height={280}>
               <PieChart>
-                <Pie data={sentimentData} dataKey="value" innerRadius={60} outerRadius={90}
-                  label={({ name, value }) => `${name}: ${value}`}>
+                <Pie 
+                  data={sentimentData} 
+                  dataKey="value" 
+                  innerRadius={60} 
+                  outerRadius={90}
+                  label={renderSentimentLabel}
+                  labelLine={{ stroke: '#9ca3af', strokeWidth: 1 }}
+                >
                   {sentimentData.map((entry, index) => (
                     <Cell key={index} fill={entry.color} />
                   ))}
@@ -159,7 +214,7 @@ export function ManagerDashboard() {
         {/* Monthly Line Chart */}
         <Card>
           <CardHeader>
-            <CardTitle>{isAr ? 'الشكاوى عبر الزمن' : 'Complaints Over Time'}</CardTitle>
+            <CardTitle>{isAr ? 'التعليقات عبر الزمن' : 'Feedback Over Time'}</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={250}>
@@ -182,13 +237,23 @@ export function ManagerDashboard() {
       {stats.category_data.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>{isAr ? 'الشكاوى حسب التصنيف' : 'Feedback by Category'}</CardTitle>
+            <CardTitle>{isAr ? 'التعليقات حسب التصنيف' : 'Feedback by Category'}</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={stats.category_data} margin={{ top: 5, right: 20, left: 0, bottom: 60 }}>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart 
+                data={stats.category_data} 
+                margin={{ top: 5, right: 20, left: 0, bottom: isAr ? 120 : 80 }}
+              >
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" angle={-35} textAnchor="end" interval={0} tick={{ fontSize: 12 }} />
+                <XAxis 
+                  dataKey="name" 
+                  angle={isAr ? -25 : -35} 
+                  textAnchor={isAr ? "start" : "end"}
+                  height={isAr ? 100 : 80}
+                  interval={0} 
+                  tick={{ fontSize: isAr ? 11 : 12 }} 
+                />
                 <YAxis />
                 <Tooltip />
                 <Bar dataKey="value" radius={[4, 4, 0, 0]}>

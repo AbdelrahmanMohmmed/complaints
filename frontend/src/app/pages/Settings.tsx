@@ -34,7 +34,7 @@ const [lName, setLName] = useState(user?.lastName || '');
     setProfileError('');
     setProfileSuccess('');
     if (!fName.trim() || !lName.trim() || !email.trim()) {
-      setProfileError('All fields are required.');
+      setProfileError('جميع الحقول مطلوبة.');
       return;
     }
     setProfileLoading(true);
@@ -43,9 +43,9 @@ const [lName, setLName] = useState(user?.lastName || '');
         method: 'PUT',
         body: JSON.stringify({ f_name: fName.trim(), l_name: lName.trim(), email: email.trim() }),
       });
-      setProfileSuccess('Profile updated successfully.');
+      setProfileSuccess('تم تحديث الملف الشخصي بنجاح.');
     } catch (err: any) {
-      setProfileError(err?.message || 'Failed to update profile.');
+      setProfileError(err?.message || 'فشل تحديث الملف الشخصي.');
     } finally {
       setProfileLoading(false);
     }
@@ -55,15 +55,15 @@ const [lName, setLName] = useState(user?.lastName || '');
     setPasswordError('');
     setPasswordSuccess('');
     if (!currentPassword || !newPassword || !confirmPassword) {
-      setPasswordError('All password fields are required.');
+      setPasswordError('جميع حقول كلمة المرور مطلوبة.');
       return;
     }
     if (newPassword !== confirmPassword) {
-      setPasswordError('New passwords do not match.');
+      setPasswordError('كلمتا المرور الجديدتان غير متطابقتين.');
       return;
     }
     if (newPassword.length < 6) {
-      setPasswordError('New password must be at least 6 characters.');
+      setPasswordError('يجب أن تتكون كلمة المرور الجديدة من 6 أحرف على الأقل.');
       return;
     }
     setPasswordLoading(true);
@@ -72,12 +72,12 @@ const [lName, setLName] = useState(user?.lastName || '');
         method: 'PUT',
         body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
       });
-      setPasswordSuccess('Password changed successfully.');
+      setPasswordSuccess('تم تغيير كلمة المرور بنجاح.');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (err: any) {
-      setPasswordError(err?.message || 'Failed to change password.');
+      setPasswordError(err?.message || 'فشل تغيير كلمة المرور.');
     } finally {
       setPasswordLoading(false);
     }
@@ -130,7 +130,7 @@ const [lName, setLName] = useState(user?.lastName || '');
 
           <div className="flex justify-end">
             <Button onClick={handleSaveProfile} disabled={profileLoading}>
-              {profileLoading ? 'Saving...' : t('common.save')}
+              {profileLoading ? 'جارٍ الحفظ...' : t('common.save')}
             </Button>
           </div>
         </CardContent>
@@ -145,15 +145,15 @@ const [lName, setLName] = useState(user?.lastName || '');
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label>Current Password</Label>
-            <Input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} placeholder="Enter current password" />
+            <Input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} placeholder="أدخل كلمة المرور الحالية" />
           </div>
           <div className="space-y-2">
             <Label>New Password</Label>
-            <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Enter new password" />
+            <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="أدخل كلمة المرور الجديدة" />
           </div>
           <div className="space-y-2">
             <Label>Confirm Password</Label>
-            <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Confirm new password" />
+            <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="تأكيد كلمة المرور الجديدة" />
           </div>
 
           {passwordError && <p className="text-sm text-red-500">{passwordError}</p>}
@@ -161,7 +161,7 @@ const [lName, setLName] = useState(user?.lastName || '');
 
           <div className="flex justify-end">
             <Button onClick={handleChangePassword} disabled={passwordLoading}>
-              {passwordLoading ? 'Updating...' : 'Update Password'}
+              {passwordLoading ? 'جارٍ التحديث...' : 'تحديث كلمة المرور'}
             </Button>
           </div>
         </CardContent>

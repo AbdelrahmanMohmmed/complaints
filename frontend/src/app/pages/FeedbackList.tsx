@@ -76,7 +76,7 @@ const [selectedFeedback, setSelectedFeedback] = useState<BackendFeedback | null>
   const [selectedAgentId, setSelectedAgentId] = useState('');
 
   // Agents are redirected to their own page
-  if (user?.role === 'agent') {
+  if (user?.role === 'websiteConfigurator') {
     return <Navigate to="/app/my-feedback" replace />;
   }
 
@@ -175,10 +175,10 @@ const handleStatusChange = async (feedbackId: number, newStatus: string) => {
     : t('feedback.title');
 
   const pageSubtitle = isSuperAdmin
-    ? (isAr ? 'عرض جميع الشكاوى عبر النظام' : 'System-wide feedback from all companies')
+    ? (isAr ? 'عرض جميع التعليقات عبر النظام' : 'System-wide feedback from all companies')
     : isManager
-      ? (isAr ? 'إدارة شكاوى فريقك وتوزيعها' : 'Manage and assign your team\'s feedback')
-      : (isAr ? 'عرض وإدارة شكاوى شركتك' : 'View and manage your company\'s feedback');
+      ? (isAr ? 'إدارة تعليقات فريقك وتوزيعها' : 'Manage and assign your team\'s feedback')
+      : (isAr ? 'عرض وإدارة تعليقات شركتك' : 'View and manage your company\'s feedback');
 
   return (
     <div className="space-y-6">
@@ -206,8 +206,8 @@ const handleStatusChange = async (feedbackId: number, newStatus: string) => {
           <UserCheck className="w-4 h-4 flex-shrink-0 mt-0.5" />
           <span>
             {isAr
-              ? 'يمكنك إسناد الشكاوى للموظفين وتغيير الأولوية والحالة. انقر على أي شكوى للتفاصيل.'
-              : 'As Manager, you can assign feedback to agents, set priorities, and change statuses. Click a row to view details.'}
+              ? 'يمكنك إسناد التعليقات للموظفين وتغيير الأولوية والحالة. انقر على أي تعليق للتفاصيل.'
+              : 'As Customer Service Supervisor (CSS), you can assign feedback to agents, set priorities, and change statuses. Click a row to view details.'}
           </span>
         </div>
       )}
@@ -215,7 +215,7 @@ const handleStatusChange = async (feedbackId: number, newStatus: string) => {
         <div className="flex items-start gap-3 p-4 bg-violet-50 dark:bg-violet-900/10 border border-violet-200 dark:border-violet-800 rounded-xl text-sm text-violet-800 dark:text-violet-300">
           <Building2 className="w-4 h-4 flex-shrink-0 mt-0.5" />
           <span>
-            {isAr ? 'عرض جميع الشكاوى من جميع الشركات والمجالات.' : 'Viewing all feedback across all companies and domains in the system.'}
+            {isAr ? 'عرض جميع التعليقات من جميع الشركات والمجالات.' : 'Viewing all feedback across all companies and domains in the system.'}
           </span>
         </div>
       )}
@@ -307,9 +307,6 @@ const handleStatusChange = async (feedbackId: number, newStatus: string) => {
                   <TableHead className="hidden xl:table-cell font-semibold">{isAr ? 'الشركة' : 'Company'}</TableHead>
                 )}
                 <TableHead className="hidden sm:table-cell font-semibold">{t('common.date')}</TableHead>
-                {(isManager || isCompanyAdmin) && (
-                  <TableHead className="font-semibold">{t('common.actions')}</TableHead>
-                )}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -391,15 +388,6 @@ const handleStatusChange = async (feedbackId: number, newStatus: string) => {
       <TableCell className="hidden sm:table-cell">
         <span className="text-xs text-gray-500 dark:text-gray-400">{formatDate(fb.created_at)}</span>
       </TableCell>
-      {isManager && (
-        <TableCell>
-          <Button size="sm" variant="outline" className="h-7 text-xs gap-1"
-            onClick={(e) => { e.stopPropagation(); setSelectedFeedback(fb); setAssignDialogOpen(true); }}>
-            <UserCheck className="w-3 h-3" />
-            {isAr ? 'إسناد' : 'Assign'}
-          </Button>
-        </TableCell>
-      )}
     </TableRow>
   );
 })}
@@ -407,7 +395,7 @@ const handleStatusChange = async (feedbackId: number, newStatus: string) => {
                 <TableRow>
                   <TableCell colSpan={10} className="text-center py-12 text-gray-400">
                     <AlertTriangle className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                    <p>{isAr ? 'لا توجد شكاوى مطابقة' : 'No feedback items match your filters'}</p>
+                    <p>{isAr ? 'لا توجد تعليقات مطابقة' : 'No feedback items match your filters'}</p>
                   </TableCell>
                 </TableRow>
               )}
@@ -419,7 +407,7 @@ const handleStatusChange = async (feedbackId: number, newStatus: string) => {
       {/* Results Count */}
       <div className="text-xs text-gray-500 dark:text-gray-400">
         {isAr
-  ? `عرض ${filteredFeedback.length} من أصل ${feedbackList.length} شكوى`
+  ? `عرض ${filteredFeedback.length} من أصل ${feedbackList.length} تعليق`
   : `Showing ${filteredFeedback.length} of ${feedbackList.length} feedback items`
 }
       </div>
@@ -428,9 +416,9 @@ const handleStatusChange = async (feedbackId: number, newStatus: string) => {
       <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{isAr ? 'إسناد الشكوى' : 'Assign Feedback'}</DialogTitle>
+            <DialogTitle>{isAr ? 'إسناد التعليق' : 'Assign Feedback'}</DialogTitle>
             <DialogDescription>
-{isAr ? `اختر موظفاً لإسناد شكوى ${selectedFeedback?.customer_name}` : `Select an agent to handle ${selectedFeedback?.customer_name}'s feedback`}            </DialogDescription>
+{isAr ? `اختر موظفاً لإسناد تعليق ${selectedFeedback?.customer_name}` : `Select an agent to handle ${selectedFeedback?.customer_name}'s feedback`}            </DialogDescription>
           </DialogHeader>
           {selectedFeedback && (
             <div className="space-y-4 py-2">

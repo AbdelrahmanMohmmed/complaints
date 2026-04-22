@@ -37,11 +37,6 @@ const API_OPTIONS = [
   { id: 'email' as const, labelEn: 'Email', labelAr: 'البريد', Icon: Mail, required: false },
 ];
 
-const EXTRA_ROLES = [
-  { value: 'manager' as const, labelEn: 'Manager', labelAr: 'مدير' },
-  { value: 'agent' as const, labelEn: 'Agent', labelAr: 'وكيل' },
-];
-
 export function SignupPage() {
   const { theme, toggleTheme } = useTheme();
   const { language, toggleLanguage } = useLanguage();
@@ -175,8 +170,8 @@ const handleNext = () => {
   };
 
   const benefits = isAr
-    ? ['تحليل مشاعر بالذكاء الاصطناعي', 'لوحة تحكم تفاعلية', 'تصنيف تلقائي للشكاوى', 'دعم عربي وإنجليزي كامل']
-    : ['AI-powered sentiment analysis', 'Interactive analytics dashboard', 'Auto-complaint categorization', 'Full Arabic & English support'];
+    ? ['تحليل مشاعر بالذكاء الاصطناعي', 'لوحة تحكم تفاعلية', 'تصنيف تلقائي للتعليقات', 'دعم عربي وإنجليزي كامل']
+    : ['AI-powered sentiment analysis', 'Interactive analytics dashboard', 'Auto-feedback categorization', 'Full Arabic & English support'];
 
   // Success state is now handled by redirect to /verify-email/sent
   return (
@@ -190,7 +185,7 @@ const handleNext = () => {
           className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
         >
           {isAr ? <ArrowRight className="w-4 h-4" /> : <ArrowLeft className="w-4 h-4" />}
-          <span>{isAr ? 'العودة للرئيسية' : 'Back to Home'}</span>
+          <span>{isAr ? 'العودة للرئيسية' : 'العودة إلى الرئيسية'}</span>
         </Link>
         <div className="flex items-center gap-2">
           <button
@@ -534,7 +529,7 @@ const handleNext = () => {
               <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
                 {isAr ? 'لديك حساب بالفعل؟' : 'Already have an account?'}{' '}
                 <Link to="/login" className="text-blue-600 dark:text-blue-400 font-medium hover:underline">
-                  {isAr ? 'تسجيل الدخول' : 'Sign In'}
+                  {isAr ? 'تسجيل الدخول' : 'تسجيل الدخول'}
                 </Link>
               </p>
             </div>

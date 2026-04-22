@@ -86,10 +86,10 @@ export function AgentProfile() {
         body: JSON.stringify({ f_name: firstName, l_name: lastName, email }),
       });
       setProfile(updated);
-      setSaveSuccess(isAr ? 'تم الحفظ بنجاح' : 'Profile updated successfully.');
+      setSaveSuccess(isAr ? 'تم الحفظ بنجاح' : 'تم تحديث الملف الشخصي بنجاح.');
       setIsEditing(false);
     } catch (err: any) {
-      setSaveError(err?.message || 'Failed to update profile.');
+      setSaveError(err?.message || 'فشل تحديث الملف الشخصي.');
     } finally {
       setSaveLoading(false);
     }
@@ -99,7 +99,7 @@ export function AgentProfile() {
     setPwdError('');
     setPwdSuccess('');
     if (!currentPassword || !newPassword || !confirmPassword) {
-      setPwdError(isAr ? 'جميع الحقول مطلوبة' : 'All fields are required.');
+      setPwdError(isAr ? 'جميع الحقول مطلوبة' : 'جميع الحقول مطلوبة.');
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -116,13 +116,13 @@ export function AgentProfile() {
         method: 'PUT',
         body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
       });
-      setPwdSuccess(isAr ? 'تم تغيير كلمة المرور بنجاح' : 'Password changed successfully.');
+      setPwdSuccess(isAr ? 'تم تغيير كلمة المرور بنجاح' : 'تم تغيير كلمة المرور بنجاح.');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
       setTimeout(() => setIsPasswordDialogOpen(false), 1500);
     } catch (err: any) {
-      setPwdError(err?.message || 'Failed to change password.');
+      setPwdError(err?.message || 'فشل تغيير كلمة المرور.');
     } finally {
       setPwdLoading(false);
     }
@@ -133,7 +133,7 @@ export function AgentProfile() {
     : (user?.firstName?.[0] || 'A') + (user?.lastName?.[0] || 'G');
 
   const statCards = [
-    { label: isAr ? 'إجمالي الشكاوى' : 'Total Feedback',  value: stats?.total_feedback ?? '—',    icon: MessageSquare, color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-900/20' },
+    { label: isAr ? 'إجمالي التعليقات' : 'إجمالي التعليقات',  value: stats?.total_feedback ?? '—',    icon: MessageSquare, color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-900/20' },
     { label: isAr ? 'مفتوح' : 'Open',                      value: stats?.open_count ?? '—',         icon: Clock,         color: 'text-blue-600 dark:text-blue-400',   bg: 'bg-blue-50 dark:bg-blue-900/20'     },
     { label: isAr ? 'قيد المعالجة' : 'In Progress',        value: stats?.in_progress_count ?? '—',  icon: Clock,         color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/20'   },
     { label: isAr ? 'تم الحل' : 'Resolved',                value: stats?.resolved_count ?? '—',     icon: CheckCircle2,  color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
@@ -227,7 +227,7 @@ export function AgentProfile() {
                 disabled={saveLoading}
               >
                 <Save className="w-3.5 h-3.5" />
-                {saveLoading ? (isAr ? 'جاري الحفظ...' : 'Saving...') : (isAr ? 'حفظ' : 'Save Changes')}
+                {saveLoading ? (isAr ? 'جاري الحفظ...' : 'جارٍ الحفظ...') : (isAr ? 'حفظ' : 'Save Changes')}
               </Button>
             )}
           </div>
@@ -309,7 +309,7 @@ export function AgentProfile() {
                       onClick={handleChangePassword}
                       disabled={pwdLoading}
                     >
-                      {pwdLoading ? (isAr ? 'جاري الحفظ...' : 'Saving...') : (isAr ? 'حفظ' : 'Save')}
+                      {pwdLoading ? (isAr ? 'جاري الحفظ...' : 'جارٍ الحفظ...') : (isAr ? 'حفظ' : 'Save')}
                     </Button>
                   </div>
                 </div>

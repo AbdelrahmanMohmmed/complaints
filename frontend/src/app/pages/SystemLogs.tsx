@@ -37,7 +37,7 @@ const mockLogs: LogEntry[] = [
   { id: 'log-6', timestamp: '2026-03-01T16:30:00Z', level: 'success', category: 'system', actor: 'System', action: 'Daily backup completed successfully', ip: '—' },
   { id: 'log-7', timestamp: '2026-03-01T14:00:00Z', level: 'info', category: 'company', actor: 'Sara Hassan', action: 'Domain "Healthcare" configuration updated', target: 'domain-2', ip: '10.0.0.5' },
   { id: 'log-8', timestamp: '2026-03-01T11:45:00Z', level: 'warning', category: 'system', actor: 'System', action: 'High API usage detected for TechCorp Solutions', target: 'company-1', ip: '—' },
-  { id: 'log-9', timestamp: '2026-03-01T09:20:00Z', level: 'success', category: 'user', actor: 'Sara Hassan', action: 'User role updated: Manager → Company Admin', target: 'layla@company.com', ip: '10.0.0.5' },
+  { id: 'log-9', timestamp: '2026-03-01T09:20:00Z', level: 'success', category: 'user', actor: 'Sara Hassan', action: 'User role updated: Customer Service Supervisor (CSS) → Company Admin', target: 'layla@company.com', ip: '10.0.0.5' },
   { id: 'log-10', timestamp: '2026-02-28T21:00:00Z', level: 'error', category: 'security', actor: 'System', action: 'Multiple failed login attempts blocked', target: 'unknown@test.com', ip: '45.33.32.156' },
   { id: 'log-11', timestamp: '2026-02-28T15:30:00Z', level: 'info', category: 'company', actor: 'Sara Hassan', action: 'FinanceHub plan upgraded to Enterprise', target: 'FinanceHub', ip: '10.0.0.5' },
   { id: 'log-12', timestamp: '2026-02-28T12:10:00Z', level: 'success', category: 'system', actor: 'System', action: 'AI model retrained with new feedback dataset', ip: '—' },
@@ -94,7 +94,7 @@ export function SystemLogs() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white">
-            {isAr ? 'سجلات النظام' : 'System Logs'}
+            {isAr ? 'سجلات النظام' : 'سجلات النظام'}
           </h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">
             {isAr ? 'تتبع جميع الأنشطة والأحداث على مستوى النظام' : 'Track all system-level events, security alerts, and activity'}

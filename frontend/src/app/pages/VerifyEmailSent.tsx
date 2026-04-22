@@ -61,7 +61,7 @@ export function VerifyEmailSent() {
       });
       navigate('/verify-email', { state: { success: true } });
     } catch (err: any) {
-      setError(err?.message || (isAr ? 'رمز غير صحيح' : 'Invalid or expired code'));
+      setError(err?.message || (isAr ? 'رمز غير صحيح' : 'رمز غير صالح أو منتهي الصلاحية'));
     } finally {
       setIsLoading(false);
     }
@@ -90,7 +90,7 @@ export function VerifyEmailSent() {
       <div className="flex items-center justify-between px-6 py-4">
         <Link to="/" className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 transition-colors">
           {isAr ? <ArrowRight className="w-4 h-4" /> : <ArrowLeft className="w-4 h-4" />}
-          <span>{isAr ? 'العودة للرئيسية' : 'Back to Home'}</span>
+          <span>{isAr ? 'العودة للرئيسية' : 'العودة إلى الرئيسية'}</span>
         </Link>
         <div className="flex items-center gap-2">
           <button onClick={toggleLanguage} className="p-2 text-gray-500 hover:text-blue-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
@@ -159,7 +159,7 @@ export function VerifyEmailSent() {
             ) : (
               <>
                 <CheckCircle2 className="w-4 h-4" />
-                {isAr ? 'تحقق من الرمز' : 'Verify Code'}
+                {isAr ? 'تحقق من الرمز' : 'تحقق من الرمز'}
               </>
             )}
           </button>

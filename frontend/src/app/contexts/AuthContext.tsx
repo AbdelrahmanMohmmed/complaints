@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import * as authService from '../../services/authService';
 
-export type UserRole = 'superAdmin' | 'companyAdmin' | 'manager' | 'agent';
+export type UserRole = 'superAdmin' | 'companyAdmin' | 'manager' | 'websiteConfigurator';
 
 /**
  * User Interface
@@ -87,7 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(response.user);
     return { success: true, role: response.user.role };  // ← pass role back
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Login failed';
+    const message = error instanceof Error ? error.message : 'فشل تسجيل الدخول';
     return { success: false, error: message };
   }
 };

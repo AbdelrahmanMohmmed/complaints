@@ -55,7 +55,11 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
       }
 
       if (response.status === 401) {
-        // TODO: Trigger token refresh
+        localStorage.removeItem('ara2kom-access-token');
+        localStorage.removeItem('ara2kom-user');
+        if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
       }
 
       // Handle Pydantic 422 validation errors — detail is an array
@@ -71,6 +75,10 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
         message = errorData.detail;
       } else {
         message = 'Unknown error';
+      }
+
+      if (response.status === 401) {
+        message = 'Your session expired. Please log in again.';
       }
 
       throw new ApiError(message, response.status, errorData);

@@ -114,7 +114,7 @@ export function LandingPage() {
       {
         icon: Shield,
         title: 'نظام صلاحيات متعدد الأدوار',
-        desc: 'يدعم أربعة أدوار (مدير النظام، مدير الشركة، المدير، الموظف) مع تحكم دقيق في الصلاحيات.',
+        desc: 'يدعم أربعة أدوار (مدير النظام، مدير الشركة، مشرف خدمة العملاء (CSS)، الموظف) مع تحكم دقيق في الصلاحيات.',
         color: 'from-orange-500 to-orange-600',
       },
       {
@@ -147,7 +147,7 @@ export function LandingPage() {
       {
         icon: Shield,
         title: 'Multi-Role Access Control',
-        desc: 'Supports four roles (Super Admin, Company Admin, Manager, Agent) with granular permission control.',
+        desc: 'Supports four roles (Super Admin, Company Admin, Customer Service Supervisor (CSS), Agent) with granular permission control.',
         color: 'from-orange-500 to-orange-600',
       },
       {
@@ -360,14 +360,14 @@ export function LandingPage() {
                   to="/signup"
                   className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-2xl hover:shadow-xl hover:shadow-blue-500/30 transition-all hover:scale-105"
                 >
-                  <span>{isAr ? 'ابدأ تجربتك ' : 'Start Trial'}</span>
+                  <span>{isAr ? 'ابدأ تجربتك ' : 'Get Started'}</span>
                   <ArrowRight className={`w-5 h-5 ${isAr ? 'rotate-180' : ''}`} />
                 </Link>
                 <Link
                   to="/login"
                   className="inline-flex items-center justify-center gap-2 px-8 py-4 border-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 font-semibold rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
                 >
-                  <span>{isAr ? 'تسجيل الدخول' : 'Sign In'}</span>
+                  <span>{isAr ? 'تسجيل الدخول' : 'Sign Up'}</span>
                 </Link>
               </div>
 
@@ -414,7 +414,7 @@ export function LandingPage() {
             </p>
             <p className="text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
               {isAr
-                ? 'نؤمن أن كل شكوى هي معلومة قيّمة. منصتنا تجعل هذه المعلومات في متناول يدك بشكل فوري وقابل للتطبيق، مما يحسن رضا عملائك ويقوي علاقتهم بعلامتك التجارية.'
+                ? 'نؤمن أن كل تعليق هو معلومة قيّمة. منصتنا تجعل هذه المعلومات في متناول يدك بشكل فوري وقابل للتطبيق، مما يحسن رضا عملائك ويقوي علاقتهم بعلامتك التجارية.'
                 : 'We believe every feedback is a valuable data point. Our platform makes that data immediately actionable, helping you improve customer satisfaction and build stronger brand loyalty.'}
             </p>
             <ul className="space-y-3">
@@ -630,7 +630,7 @@ export function LandingPage() {
   ${sending ? "opacity-70 cursor-not-allowed" : "hover:shadow-lg hover:shadow-blue-500/25 hover:scale-[1.02]"}`}
                   >
                     {sending
-                      ? (isAr ? "جاري الإرسال..." : "Sending...")
+                      ? (isAr ? "جاري الإرسال..." : "جارٍ الإرسال...")
                       : (isAr ? "إرسال الرسالة" : "Send Message")}
                     <ArrowRight className={`w-4 h-4 ${isAr ? 'rotate-180' : ''}`} />
                   </button>
