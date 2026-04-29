@@ -21,6 +21,7 @@ interface BackendFeedback {
   feedback_id: number;
   company_id: number;
   api_id: number | null;
+  channel_name?: string | null;
   category_id: number | null;
   category_name: string | null;
   customer_name: string | null;
@@ -48,12 +49,42 @@ const statusColors: Record<string, string> = {
   inProgress: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
   resolved: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
   closed: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400',
+  analyzed: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400',
 };
 
 const priorityColors: Record<string, string> = {
   low: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400',
   medium: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
   high: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+  critical: 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-400',
+};
+
+const normalizePriority = (value?: string | null) =>
+  (value || 'low').toLowerCase();
+
+const normalizeStatus = (value?: string | null) => {
+  const normalized = (value || 'open').toLowerCase();
+  if (normalized === 'inprogress' || normalized === 'in_progress') return 'inProgress';
+  return normalized;
+};
+
+const HUMAN_LABELS: Record<string, string> = {
+  inProgress: 'In Progress',
+  analyzed: 'Analyzed',
+  critical: 'Critical',
+};
+
+const toTitleCase = (value: string) =>
+  value
+    .replace(/[_-]+/g, ' ')
+    .replace(/\w/g, (match) => match.toUpperCase());
+
+const displayLabel = (labelKey: string, fallbackValue: string) => {
+  if (labelKey === fallbackValue) return fallbackValue;
+  if (labelKey.startsWith('status.') || labelKey.startsWith('priority.')) {
+    return HUMAN_LABELS[fallbackValue] || toTitleCase(fallbackValue);
+  }
+  return labelKey;
 };
 
 export function FeedbackDetails() {
@@ -92,8 +123,8 @@ export function FeedbackDetails() {
           request<Category[]>('/categories/'),
         ]);
         setFeedback(fb);
-        setStatus(fb.status || 'open');
-        setPriority(fb.priority || 'low');
+        setStatus(normalizeStatus(fb.status || 'open'));
+        setPriority(normalizePriority(fb.priority || 'low'));
         setCategoryId(fb.category_id ? String(fb.category_id) : '');
         setCategories(cats);
       } catch (err) {
@@ -181,7 +212,7 @@ export function FeedbackDetails() {
           </p>
         </div>
         <Badge className={cn('capitalize', statusColors[status])}>
-          {t(`status.${status}`)}
+          {displayLabel(t(`status.${status}`), status)}
         </Badge>
       </div>
 

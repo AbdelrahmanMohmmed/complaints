@@ -5,8 +5,7 @@ node_modules/
 dist/
 
 # environment variables
-
-
+backend/models
 # logs
 *.log
 

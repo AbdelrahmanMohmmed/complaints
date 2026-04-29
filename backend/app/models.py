@@ -7,7 +7,16 @@ Models are organized into three categories:
 
 """
 
-from sqlalchemy import Column, ForeignKey, Index, Integer, String, Text, Boolean, DateTime
+from sqlalchemy import (
+    Column,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    Boolean,
+    DateTime,
+)
 from sqlalchemy.orm import declarative_base, relationship
 from sqlalchemy.sql import func
 
@@ -90,9 +99,9 @@ class User(Base):
     email = Column(String(100), nullable=False, unique=True)
     password_hash = Column(String, nullable=False)
     is_active = Column(Boolean, default=True)
-    is_verified = Column(Boolean, default=False)               # ← new
-    verification_code = Column(String(6), nullable=True)       # ← new
-    verification_expires_at = Column(DateTime(timezone=True), nullable=True) 
+    is_verified = Column(Boolean, default=False)  # ← new
+    verification_code = Column(String(6), nullable=True)  # ← new
+    verification_expires_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships
@@ -122,7 +131,7 @@ class Api(Base):
 
     # Relationships
     company = relationship("Company", back_populates="apis")
-    feedbacks = relationship("Feedback", back_populates="api",passive_deletes=True)
+    feedbacks = relationship("Feedback", back_populates="api", passive_deletes=True)
 
     def __repr__(self):
         return f"<Api(api_id={self.api_id}, channel={self.channel_name}, status={self.status})>"
@@ -141,6 +150,7 @@ class FeedbackCategory(Base):
     category_id = Column(Integer, primary_key=True, autoincrement=True)
     domain_id = Column(Integer, ForeignKey("domains.domain_id"), nullable=False)
     category_name = Column(String(100), nullable=False)
+    label_id = Column(Integer, nullable=True)
 
     # Relationships
     domain = relationship("Domain", back_populates="feedback_categories")
@@ -169,7 +179,9 @@ class Feedback(Base):
     feedback_id = Column(Integer, primary_key=True, autoincrement=True)
     company_id = Column(Integer, ForeignKey("companies.company_id"), nullable=False)
     api_id = Column(Integer, ForeignKey("apis.api_id"), nullable=False)
-    category_id = Column(Integer, ForeignKey("feedback_categories.category_id"), nullable=True)
+    category_id = Column(
+        Integer, ForeignKey("feedback_categories.category_id"), nullable=True
+    )
 
     # Raw Feedback Data
     customer_name = Column(String(100))
@@ -177,7 +189,9 @@ class Feedback(Base):
 
     # Processing Pipeline
     cleaned_text = Column(Text, nullable=True)  # Preprocessed text
-    status = Column(String(20), default="unprocessed")  # unprocessed, preprocessed, analyzed
+    status = Column(
+        String(20), default="unprocessed"
+    )  # unprocessed, preprocessed, analyzed
 
     # ML Analysis Results
     sentiment = Column(String(20), nullable=True)  # positive, negative, neutral

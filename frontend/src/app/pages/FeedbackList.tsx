@@ -26,6 +26,7 @@ interface BackendFeedback {
   feedback_id: number;
   company_id: number;
   api_id: number | null; 
+  channel_name?: string | null;
   category_id: number | null;
   customer_name: string | null;
   category_name: string | null;  // ← add this
@@ -47,12 +48,42 @@ const statusColors: Record<string, string> = {
   inProgress: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
   resolved: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
   closed: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400',
+  analyzed: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400',
 };
 
 const priorityColors: Record<string, string> = {
   low: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400',
   medium: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
   high: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+  critical: 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-400',
+};
+
+const normalizePriority = (value?: string | null) =>
+  (value || 'low').toLowerCase();
+
+const normalizeStatus = (value?: string | null) => {
+  const normalized = (value || 'open').toLowerCase();
+  if (normalized === 'inprogress' || normalized === 'in_progress') return 'inProgress';
+  return normalized;
+};
+
+const HUMAN_LABELS: Record<string, string> = {
+  inProgress: 'In Progress',
+  analyzed: 'Analyzed',
+  critical: 'Critical',
+};
+
+const toTitleCase = (value: string) =>
+  value
+    .replace(/[_-]+/g, ' ')
+    .replace(/\w/g, (match) => match.toUpperCase());
+
+const displayLabel = (labelKey: string, fallbackValue: string) => {
+  if (labelKey === fallbackValue) return fallbackValue;
+  if (labelKey.startsWith('status.') || labelKey.startsWith('priority.')) {
+    return HUMAN_LABELS[fallbackValue] || toTitleCase(fallbackValue);
+  }
+  return labelKey;
 };
 
 export function FeedbackList() {
@@ -107,8 +138,10 @@ const filteredFeedback = feedbackList.filter((fb) => {
   const matchesSearch =
     (fb.customer_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
     (fb.feedback_context || '').toLowerCase().includes(searchQuery.toLowerCase());
-  const currentStatus = feedbackStatuses[fb.feedback_id] || fb.status;
-  const currentPriority = feedbackPriorities[fb.feedback_id] || fb.priority || 'low';
+  const currentStatus = normalizeStatus(feedbackStatuses[fb.feedback_id] || fb.status);
+  const currentPriority = normalizePriority(
+    feedbackPriorities[fb.feedback_id] || fb.priority || 'low'
+  );
   const matchesStatus = statusFilter === 'all' || currentStatus === statusFilter;
   const matchesSentiment = sentimentFilter === 'all' || fb.sentiment === sentimentFilter;
   const matchesPriority = priorityFilter === 'all' || currentPriority === priorityFilter;
@@ -311,8 +344,10 @@ const handleStatusChange = async (feedbackId: number, newStatus: string) => {
             </TableHeader>
             <TableBody>
               {filteredFeedback.map((fb) => {
-  const currentStatus = feedbackStatuses[fb.feedback_id] || fb.status;
-  const currentPriority = feedbackPriorities[fb.feedback_id] || fb.priority || 'low';
+  const currentStatus = normalizeStatus(feedbackStatuses[fb.feedback_id] || fb.status);
+  const currentPriority = normalizePriority(
+    feedbackPriorities[fb.feedback_id] || fb.priority || 'low'
+  );
   return (
     <TableRow
       key={fb.feedback_id}
@@ -332,7 +367,7 @@ const handleStatusChange = async (feedbackId: number, newStatus: string) => {
         <span className="text-sm text-gray-600 dark:text-gray-400">  {fb.category_name || '—'}</span>
       </TableCell>
       <TableCell className="hidden xl:table-cell">
-        <span className="text-sm text-gray-600 dark:text-gray-400">—</span>
+        <span className="text-sm text-gray-600 dark:text-gray-400">{fb.channel_name || '—'}</span>
       </TableCell>
       <TableCell>
         <Badge className={cn('capitalize text-xs', sentimentColors[fb.sentiment || 'neutral'])}>
@@ -359,7 +394,7 @@ const handleStatusChange = async (feedbackId: number, newStatus: string) => {
           </div>
         ) : (
           <Badge className={cn('capitalize text-xs', priorityColors[currentPriority])}>
-            {t(`priority.${currentPriority}`)}
+            {displayLabel(t(`priority.${currentPriority}`), currentPriority)}
           </Badge>
         )}
       </TableCell>
@@ -381,7 +416,7 @@ const handleStatusChange = async (feedbackId: number, newStatus: string) => {
           </div>
         ) : (
           <Badge className={cn('capitalize text-xs', statusColors[currentStatus])}>
-            {t(`status.${currentStatus}`)}
+            {displayLabel(t(`status.${currentStatus}`), currentStatus)}
           </Badge>
         )}
       </TableCell>
