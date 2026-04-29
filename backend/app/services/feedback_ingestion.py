@@ -1,32 +1,53 @@
-"""
-Feedback ingestion service for fetching comments from social media platforms.
+"""Feedback ingestion service for fetching feedback from social media platforms.
+
 Runs as a scheduled task every hour via APScheduler.
+Supports Facebook, Twitter/X, and WhatsApp as feedback sources.
+Handles API credential validation, deduplication, and error recovery.
 """
 
 import logging
 from datetime import datetime, timedelta
+<<<<<<< HEAD
 import json
 import imaplib
+=======
+from typing import Optional
+
+>>>>>>> origin/AI_Models-Integration
 import httpx
-from sqlalchemy.orm import Session
 from sqlalchemy import and_
+<<<<<<< HEAD
 from .. import models, utils, database
 from .get_email_messages import fetch_gmail_messages
+=======
+from sqlalchemy.orm import Session
+
+from .. import database, models, utils
+>>>>>>> origin/AI_Models-Integration
 
 logger = logging.getLogger(__name__)
 
-# Platform base URLs
+
+# ============================================================================
+# Configuration
+# ============================================================================
+
+# Platform API base URLs
 PLATFORM_URLS = {
     "facebook": "https://graph.facebook.com",
     "twitter": "https://api.twitter.com/2",
     "whatsapp": "https://graph.facebook.com/v17.0",
+<<<<<<< HEAD
     "gmail": "imap.gmail.com",
+=======
+>>>>>>> origin/AI_Models-Integration
 }
 
-# Timeout for API calls (in seconds)
+# API request timeout in seconds
 API_TIMEOUT = 10
 
 
+<<<<<<< HEAD
 def _parse_gmail_credentials(decrypted_payload: str) -> tuple[str, str]:
     """Extract Gmail username/password from encrypted payload."""
     parsed = json.loads(decrypted_payload)
@@ -40,6 +61,99 @@ def _parse_gmail_credentials(decrypted_payload: str) -> tuple[str, str]:
 async def fetch_facebook_comments(
     api_key: str, api_base_url: str, db: Session, integration_id: int, company_id: int
 ) -> int:
+=======
+# ============================================================================
+# Helper Functions
+# ============================================================================
+
+
+def add_feedback_safe(
+    db: Session,
+    company_id: int,
+    api_id: int,
+    feedback_text: str,
+    created_at: datetime,
+    customer_name: Optional[str] = None,
+) -> bool:
+    """Safely add feedback to database with deduplication.
+
+    Checks if feedback with same api_id + feedback_context already exists
+    to prevent duplicates. Returns True if feedback was added, False if duplicate.
+
+    Args:
+        db: Database session
+        company_id: Company ID
+        api_id: Integration API ID
+        feedback_text: Raw feedback text
+        created_at: Feedback creation timestamp
+        customer_name: Customer name (optional)
+
+    Returns:
+        True if feedback added, False if duplicate
+
+    """
+    try:
+        # Check for duplicate feedback (same API + same text)
+        existing = db.query(models.Feedback).filter(
+            and_(
+                models.Feedback.api_id == api_id,
+                models.Feedback.feedback_context == feedback_text,
+            )
+        ).first()
+
+        if existing:
+            logger.debug(f"Skipped duplicate feedback from integration {api_id}")
+            return False
+
+        # Create new feedback record
+        new_feedback = models.Feedback(
+            company_id=company_id,
+            api_id=api_id,
+            feedback_context=feedback_text,
+            status="unprocessed",
+            created_at=created_at,
+            customer_name=customer_name,
+        )
+        db.add(new_feedback)
+        db.commit()
+        logger.debug(f"Added new feedback from integration {api_id}")
+        return True
+
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error adding feedback: {str(e)}", exc_info=True)
+        return False
+
+
+def mark_integration_expired(db: Session, integration_id: int) -> None:
+    """Mark integration as expired due to authentication failure.
+
+    Args:
+        db: Database session
+        integration_id: API integration ID
+
+    """
+    try:
+        integration = db.query(models.Api).filter(
+            models.Api.api_id == integration_id
+        ).first()
+        if integration:
+            integration.status = "expired"
+            db.commit()
+            logger.warning(f"Integration {integration_id} marked as expired")
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error marking integration as expired: {str(e)}")
+
+
+# ============================================================================
+# Platform-Specific Fetch Functions
+# ============================================================================
+
+
+async def fetch_facebook_comments(api_key: str, api_base_url: str, db: Session, 
+                                  integration_id: int, company_id: int) -> int:
+>>>>>>> origin/AI_Models-Integration
     """
     Fetch comments from Facebook.
     GET {api_base_url}/me/feed?fields=comments&access_token={api_key}
@@ -94,6 +208,7 @@ async def fetch_facebook_comments(
                         )
                     except (ValueError, AttributeError):
                         created_at = datetime.utcnow()
+<<<<<<< HEAD
 
                     # Deduplicate: check if feedback already exists
                     existing = (
@@ -113,11 +228,17 @@ async def fetch_facebook_comments(
 
                     # Create new feedback record
                     new_feedback = models.Feedback(
+=======
+                    
+                    # Add feedback and track if it was new
+                    if add_feedback_safe(
+                        db,
+>>>>>>> origin/AI_Models-Integration
                         company_id=company_id,
                         api_id=integration_id,
-                        feedback_context=feedback_text,
-                        status="unprocessed",
+                        feedback_text=feedback_text,
                         created_at=created_at,
+<<<<<<< HEAD
                         customer_name=comment.get("from", {}).get("name"),
                     )
                     db.add(new_feedback)
@@ -128,6 +249,14 @@ async def fetch_facebook_comments(
                 f"Facebook: Added {comments_added} new comments for integration {integration_id}"
             )
 
+=======
+                        customer_name=comment.get("from", {}).get("name")
+                    ):
+                        comments_added += 1
+            
+            logger.info(f"Facebook: Added {comments_added} new comments for integration {integration_id}")
+            
+>>>>>>> origin/AI_Models-Integration
     except httpx.TimeoutException:
         logger.error(
             f"Facebook API timeout for integration {integration_id} - will retry next hour"
@@ -213,6 +342,7 @@ async def fetch_twitter_comments(
                     )
                 except (ValueError, AttributeError):
                     created_at = datetime.utcnow()
+<<<<<<< HEAD
 
                 # Deduplicate
                 existing = (
@@ -231,13 +361,18 @@ async def fetch_twitter_comments(
                     continue
 
                 # Create new feedback record
+=======
+                
+                # Add feedback and track if it was new
+>>>>>>> origin/AI_Models-Integration
                 author_name = user_map.get(tweet.get("author_id"), "")
-                new_feedback = models.Feedback(
+                if add_feedback_safe(
+                    db,
                     company_id=company_id,
                     api_id=integration_id,
-                    feedback_context=feedback_text,
-                    status="unprocessed",
+                    feedback_text=feedback_text,
                     created_at=created_at,
+<<<<<<< HEAD
                     customer_name=author_name,
                 )
                 db.add(new_feedback)
@@ -248,6 +383,14 @@ async def fetch_twitter_comments(
                 f"Twitter: Added {comments_added} new mentions for integration {integration_id}"
             )
 
+=======
+                    customer_name=author_name
+                ):
+                    comments_added += 1
+            
+            logger.info(f"Twitter: Added {comments_added} new mentions for integration {integration_id}")
+            
+>>>>>>> origin/AI_Models-Integration
     except httpx.TimeoutException:
         logger.error(
             f"Twitter API timeout for integration {integration_id} - will retry next hour"
@@ -314,6 +457,7 @@ async def fetch_whatsapp_messages(
                         created_at = datetime.fromtimestamp(int(timestamp))
                     except (ValueError, TypeError):
                         created_at = datetime.utcnow()
+<<<<<<< HEAD
 
                 # Deduplicate
                 existing = (
@@ -333,11 +477,17 @@ async def fetch_whatsapp_messages(
 
                 # Create new feedback record
                 new_feedback = models.Feedback(
+=======
+                
+                # Add feedback and track if it was new
+                if add_feedback_safe(
+                    db,
+>>>>>>> origin/AI_Models-Integration
                     company_id=company_id,
                     api_id=integration_id,
-                    feedback_context=feedback_text,
-                    status="unprocessed",
+                    feedback_text=feedback_text,
                     created_at=created_at,
+<<<<<<< HEAD
                     customer_name=message.get("from", {}).get("name"),
                 )
                 db.add(new_feedback)
@@ -348,6 +498,14 @@ async def fetch_whatsapp_messages(
                 f"WhatsApp: Added {comments_added} new messages for integration {integration_id}"
             )
 
+=======
+                    customer_name=message.get("from", {}).get("name")
+                ):
+                    comments_added += 1
+            
+            logger.info(f"WhatsApp: Added {comments_added} new messages for integration {integration_id}")
+            
+>>>>>>> origin/AI_Models-Integration
     except httpx.TimeoutException:
         logger.error(
             f"WhatsApp API timeout for integration {integration_id} - will retry next hour"
@@ -444,6 +602,7 @@ def fetch_gmail_feedback(
     return comments_added
 
 
+<<<<<<< HEAD
 def mark_integration_expired(db: Session, integration_id: int):
     """Mark an integration as expired due to authentication failure."""
     try:
@@ -457,12 +616,21 @@ def mark_integration_expired(db: Session, integration_id: int):
     except Exception as e:
         logger.error(f"Error marking integration {integration_id} as expired: {str(e)}")
         db.rollback()
+=======
+# ============================================================================
+# Main Ingestion Job
+# ============================================================================
+>>>>>>> origin/AI_Models-Integration
 
 
-async def ingest_feedback():
-    """
-    Main cron job function that fetches comments from all active integrations.
-    Runs every hour.
+async def ingest_feedback() -> None:
+    """Main feedback ingestion job for all active integrations.
+
+    Fetches feedback from Facebook, Twitter/X, and WhatsApp APIs.
+    Processes each active integration and stores feedback with deduplication.
+    Marks integrations as expired on authentication failure.
+
+    Runs every hour via APScheduler.
     """
     logger.info("Starting feedback ingestion job...")
     db = database.SessionLocal()
@@ -470,12 +638,22 @@ async def ingest_feedback():
 
     try:
         # Get all active integrations
+<<<<<<< HEAD
         active_integrations = (
             db.query(models.Api).filter(models.Api.status == "active").all()
         )
 
         logger.info(f"Found {len(active_integrations)} active integrations")
 
+=======
+        active_integrations = db.query(models.Api).filter(
+            models.Api.status == "active"
+        ).all()
+
+        logger.info(f"Found {len(active_integrations)} active integrations")
+
+        # Process each integration
+>>>>>>> origin/AI_Models-Integration
         for integration in active_integrations:
             try:
                 # Decrypt API key
@@ -488,19 +666,31 @@ async def ingest_feedback():
                     continue
 
                 channel_name = integration.channel_name.lower()
+<<<<<<< HEAD
                 api_base_url = integration.api_base_url or PLATFORM_URLS.get(
                     channel_name
                 )
+=======
+                api_base_url = integration.api_base_url or PLATFORM_URLS.get(channel_name)
+>>>>>>> origin/AI_Models-Integration
 
                 if not api_base_url:
-                    logger.warning(f"No base URL found for channel {channel_name}")
+                    logger.warning(f"No base URL for channel {channel_name}")
                     continue
 
                 logger.info(
+<<<<<<< HEAD
                     f"Processing integration {integration.api_id} ({channel_name}) for company {integration.company_id}"
                 )
 
                 # Call the appropriate platform API
+=======
+                    f"Processing {channel_name} integration {integration.api_id} "
+                    f"for company {integration.company_id}"
+                )
+
+                # Fetch feedback from appropriate platform
+>>>>>>> origin/AI_Models-Integration
                 comments_added = 0
                 if channel_name == "facebook":
                     comments_added = await fetch_facebook_comments(
@@ -525,6 +715,7 @@ async def ingest_feedback():
                         db,
                         integration.api_id,
                         integration.company_id,
+<<<<<<< HEAD
                     )
                 elif channel_name == "gmail":
                     gmail_username, gmail_password = _parse_gmail_credentials(
@@ -541,6 +732,11 @@ async def ingest_feedback():
                     logger.warning(
                         f"Unknown channel name: {channel_name} for integration {integration.api_id}"
                     )
+=======
+                    )
+                else:
+                    logger.warning(f"Unknown channel: {channel_name} for integration {integration.api_id}")
+>>>>>>> origin/AI_Models-Integration
                     continue
 
                 total_comments += comments_added
@@ -550,11 +746,16 @@ async def ingest_feedback():
                     f"Error processing integration {integration.api_id}: {str(e)}",
                     exc_info=True,
                 )
+<<<<<<< HEAD
                 continue
 
         logger.info(
             f"Feedback ingestion job completed. Total comments added: {total_comments}"
         )
+=======
+
+        logger.info(f"Feedback ingestion job completed. Total comments added: {total_comments}")
+>>>>>>> origin/AI_Models-Integration
 
     except Exception as e:
         logger.error(f"Fatal error in feedback ingestion job: {str(e)}", exc_info=True)

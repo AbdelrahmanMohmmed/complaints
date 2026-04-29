@@ -1,17 +1,30 @@
 from pydantic_settings import BaseSettings
 
-class Settings (BaseSettings):
+class Settings(BaseSettings):
+    """Application configuration loaded from environment variables."""
 
-    DATABASE_HOSTNAME:str
-    DATABASE_PASSWORD:str
-    DATABASE_USERNAME:str
-    DATABASE_PORT:str
-    DATABASE_NAME:str
-    secret_key:str
-    algorithm:str
-    access_token_expire_minutes:int
+    # Database configuration
+    DATABASE_HOSTNAME: str
+    DATABASE_PASSWORD: str
+    DATABASE_USERNAME: str
+    DATABASE_PORT: str
+    DATABASE_NAME: str
+
+    # Authentication configuration
+    secret_key: str
+    algorithm: str
+    access_token_expire_minutes: int
     gmail_user: str          # ← add
     gmail_app_password: str  # ← add
+
+    # ML Model paths (optional - if not provided, models won't be loaded)
+    SENTIMENT_MODEL_PATH: str = ""  # Path to SVM sentiment model (.pkl file)
+    EMOTION_MODEL_PATH: str = ""  # Path to SVM emotion model (.pkle file)
+    FASTTEXT_MODEL_PATH: str = ""  # Path to FastText model (.bin file)
+    BERT_MODEL_PATH: str = ""  # Path to BERT problem type model
+    ROBERTA_MODEL_PATH: str = ""  # Path to RoBERTa problem type model
+
     model_config = {"env_file": ".env"}
-    
+
+
 settings = Settings()

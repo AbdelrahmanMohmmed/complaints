@@ -6,7 +6,8 @@ from .. import models, utils, database, oauth2 ,schemas
 from ..schemas import user
 from ..schemas import user as schemas
 
-router = APIRouter(prefix="/users", tags=['Users'])
+router = APIRouter(prefix="/users", tags=["Users"])
+
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.UserOut)
 def create_user(
@@ -39,15 +40,37 @@ def create_user(
         db.refresh(new_user)
     except IntegrityError:
         db.rollback()
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already registered"
+        )
+
     return new_user
+
 
 @router.get("/me", response_model=user.UserMe)
 def get_me(
     db: Session = Depends(database.get_db),
-    current_user_id: int = Depends(oauth2.get_current_user)
-):
-    user = db.query(models.User).filter(models.User.user_id == current_user_id).first()
+    current_user_id: int = Depends(oauth2.get_current_user),
+) -> models.User:
+    """Retrieve current authenticated user's profile.
+
+    Returns the profile information of the user making the request.
+
+    Args:
+        db: Database session
+        current_user_id: Current user ID from JWT token
+
+    Returns:
+        User profile (UserMe schema)
+
+    Raises:
+        HTTPException: 404 if user not found (shouldn't happen with valid token)
+    """
+    user = db.query(models.User).filter(
+        models.User.user_id == current_user_id
+    ).first()
+
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user

@@ -1,3 +1,9 @@
+"""API integration management routes - create, list, update, delete integrations.
+
+Handles connections to external feedback sources (Facebook, Twitter, WhatsApp).
+Includes credential validation, encryption, and role-based access control.
+"""
+
 import httpx
 import imaplib
 import json
@@ -5,12 +11,22 @@ from fastapi import APIRouter, status, HTTPException, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from typing import List
-from .. import models, utils, database, oauth2
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+
+from .. import database, models, oauth2, utils
 from ..schemas import integration
 
 router = APIRouter(prefix="/integrations", tags=["Integrations"])
 
-# Platform base URLs
+
+# ============================================================================
+# Configuration & Authorization
+# ============================================================================
+
+# Platform API endpoints
 BASE_URLS = {
     "facebook": "https://graph.facebook.com",
     "twitter": "https://api.twitter.com/2",
@@ -18,10 +34,14 @@ BASE_URLS = {
     "gmail": "imap.gmail.com",
 }
 
-# RBAC: Manager (1) and Tech Admin (2) have all permissions
-# CSS (3) has no access
-ALLOWED_ROLES_MANAGE = [1, 2]  # Manager and Tech Admin can create/update/delete
-ALLOWED_ROLES_VIEW = [1, 2]  # Manager and Tech Admin can view
+# Role-based access control
+ALLOWED_ROLES_MANAGE = [1, 2]  # Manager (1) and Tech Admin (2)
+ALLOWED_ROLES_VIEW = [1, 2]  # Manager (1) and Tech Admin (2)
+
+
+# ============================================================================
+# Helper Functions
+# ============================================================================
 
 
 def validate_gmail_credentials(
@@ -235,19 +255,22 @@ async def create_integration(
 
     except IntegrityError as e:
         db.rollback()
-        error_msg = str(e.orig) if e.orig else str(e)
-        print(f"❌ IntegrityError creating integration: {error_msg}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Failed to create integration",
         )
     except Exception as e:
         db.rollback()
-        print(f"❌ Error creating integration: {str(e)}")
+        print(f"Error creating integration: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Unexpected error creating integration",
         )
+
+
+# ============================================================================
+# List Integrations
+# ============================================================================
 
 
 @router.get("/", response_model=List[integration.IntegrationOut])
@@ -370,8 +393,66 @@ def update_integration_status(
         return integration
     except Exception as e:
         db.rollback()
-        print(f"❌ Error updating integration status: {str(e)}")
+        print(f"Error updating integration status: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to update integration status",
+        )
+
+
+# ============================================================================
+# Delete Integration
+# ============================================================================
+
+
+@router.delete("/{integration_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_integration(
+    integration_id: int,
+    current_user: dict = Depends(oauth2.get_current_user_with_company),
+    db: Session = Depends(database.get_db),
+) -> None:
+    """Delete an integration.
+
+    Manager (1) and Tech Admin (2) only. Integration must belong to company.
+
+    Args:
+        integration_id: Integration ID to delete
+        current_user: Current user with company info
+        db: Database session
+
+    Raises:
+        HTTPException: 403 if user role not authorized
+        HTTPException: 404 if integration not found or doesn't belong to company
+    """
+    # RBAC: Only Manager or Tech Admin can delete
+    if current_user["role_id"] not in ALLOWED_ROLES_MANAGE:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only Manager or Tech Admin can delete integrations"
+        )
+
+    company_id = current_user["company_id"]
+
+    # Find integration and verify ownership
+    integration = db.query(models.Api).filter(
+        models.Api.api_id == integration_id,
+        models.Api.company_id == company_id,
+    ).first()
+
+    if not integration:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Integration not found"
+        )
+
+    # Delete integration
+    try:
+        db.delete(integration)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        print(f"Error deleting integration: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete integration"
         )

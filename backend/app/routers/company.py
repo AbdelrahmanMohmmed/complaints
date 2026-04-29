@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from .. import models, utils, database
 from ..schemas import company
 
-router = APIRouter(prefix="/companies", tags=['Companies'])
+router = APIRouter(prefix="/companies", tags=["Companies"])
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=company.CompanyOut)
 def create_company(
@@ -70,7 +70,10 @@ def create_company(
 
     except IntegrityError:
         db.rollback()
-        raise HTTPException(status_code=400, detail="Signup failed, please try again")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Signup failed, please try again"
+        )
 
     return new_company
 
