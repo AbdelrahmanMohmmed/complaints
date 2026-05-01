@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from . import database, models
 from .ai import load_models
 from .config import settings
-from .routers import auth, company, integration, user
+from .routers import auth, company, integration, user, feedback
 from .services.ai_analysis import ai_analysis_service
 from .services.feedback_ingestion import ingest_feedback
 from .services.preprocessing import preprocess_feedback_service
@@ -66,6 +66,7 @@ app.include_router(user.router, prefix="/api/v1")
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(company.router, prefix="/api/v1")
 app.include_router(integration.router, prefix="/api/v1")
+app.include_router(feedback.router, prefix="/api/v1")
 
 
 # ============================================================================

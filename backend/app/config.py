@@ -23,6 +23,11 @@ class Settings(BaseSettings):
     BERT_MODEL_PATH: str = ""  # Path to BERT problem type model
     ROBERTA_MODEL_PATH: str = ""  # Path to RoBERTa problem type model
 
+    # Facebook OAuth configuration
+    FACEBOOK_APP_ID: str
+    FACEBOOK_APP_SECRET: str
+    FACEBOOK_REDIRECT_URI: str
+
     model_config = {"env_file": ".env"}
 
 

@@ -1,13 +1,15 @@
-"""Feedback ingestion service for fetching feedback from social media platforms.
+"""Feedback ingestion service for fetching feedback from external platforms.
 
 Runs as a scheduled task every hour via APScheduler.
-Supports Facebook, Twitter/X, and WhatsApp as feedback sources.
+Supports Facebook and Freshdesk as feedback sources.
 Handles API credential validation, deduplication, and error recovery.
 """
 
 import logging
+import base64
 from datetime import datetime, timedelta
 from typing import Optional
+import re
 
 import httpx
 from sqlalchemy import and_
@@ -25,8 +27,6 @@ logger = logging.getLogger(__name__)
 # Platform API base URLs
 PLATFORM_URLS = {
     "facebook": "https://graph.facebook.com",
-    "twitter": "https://api.twitter.com/2",
-    "whatsapp": "https://graph.facebook.com/v17.0",
 }
 
 # API request timeout in seconds
@@ -117,20 +117,51 @@ def mark_integration_expired(db: Session, integration_id: int) -> None:
         logger.error(f"Error marking integration as expired: {str(e)}")
 
 
+def strip_html_tags(html_text: str) -> str:
+    """Remove HTML tags and decode HTML entities to extract plain text.
+    
+    Args:
+        html_text: HTML text with tags
+        
+    Returns:
+        Plain text without HTML tags
+    """
+    # Remove HTML tags
+    clean_text = re.sub(r'<[^>]+>', '', html_text)
+    # Decode common HTML entities
+    clean_text = clean_text.replace('&quot;', '"')
+    clean_text = clean_text.replace('&amp;', '&')
+    clean_text = clean_text.replace('&lt;', '<')
+    clean_text = clean_text.replace('&gt;', '>')
+    clean_text = clean_text.replace('&nbsp;', ' ')
+    # Remove extra whitespace
+    clean_text = ' '.join(clean_text.split())
+    return clean_text
+
+
 # ============================================================================
 # Platform-Specific Fetch Functions
 # ============================================================================
 
 
 async def fetch_facebook_comments(api_key: str, api_base_url: str, db: Session, 
-                                  integration_id: int, company_id: int) -> int:
+                                  integration_id: int, company_id: int,
+                                  platform_page_id: str = None) -> int:
     """
-    Fetch comments from Facebook.
-    GET {api_base_url}/me/feed?fields=comments&access_token={api_key}
+    Fetch comments from Facebook page.
+    GET {api_base_url}/{page_id}/feed?fields=comments&access_token={api_key}
+    
+    If platform_page_id is provided, fetches from that specific page.
+    Otherwise fetches from the authenticated user's feed (legacy behavior).
     """
     comments_added = 0
     try:
-        url = f"{api_base_url}/me/feed"
+        # Use platform_page_id if available, otherwise fall back to /me/feed (legacy)
+        if platform_page_id:
+            url = f"{api_base_url}/{platform_page_id}/feed"
+        else:
+            url = f"{api_base_url}/me/feed"
+            
         params = {
             "fields": "comments.limit(100){message,created_time,from{name,id}}",
             "access_token": api_key
@@ -197,112 +228,40 @@ async def fetch_facebook_comments(api_key: str, api_base_url: str, db: Session,
     return comments_added
 
 
-async def fetch_twitter_comments(api_key: str, api_base_url: str, db: Session,
-                                 integration_id: int, company_id: int) -> int:
-    """
-    Fetch recent mentions/tweets from Twitter/X.
-    GET {api_base_url}/tweets/search/recent with Authorization: Bearer {api_key}
-    """
-    comments_added = 0
-    try:
-        # For Twitter, we fetch recent tweets/mentions
-        # Using a query to get mentions (you may need to adjust based on your integration setup)
-        url = f"{api_base_url}/tweets/search/recent"
-        
-        # Fetch tweets from the last hour
-        start_time = (datetime.utcnow() - timedelta(hours=1)).isoformat() + "Z"
-        
-        params = {
-            "query": "from:@yourcompany",  # Adjust this based on your use case
-            "start_time": start_time,
-            "max_results": 100,
-            "tweet.fields": "created_at,author_id",
-            "expansions": "author_id",
-            "user.fields": "username"
-        }
-        headers = {"Authorization": f"Bearer {api_key}"}
-        
-        async with httpx.AsyncClient(timeout=API_TIMEOUT) as client:
-            response = await client.get(url, params=params, headers=headers)
-            
-            # Handle authentication failures
-            if response.status_code in [401, 403]:
-                logger.warning(f"Integration {integration_id} returned {response.status_code} - marking as expired")
-                mark_integration_expired(db, integration_id)
-                return 0
-            
-            if response.status_code != 200:
-                logger.error(f"Twitter API returned {response.status_code} for integration {integration_id}")
-                return 0
-            
-            data = response.json()
-            
-            # Build a mapping of user IDs to usernames
-            user_map = {}
-            if "includes" in data and "users" in data["includes"]:
-                for user in data["includes"]["users"]:
-                    user_map[user["id"]] = user.get("username", "")
-            
-            # Process tweets
-            for tweet in data.get("data", []):
-                feedback_text = tweet.get("text", "").strip()
-                if not feedback_text:
-                    continue
-                
-                # Parse created_at from Twitter
-                created_at_str = tweet.get("created_at")
-                if not created_at_str:
-                    continue
-                
-                try:
-                    created_at = datetime.fromisoformat(created_at_str.replace("Z", "+00:00"))
-                except (ValueError, AttributeError):
-                    created_at = datetime.utcnow()
-                
-                # Add feedback and track if it was new
-                author_name = user_map.get(tweet.get("author_id"), "")
-                if add_feedback_safe(
-                    db,
-                    company_id=company_id,
-                    api_id=integration_id,
-                    feedback_text=feedback_text,
-                    created_at=created_at,
-                    customer_name=author_name
-                ):
-                    comments_added += 1
-            
-            logger.info(f"Twitter: Added {comments_added} new mentions for integration {integration_id}")
-            
-    except httpx.TimeoutException:
-        logger.error(f"Twitter API timeout for integration {integration_id} - will retry next hour")
-    except httpx.RequestError as e:
-        logger.error(f"Twitter API request error for integration {integration_id}: {str(e)}")
-    except Exception as e:
-        logger.error(f"Error processing Twitter mentions for integration {integration_id}: {str(e)}")
-        db.rollback()
+def get_freshdesk_headers(api_key: str) -> dict:
+    """Get Freshdesk Basic Auth headers.
     
-    return comments_added
+    Args:
+        api_key: Freshdesk API key
+        
+    Returns:
+        Dictionary with Authorization header
+    """
+    credentials = base64.b64encode(f"{api_key}:X".encode()).decode()
+    return {"Authorization": f"Basic {credentials}"}
 
 
-async def fetch_whatsapp_messages(api_key: str, api_base_url: str, db: Session,
+async def fetch_freshdesk_tickets(api_key: str, api_base_url: str, db: Session,
                                   integration_id: int, company_id: int) -> int:
     """
-    Fetch incoming messages from WhatsApp.
-    GET {api_base_url}/messages with Authorization: Bearer {api_key}
+    Fetch open tickets from Freshdesk and save description + created_at to database.
+    
+    GET {api_base_url}/api/v2/tickets?status=2&limit=100
+    Headers: Authorization: Basic {base64(api_key:X)}
     """
-    comments_added = 0
+    tickets_added = 0
     try:
-        # WhatsApp message retrieval endpoint
-        url = f"{api_base_url}/me/messages"
-        headers = {"Authorization": f"Bearer {api_key}"}
+        headers = get_freshdesk_headers(api_key)
+        url = f"{api_base_url}/api/v2/tickets"
         
+        # Fetch tickets with description and created_at fields
         params = {
-            "limit": 100,
-            "fields": "from,message,timestamp"
+            "per_page": 100,
+            "include": "description",
         }
         
         async with httpx.AsyncClient(timeout=API_TIMEOUT) as client:
-            response = await client.get(url, params=params, headers=headers)
+            response = await client.get(url, headers=headers, params=params)
             
             # Handle authentication failures
             if response.status_code in [401, 403]:
@@ -311,49 +270,73 @@ async def fetch_whatsapp_messages(api_key: str, api_base_url: str, db: Session,
                 return 0
             
             if response.status_code != 200:
-                logger.error(f"WhatsApp API returned {response.status_code} for integration {integration_id}")
+                logger.error(f"Freshdesk API returned {response.status_code} for integration {integration_id}")
+                logger.error(f"Response body: {response.text}")
                 return 0
             
             data = response.json()
             
-            # Process messages
-            for message in data.get("data", []):
-                feedback_text = message.get("message", "").strip()
-                if not feedback_text:
-                    continue
-                
-                # Parse timestamp from WhatsApp
-                timestamp = message.get("timestamp")
-                if not timestamp:
-                    created_at = datetime.utcnow()
-                else:
-                    try:
-                        created_at = datetime.fromtimestamp(int(timestamp))
-                    except (ValueError, TypeError):
-                        created_at = datetime.utcnow()
-                
-                # Add feedback and track if it was new
-                if add_feedback_safe(
-                    db,
-                    company_id=company_id,
-                    api_id=integration_id,
-                    feedback_text=feedback_text,
-                    created_at=created_at,
-                    customer_name=message.get("from", {}).get("name")
-                ):
-                    comments_added += 1
+            # Freshdesk returns tickets as a list directly or wrapped in "results"
+            if isinstance(data, list):
+                tickets = data
+            else:
+                tickets = data.get("results", [])
             
-            logger.info(f"WhatsApp: Added {comments_added} new messages for integration {integration_id}")
+            if not tickets:
+                logger.info(f"Freshdesk: No tickets for integration {integration_id}")
+                return 0
+            
+            logger.info(f"Freshdesk: Found {len(tickets)} tickets for integration {integration_id}")
+            
+            # Process each ticket
+            for ticket in tickets:
+                try:
+                    # Extract only description and created_at
+                    description = ticket.get("description", "").strip()
+                    
+                    # Strip HTML tags from description
+                    description = strip_html_tags(description)
+                    
+                    created_at_str = ticket.get("created_at")
+                    
+                    # Skip if description is empty
+                    if not description:
+                        continue
+                    
+                    # Parse created_at timestamp
+                    if not created_at_str:
+                        created_at = datetime.utcnow()
+                    else:
+                        try:
+                            created_at = datetime.fromisoformat(created_at_str.replace("Z", "+00:00"))
+                        except (ValueError, AttributeError):
+                            created_at = datetime.utcnow()
+                    
+                    # Add feedback with deduplication using existing safe function
+                    if add_feedback_safe(
+                        db,
+                        company_id=company_id,
+                        api_id=integration_id,
+                        feedback_text=description,
+                        created_at=created_at,
+                    ):
+                        tickets_added += 1
+                    
+                except Exception as e:
+                    logger.error(f"Error processing ticket: {str(e)}")
+                    continue
+            
+            logger.info(f"Freshdesk: Added {tickets_added} new tickets for integration {integration_id}")
             
     except httpx.TimeoutException:
-        logger.error(f"WhatsApp API timeout for integration {integration_id} - will retry next hour")
+        logger.error(f"Freshdesk API timeout for integration {integration_id} - will retry next hour")
     except httpx.RequestError as e:
-        logger.error(f"WhatsApp API request error for integration {integration_id}: {str(e)}")
+        logger.error(f"Freshdesk API request error for integration {integration_id}: {str(e)}")
     except Exception as e:
-        logger.error(f"Error processing WhatsApp messages for integration {integration_id}: {str(e)}")
+        logger.error(f"Error processing Freshdesk tickets for integration {integration_id}: {str(e)}", exc_info=True)
         db.rollback()
     
-    return comments_added
+    return tickets_added
 
 
 # ============================================================================
@@ -364,7 +347,7 @@ async def fetch_whatsapp_messages(api_key: str, api_base_url: str, db: Session,
 async def ingest_feedback() -> None:
     """Main feedback ingestion job for all active integrations.
 
-    Fetches feedback from Facebook, Twitter/X, and WhatsApp APIs.
+    Fetches feedback from Facebook and Freshdesk APIs.
     Processes each active integration and stores feedback with deduplication.
     Marks integrations as expired on authentication failure.
 
@@ -415,17 +398,10 @@ async def ingest_feedback() -> None:
                         db,
                         integration.api_id,
                         integration.company_id,
+                        integration.platform_page_id,
                     )
-                elif channel_name == "twitter":
-                    comments_added = await fetch_twitter_comments(
-                        decrypted_key,
-                        api_base_url,
-                        db,
-                        integration.api_id,
-                        integration.company_id,
-                    )
-                elif channel_name == "whatsapp":
-                    comments_added = await fetch_whatsapp_messages(
+                elif channel_name == "freshdesk":
+                    comments_added = await fetch_freshdesk_tickets(
                         decrypted_key,
                         api_base_url,
                         db,
