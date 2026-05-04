@@ -22,13 +22,13 @@ const translations = {
     'nav.allFeedback': 'All Feedback',
     'nav.apis': 'APIs',
     'nav.reports': 'Reports',
-    'nav.myFeedback': 'تعليقاتي',
+    'nav.myFeedback': 'My Feedback',
     'nav.systemSettings': 'System Settings',
     'nav.systemOverview': 'System Overview',
-    'nav.systemAnalytics': 'تحليلات النظام',
+    'nav.systemAnalytics': 'System Analytics',
     'nav.logs': 'Logs',
     'nav.allComplaints': 'All Feedback',
-    'nav.teamPerformance': 'أداء الفريق',
+    'nav.teamPerformance': 'Team Performance',
     'nav.profile': 'My Profile',
     
     // Common
@@ -59,7 +59,7 @@ const translations = {
     
     // Dashboard
     'dashboard.title': 'Dashboard',
-    'dashboard.totalFeedback': 'إجمالي التعليقات',
+    'dashboard.totalFeedback': 'Total Feedback',
     'dashboard.positiveRatio': 'Positive Ratio',
     'dashboard.openFeedback': 'Open Feedback',
     'dashboard.highPriority': 'High Priority',
@@ -73,7 +73,7 @@ const translations = {
     'dashboard.systemFeedback': 'System Feedback',
     'dashboard.totalUsers': 'Total Users',
     'dashboard.activeUsers': 'Active Users',
-    'dashboard.feedbackByDomain': 'التعليقات حسب المجال',
+    'dashboard.feedbackByDomain': 'Feedback by Domain',
     'dashboard.companyOverview': 'Company Overview',
     'dashboard.teamFeedback': 'Team Feedback',
     'dashboard.pendingAssignment': 'Pending Assignment',
@@ -84,7 +84,7 @@ const translations = {
     'dashboard.recentActivity': 'Recent Activity',
     'dashboard.quickActions': 'Quick Actions',
     'dashboard.priorityDistribution': 'Priority Distribution',
-    'dashboard.teamPerformance': 'أداء الفريق',
+    'dashboard.teamPerformance': 'Team Performance',
     'dashboard.resolutionTrend': 'Resolution Trend',
     'dashboard.feedbackVolume': 'Feedback Volume',
     
@@ -99,7 +99,7 @@ const translations = {
     'feedback.channel': 'Channel',
     'feedback.assignedTo': 'Assigned To',
     'feedback.createdAt': 'Created At',
-    'feedback.details': 'تفاصيل التعليقات',
+    'feedback.details': 'Feedback Details',
     'feedback.assignAgent': 'Assign to Agent',
     'feedback.changeStatus': 'Change Status',
     'feedback.timeline': 'Timeline',
@@ -126,7 +126,7 @@ const translations = {
     'priority.high': 'High',
     
     // Users
-    'users.title': 'إدارة المستخدمين',
+    'users.title': 'User Management',
     'users.addUser': 'Add User',
     'users.editUser': 'Edit User',
     
@@ -144,12 +144,12 @@ const translations = {
     'integrations.disconnected': 'Disconnected',
     
     // Categories
-    'categories.title': 'إدارة التصنيفات',
+    'categories.title': 'Category Management',
     'categories.addCategory': 'Add Category',
     
     // Super Admin
-    'superadmin.domains': 'إدارة المجالات',
-    'superadmin.companies': 'إدارة الشركات',
+    'superadmin.domains': 'Domain Management',
+    'superadmin.companies': 'Company Management',
     'superadmin.systemStats': 'System Statistics',
     'superadmin.totalCompanies': 'Total Companies',
     'superadmin.totalDomains': 'Total Domains',
@@ -161,12 +161,12 @@ const translations = {
     
     // Manager
     'manager.assignFeedback': 'Assign Feedback',
-    'manager.teamPerformance': 'أداء الفريق',
+    'manager.teamPerformance': 'Team Performance',
     'manager.pendingAssignment': 'Pending Assignment',
     'manager.agentWorkload': 'Agent Workload',
     
     // Agent
-    'agent.myFeedback': 'تعليقاتي',
+    'agent.myFeedback': 'My Feedback',
     'agent.assignedToMe': 'Assigned to Me',
     'agent.updateStatus': 'Update Status',
     'agent.addNote': 'Add Note',
@@ -233,7 +233,7 @@ const translations = {
     'common.active': 'نشط',
     'common.inactive': 'غير نشط',
     'common.all': 'الكل',
-    'common.assign': 'إ��ناد',
+    'common.assign': 'إسناد',
     'common.view': 'عرض',
     'common.notes': 'الملاحظات',
     'common.addNote': 'إضافة ملاحظة',

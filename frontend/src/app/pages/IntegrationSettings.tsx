@@ -46,7 +46,8 @@ const channelColors: Record<string, string> = {
 };
 
 export function IntegrationSettings() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const isAr = language === 'ar';
 
   const [integrations, setIntegrations] = useState<BackendIntegration[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -81,17 +82,17 @@ export function IntegrationSettings() {
 
   const handleAddIntegration = async () => {
     if (!newChannelName) {
-      setAddError('Please select a channel.');
+      setAddError(isAr ? 'يرجى اختيار قناة.' : 'Please select a channel.');
       return;
     }
 
     if (newChannelName === 'gmail') {
       if (!newGmailUsername.trim() || !newGmailPassword.trim()) {
-        setAddError('Please enter Gmail username and Gmail app password.');
+        setAddError(isAr ? 'يرجى إدخال اسم مستخدم Gmail وكلمة مرور التطبيق.' : 'Please enter Gmail username and Gmail app password.');
         return;
       }
     } else if (!newApiKey.trim()) {
-      setAddError('Please enter an API key.');
+      setAddError(isAr ? 'يرجى إدخال مفتاح API.' : 'Please enter an API key.');
       return;
     }
 
@@ -121,20 +122,20 @@ export function IntegrationSettings() {
       setNewGmailUsername('');
       setNewGmailPassword('');
     } catch (err: any) {
-      setAddError(err?.message || 'Failed to connect. Check your credentials.');
+      setAddError(err?.message || (isAr ? 'فشل الاتصال. تحقق من بيانات الاعتماد.' : 'Failed to connect. Check your credentials.'));
     } finally {
       setAddLoading(false);
     }
   };
 
   const handleDelete = async (api_id: number) => {
-    if (!confirm('Are you sure you want to remove this integration?')) return;
+    if (!confirm(isAr ? 'هل أنت متأكد أنك تريد إزالة هذا التكامل؟' : 'Are you sure you want to remove this integration?')) return;
     setDeletingId(api_id);
     try {
       await request(`/integrations/${api_id}`, { method: 'DELETE' });
       setIntegrations(prev => prev.filter(i => i.api_id !== api_id));
     } catch (err: any) {
-      alert(err?.message || 'Failed to delete integration');
+      alert(err?.message || (isAr ? 'فشل حذف التكامل' : 'Failed to delete integration'));
     } finally {
       setDeletingId(null);
     }
@@ -149,7 +150,7 @@ export function IntegrationSettings() {
       });
       setIntegrations(prev => prev.map(i => i.api_id === updated.api_id ? updated : i));
     } catch (err: any) {
-      alert(err?.message || 'Failed to update status');
+      alert(err?.message || (isAr ? 'فشل تحديث الحالة' : 'Failed to update status'));
     }
   };
 
@@ -165,7 +166,7 @@ export function IntegrationSettings() {
             {t('integrations.title')}
           </h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1">
-            Connect external channels to receive feedback
+            {isAr ? 'ربط القنوات الخارجية لاستقبال التعليقات' : 'Connect external channels to receive feedback'}
           </p>
         </div>
 
@@ -180,20 +181,20 @@ export function IntegrationSettings() {
             <DialogHeader>
               <DialogTitle>{t('integrations.addIntegration')}</DialogTitle>
               <DialogDescription>
-                Connect a new channel to start collecting feedback
+                {isAr ? 'اربط قناة جديدة لبدء جمع التعليقات' : 'Connect a new channel to start collecting feedback'}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label>Channel</Label>
+                <Label>{isAr ? 'القناة' : 'Channel'}</Label>
                 <Select value={newChannelName} onValueChange={setNewChannelName}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select channel..." />
+                    <SelectValue placeholder={isAr ? 'اختر قناة...' : 'Select channel...'} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="facebook">Facebook</SelectItem>
-                    <SelectItem value="twitter">Twitter / X</SelectItem>
-                    <SelectItem value="whatsapp">WhatsApp Business</SelectItem>
+                    <SelectItem value="facebook">{isAr ? 'فيسبوك' : 'Facebook'}</SelectItem>
+                    <SelectItem value="twitter">{isAr ? 'تويتر / X' : 'Twitter / X'}</SelectItem>
+                    <SelectItem value="whatsapp">{isAr ? 'واتساب للأعمال' : 'WhatsApp Business'}</SelectItem>
                     <SelectItem value="gmail">Gmail</SelectItem>
                   </SelectContent>
                 </Select>
@@ -201,7 +202,7 @@ export function IntegrationSettings() {
               {newChannelName === 'gmail' ? (
                 <>
                   <div className="space-y-2">
-                    <Label>Gmail Username</Label>
+                    <Label>{isAr ? 'اسم مستخدم Gmail' : 'Gmail username'}</Label>
                     <Input
                       type="email"
                       placeholder="your-account@gmail.com"
@@ -210,15 +211,15 @@ export function IntegrationSettings() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Gmail App Password</Label>
+                    <Label>{isAr ? 'كلمة مرور تطبيق Gmail' : 'Gmail app password'}</Label>
                     <Input
                       type="password"
-                      placeholder="Paste 16-character Gmail app password"
+                      placeholder={isAr ? 'الصق كلمة مرور تطبيق Gmail (16 حرفا)' : 'Paste 16-character Gmail app password'}
                       value={newGmailPassword}
                       onChange={(e) => setNewGmailPassword(e.target.value)}
                     />
                     <p className="text-xs text-gray-400">
-                      Use a Gmail App Password (not your regular Gmail password).
+                      {isAr ? 'استخدم كلمة مرور تطبيق Gmail (وليس كلمة مرور Gmail العادية).' : 'Use a Gmail App Password (not your regular Gmail password).'}
                     </p>
                   </div>
                 </>
@@ -227,14 +228,14 @@ export function IntegrationSettings() {
                   <Label>{t('integrations.apiKey')}</Label>
                   <Input
                     type="password"
-                    placeholder="Paste your API key or Bearer token..."
+                    placeholder={isAr ? 'الصق مفتاح API أو رمز Bearer...' : 'Paste your API key or Bearer token...'}
                     value={newApiKey}
                     onChange={(e) => setNewApiKey(e.target.value)}
                   />
                   <p className="text-xs text-gray-400">
-                    {newChannelName === 'facebook' && 'Use your Facebook Page Access Token'}
-                    {newChannelName === 'twitter' && 'Use your Twitter Bearer Token (app-only)'}
-                    {newChannelName === 'whatsapp' && 'Use your WhatsApp Cloud API Bearer Token'}
+                    {newChannelName === 'facebook' && (isAr ? 'استخدم رمز وصول صفحة فيسبوك' : 'Use your Facebook Page Access Token')}
+                    {newChannelName === 'twitter' && (isAr ? 'استخدم رمز Bearer لتويتر (تطبيق فقط)' : 'Use your Twitter Bearer Token (app-only)')}
+                    {newChannelName === 'whatsapp' && (isAr ? 'استخدم رمز Bearer لـ WhatsApp Cloud API' : 'Use your WhatsApp Cloud API Bearer Token')}
                   </p>
                 </div>
               )}
@@ -249,7 +250,7 @@ export function IntegrationSettings() {
                 {t('common.cancel')}
               </Button>
               <Button onClick={handleAddIntegration} disabled={addLoading}>
-                {addLoading ? 'Validating...' : 'Connect'}
+                {addLoading ? (isAr ? 'جارٍ التحقق...' : 'Validating...') : (isAr ? 'اتصال' : 'Connect')}
               </Button>
             </div>
           </DialogContent>
@@ -261,7 +262,9 @@ export function IntegrationSettings() {
         <Card className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Integrations</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                {isAr ? 'إجمالي التكاملات' : 'Total integrations'}
+              </p>
               <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">{integrations.length}</p>
             </div>
             <Plug className="w-10 h-10 text-blue-600 dark:text-blue-400 opacity-20" />
@@ -289,14 +292,18 @@ export function IntegrationSettings() {
 
       {/* Integrations Grid */}
       {isLoading ? (
-        <div className="text-center py-12 text-gray-500">Loading integrations...</div>
+        <div className="text-center py-12 text-gray-500">
+          {isAr ? 'جارٍ تحميل التكاملات...' : 'Loading integrations...'}
+        </div>
       ) : integrations.length === 0 ? (
         <Card>
           <CardContent className="p-12 text-center">
             <Plug className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-            <p className="text-gray-500 dark:text-gray-400 font-medium">No integrations yet</p>
+            <p className="text-gray-500 dark:text-gray-400 font-medium">
+              {isAr ? 'لا توجد تكاملات بعد' : 'No integrations yet'}
+            </p>
             <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">
-              Click "Add Integration" to connect your first channel
+              {isAr ? 'اضغط "إضافة تكامل" لربط قناتك الاولى' : 'Click "Add Integration" to connect your first channel'}
             </p>
           </CardContent>
         </Card>
@@ -333,9 +340,11 @@ export function IntegrationSettings() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label className="text-sm text-gray-600 dark:text-gray-400">Credentials</Label>
+                    <Label className="text-sm text-gray-600 dark:text-gray-400">
+                      {isAr ? 'بيانات الاعتماد' : 'Credentials'}
+                    </Label>
                     <Input
-                      value="Configured securely"
+                      value={isAr ? 'تم الإعداد بشكل آمن' : 'Configured securely'}
                       type="text"
                       readOnly
                       className="bg-gray-50 dark:bg-gray-900 text-xs"
@@ -349,7 +358,7 @@ export function IntegrationSettings() {
                       onClick={() => handleToggleStatus(integration)}
                     >
                       <RefreshCw className="w-4 h-4" />
-                      {isActive ? 'Deactivate' : 'Reactivate'}
+                      {isActive ? (isAr ? 'إلغاء التفعيل' : 'Deactivate') : (isAr ? 'إعادة التفعيل' : 'Reactivate')}
                     </Button>
                     <Button
                       variant="outline"
@@ -358,7 +367,9 @@ export function IntegrationSettings() {
                       onClick={() => handleDelete(integration.api_id)}
                     >
                       <Trash2 className="w-4 h-4" />
-                      {deletingId === integration.api_id ? 'Removing...' : 'Remove'}
+                      {deletingId === integration.api_id
+                        ? (isAr ? 'جارٍ الإزالة...' : 'Removing...')
+                        : (isAr ? 'إزالة' : 'Remove')}
                     </Button>
                   </div>
                 </CardContent>

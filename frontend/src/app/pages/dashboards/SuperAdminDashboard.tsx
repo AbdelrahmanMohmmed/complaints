@@ -41,7 +41,7 @@ export function SuperAdminDashboard() {
       icon: Building2,
       color: 'text-violet-600 dark:text-violet-400',
       bg: 'bg-violet-50 dark:bg-violet-900/20',
-      sub: isAr ? 'مقارنة بالشهر الماضي' : 'مقارنة بالشهر الماضي',
+      sub: isAr ? 'مقارنة بالشهر الماضي' : 'vs last month',
     },
     {
       label: t('dashboard.activeCompanies'),
@@ -54,7 +54,7 @@ export function SuperAdminDashboard() {
       sub: isAr ? 'شركة نشطة' : 'currently active',
     },
     {
-      label: isAr ? 'إجمالي المستخدمين' : 'Total Users (System)',
+      label: isAr ? 'إجمالي المستخدمين' : 'Total users (system)',
       value: '287',
       change: '+12',
       trend: 'up',
@@ -64,7 +64,7 @@ export function SuperAdminDashboard() {
       sub: isAr ? 'عبر المنصة' : 'platform-wide',
     },
     {
-      label: isAr ? 'إجمالي التعليقات' : 'إجمالي التعليقات',
+      label: isAr ? 'إجمالي التعليقات' : 'Total feedback',
       value: '12,450',
       change: '+18.2%',
       trend: 'up',
@@ -221,7 +221,7 @@ export function SuperAdminDashboard() {
         {/* Pie Chart: Global Sentiment Distribution */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">{isAr ? 'توزيع المشاعر العالمي' : 'Global Sentiment Distribution'}</CardTitle>
+            <CardTitle className="text-base">{isAr ? 'توزيع المشاعر العالمي' : 'Global sentiment distribution'}</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={190}>

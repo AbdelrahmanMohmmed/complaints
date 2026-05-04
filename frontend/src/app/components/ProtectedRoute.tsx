@@ -2,6 +2,7 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
 import { getAllowedRolesForPath } from '../routes';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -31,6 +32,8 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user, isLoading } = useAuth();
   const location = useLocation();
+  const { language } = useLanguage();
+  const isAr = language === 'ar';
 
   // Show loading spinner while restoring session
   if (isLoading) {
@@ -74,16 +77,18 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-              Access Denied
+              {isAr ? 'تم رفض الوصول' : 'Access denied'}
             </h1>
             <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Your role ({user.role}) does not have permission to access this page.
+              {isAr
+                ? `دورك (${user.role}) لا يملك صلاحية الوصول إلى هذه الصفحة.`
+                : `Your role (${user.role}) does not have permission to access this page.`}
             </p>
             <a
               href="/app"
               className="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
-              Return to Dashboard
+              {isAr ? 'العودة إلى لوحة التحكم' : 'Return to dashboard'}
             </a>
           </div>
         </div>

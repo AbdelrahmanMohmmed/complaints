@@ -107,29 +107,29 @@ export function CompanyAdminDashboard() {
 
   if (isLoading) return (
     <div className="flex items-center justify-center h-64 text-gray-500">
-      Loading dashboard...
+      {isAr ? 'جارٍ تحميل لوحة التحكم...' : 'Loading dashboard...'}
     </div>
   );
 
   if (!stats) return (
     <div className="flex items-center justify-center h-64 text-red-500">
-      Failed to load dashboard data.
+      {isAr ? 'فشل تحميل بيانات لوحة التحكم.' : 'Failed to load dashboard data.'}
     </div>
   );
 
   const sentimentData = [
-    { name: 'Positive', value: stats.positive_count, color: SENTIMENT_COLORS.positive },
-    { name: 'Negative', value: stats.negative_count, color: SENTIMENT_COLORS.negative },
-    { name: 'Neutral',  value: stats.neutral_count,  color: SENTIMENT_COLORS.neutral  },
+    { name: t('sentiment.positive'), value: stats.positive_count, color: SENTIMENT_COLORS.positive },
+    { name: t('sentiment.negative'), value: stats.negative_count, color: SENTIMENT_COLORS.negative },
+    { name: t('sentiment.neutral'),  value: stats.neutral_count,  color: SENTIMENT_COLORS.neutral  },
   ];
 
   const kpis = [
-    { label: 'إجمالي التعليقات',  value: stats.total_feedback,    icon: MessageSquare, color: 'text-blue-600',   bg: 'bg-blue-50 dark:bg-blue-900/20'   },
-    { label: 'Open',            value: stats.open_count,        icon: AlertCircle,   color: 'text-sky-600',    bg: 'bg-sky-50 dark:bg-sky-900/20'     },
-    { label: 'In Progress',     value: stats.in_progress_count, icon: Clock,         color: 'text-amber-600',  bg: 'bg-amber-50 dark:bg-amber-900/20' },
-    { label: 'Resolved',        value: stats.resolved_count,    icon: CheckCircle,   color: 'text-green-600',  bg: 'bg-green-50 dark:bg-green-900/20' },
-    { label: 'High Priority',   value: stats.high_priority_count, icon: TrendingDown, color: 'text-red-600',  bg: 'bg-red-50 dark:bg-red-900/20'     },
-    { label: 'Negative',        value: stats.negative_count,    icon: Smile,         color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20'},
+    { label: t('dashboard.totalFeedback'), value: stats.total_feedback, icon: MessageSquare, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
+    { label: t('status.open'), value: stats.open_count, icon: AlertCircle, color: 'text-sky-600', bg: 'bg-sky-50 dark:bg-sky-900/20' },
+    { label: t('status.inProgress'), value: stats.in_progress_count, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20' },
+    { label: t('status.resolved'), value: stats.resolved_count, icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/20' },
+    { label: t('dashboard.highPriority'), value: stats.high_priority_count, icon: TrendingDown, color: 'text-red-600', bg: 'bg-red-50 dark:bg-red-900/20' },
+    { label: t('sentiment.negative'), value: stats.negative_count, icon: Smile, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20' },
   ];
 
   return (
@@ -141,11 +141,13 @@ export function CompanyAdminDashboard() {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <Building2 className="w-5 h-5 text-blue-200" />
-              <span className="text-sm text-blue-200">Company Admin</span>
+              <span className="text-sm text-blue-200">{t('role.companyAdmin')}</span>
             </div>
-            <h1 className="text-3xl font-black">Dashboard</h1>
+            <h1 className="text-3xl font-black">{t('dashboard.title')}</h1>
             <p className="text-blue-200 text-sm">
-              Manage your company's feedback and performance
+              {isAr
+                ? 'إدارة تعليقات شركتك وأداء فريقك'
+                : "Manage your company's feedback and performance"}
             </p>
           </div>
         </div>
@@ -176,7 +178,7 @@ export function CompanyAdminDashboard() {
         {/* Sentiment Pie */}
         <Card>
           <CardHeader>
-            <CardTitle>Sentiment Distribution</CardTitle>
+            <CardTitle>{t('dashboard.sentimentDistribution')}</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={280}>
@@ -202,7 +204,7 @@ export function CompanyAdminDashboard() {
         {/* Monthly Line Chart */}
         <Card>
           <CardHeader>
-            <CardTitle>Feedback Over Time</CardTitle>
+            <CardTitle>{isAr ? 'التعليقات عبر الزمن' : 'Feedback over time'}</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={250}>
@@ -225,7 +227,7 @@ export function CompanyAdminDashboard() {
       {stats.category_data.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Feedback by Category</CardTitle>
+            <CardTitle>{t('dashboard.categoryDistribution')}</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>

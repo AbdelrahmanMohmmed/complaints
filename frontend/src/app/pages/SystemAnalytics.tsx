@@ -23,7 +23,7 @@ export function SystemAnalytics() {
 
   const kpis = [
     {
-      label: isAr ? 'معدل نمو الشركات' : 'معدل نمو الشركات',
+      label: isAr ? 'معدل نمو الشركات' : 'Company growth rate',
       value: '+18%',
       trend: 'up',
       icon: Building2,
@@ -31,7 +31,7 @@ export function SystemAnalytics() {
       bg: 'bg-violet-50 dark:bg-violet-900/20',
     },
     {
-      label: isAr ? 'معدل نمو المستخدمين' : 'معدل نمو المستخدمين',
+      label: isAr ? 'معدل نمو المستخدمين' : 'User growth rate',
       value: '+24%',
       trend: 'up',
       icon: Users,
@@ -39,7 +39,7 @@ export function SystemAnalytics() {
       bg: 'bg-blue-50 dark:bg-blue-900/20',
     },
     {
-      label: isAr ? 'حجم التعليقات الشهري' : 'حجم التعليقات الشهري',
+      label: isAr ? 'حجم التعليقات الشهري' : 'Monthly feedback volume',
       value: '2,890',
       trend: 'up',
       icon: MessageSquare,
@@ -47,7 +47,7 @@ export function SystemAnalytics() {
       bg: 'bg-emerald-50 dark:bg-emerald-900/20',
     },
     {
-      label: isAr ? 'وقت استجابة API' : 'وقت استجابة API',
+      label: isAr ? 'وقت استجابة API' : 'API response time',
       value: '142ms',
       trend: 'down',
       icon: Cpu,
@@ -100,15 +100,15 @@ export function SystemAnalytics() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white">
-            {isAr ? 'تحليلات النظام' : 'تحليلات النظام'}
+            {isAr ? 'تحليلات النظام' : 'System Analytics'}
           </h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">
-            {isAr ? 'إحصائيات شاملة عن أداء وعمليات المنصة' : 'إحصاءات شاملة عن أداء المنصة ونموها وعملياتها'}
+            {isAr ? 'إحصائيات شاملة عن أداء وعمليات المنصة' : 'Comprehensive stats about platform performance, growth, and operations'}
           </p>
         </div>
         <Button size="sm" className="gap-2 bg-violet-600 hover:bg-violet-700 text-white">
           <Download className="w-4 h-4" />
-          {isAr ? 'تصدير التقرير' : 'تصدير التقرير'}
+          {isAr ? 'تصدير التقرير' : 'Export report'}
         </Button>
       </div>
 
@@ -127,7 +127,7 @@ export function SystemAnalytics() {
                       : <TrendingDown className="w-3.5 h-3.5 text-red-500" />
                     }
                     <span className={cn('text-xs font-semibold', kpi.trend === 'up' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
-                      {isAr ? 'مقارنة بالشهر الماضي' : 'مقارنة بالشهر الماضي'}
+                      {isAr ? 'مقارنة بالشهر الماضي' : 'Compared to last month'}
                     </span>
                   </div>
                 </div>
@@ -165,7 +165,7 @@ export function SystemAnalytics() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card className="lg:col-span-2">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">{isAr ? 'نمو المنصة الشهري' : 'Monthly نمو المنصة'}</CardTitle>
+              <CardTitle className="text-base">{isAr ? 'نمو المنصة الشهري' : 'Monthly platform growth'}</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={280}>
@@ -195,7 +195,7 @@ export function SystemAnalytics() {
           {/* Top Companies */}
           <Card className="lg:col-span-2">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">{isAr ? 'أكثر الشركات نشاطاً' : 'أكثر الشركات نشاطًا'}</CardTitle>
+              <CardTitle className="text-base">{isAr ? 'أكثر الشركات نشاطاً' : 'Top active companies'}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
@@ -249,7 +249,7 @@ export function SystemAnalytics() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">{isAr ? 'التعليقات حسب المجال' : 'التعليقات حسب المجال'}</CardTitle>
+              <CardTitle className="text-base">{isAr ? 'التعليقات حسب المجال' : 'Feedback by domain'}</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={280}>
@@ -318,7 +318,7 @@ export function SystemAnalytics() {
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">{isAr ? 'استدعاءات API الأسبوعية' : 'استدعاءات API الأسبوعية'}</CardTitle>
+              <CardTitle className="text-base">{isAr ? 'استدعاءات API الأسبوعية' : 'Weekly API calls'}</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={280}>
@@ -327,7 +327,7 @@ export function SystemAnalytics() {
                   <XAxis dataKey="week" tick={{ fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 11 }} />
                   <Tooltip contentStyle={{ backgroundColor: 'var(--background)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '12px' }} />
-                  <Bar dataKey="apiCalls" fill="#7c3aed" radius={[6, 6, 0, 0]} name={isAr ? 'استدعاءات API' : 'استدعاءات API'} />
+                  <Bar dataKey="apiCalls" fill="#7c3aed" radius={[6, 6, 0, 0]} name={isAr ? 'استدعاءات API' : 'API calls'} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>

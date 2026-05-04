@@ -28,12 +28,12 @@ export function ForgotPasswordPage() {
     setIsLoading(false);
 
     if (!result.success) {
-      setError(result.error || (isAr ? 'فشل إرسال الرمز' : 'فشل إرسال الرمز'));
+      setError(result.error || (isAr ? 'فشل إرسال الرمز' : 'Failed to send code'));
       return;
     }
 
     setCodeSent(true);
-    setSuccess(isAr ? 'تم إرسال رمز التحقق إلى بريدك الإلكتروني' : 'تم إرسال رمز التحقق إلى بريدك الإلكتروني');
+    setSuccess(isAr ? 'تم إرسال رمز التحقق إلى بريدك الإلكتروني' : 'Verification code sent to your email');
   };
 
   const handleVerifyCode = async (e: React.FormEvent) => {
@@ -46,7 +46,7 @@ export function ForgotPasswordPage() {
     setIsLoading(false);
 
     if (!result.success) {
-      setError(result.error || (isAr ? 'رمز غير صالح أو منتهي الصلاحية' : 'رمز غير صالح أو منتهي الصلاحية'));
+      setError(result.error || (isAr ? 'رمز غير صالح أو منتهي الصلاحية' : 'Invalid or expired code'));
       return;
     }
 
@@ -61,7 +61,7 @@ export function ForgotPasswordPage() {
           className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
         >
           {isAr ? <ArrowRight className="w-4 h-4" /> : <ArrowLeft className="w-4 h-4" />}
-          <span>{isAr ? 'العودة لتسجيل الدخول' : 'العودة إلى تسجيل الدخول'}</span>
+          <span>{isAr ? 'العودة لتسجيل الدخول' : 'Back to login'}</span>
         </Link>
         <div className="flex items-center gap-2">
           <button onClick={toggleLanguage} className="p-2 text-gray-500 dark:text-gray-400 hover:text-blue-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
@@ -80,12 +80,12 @@ export function ForgotPasswordPage() {
               {codeSent ? <KeyRound className="w-7 h-7 text-white" /> : <Mail className="w-7 h-7 text-white" />}
             </div>
             <h1 className="text-2xl font-black text-gray-900 dark:text-white">
-              {codeSent ? (isAr ? 'أدخل رمز التحقق' : 'أدخل رمز التحقق') : (isAr ? 'نسيت كلمة المرور' : 'نسيت كلمة المرور')}
+              {codeSent ? (isAr ? 'أدخل رمز التحقق' : 'Enter the verification code') : (isAr ? 'نسيت كلمة المرور' : 'Forgot password')}
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               {codeSent
-                ? (isAr ? 'تحقق من بريدك الإلكتروني وأدخل الرمز المكون من 6 أرقام' : 'تحقق من بريدك الإلكتروني وأدخل الرمز المكوّن من 6 أرقام')
-                : (isAr ? 'أدخل بريدك الإلكتروني لإرسال رمز إعادة التعيين' : 'أدخل بريدك الإلكتروني لتلقي رمز إعادة التعيين')}
+                ? (isAr ? 'تحقق من بريدك الإلكتروني وأدخل الرمز المكون من 6 أرقام' : 'Check your email and enter the 6-digit code')
+                : (isAr ? 'أدخل بريدك الإلكتروني لإرسال رمز إعادة التعيين' : 'Enter your email to receive a reset code')}
             </p>
           </div>
 
@@ -106,7 +106,7 @@ export function ForgotPasswordPage() {
             <form onSubmit={handleSendCode} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                  {isAr ? 'البريد الإلكتروني' : 'البريد الإلكتروني'}
+                  {isAr ? 'البريد الإلكتروني' : 'Email'}
                 </label>
                 <input
                   type="email"
@@ -123,14 +123,14 @@ export function ForgotPasswordPage() {
                 disabled={isLoading}
                 className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl disabled:opacity-60"
               >
-                {isLoading ? (isAr ? 'جارٍ الإرسال...' : 'جارٍ الإرسال...') : (isAr ? 'إرسال الرمز' : 'إرسال الرمز')}
+                {isLoading ? (isAr ? 'جارٍ الإرسال...' : 'Sending...') : (isAr ? 'إرسال الرمز' : 'Send code')}
               </button>
             </form>
           ) : (
             <form onSubmit={handleVerifyCode} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                  {isAr ? 'رمز التحقق' : 'رمز التحقق'}
+                  {isAr ? 'رمز التحقق' : 'Verification code'}
                 </label>
                 <input
                   type="text"
@@ -147,7 +147,7 @@ export function ForgotPasswordPage() {
                 disabled={isLoading || code.length !== 6}
                 className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl disabled:opacity-60"
               >
-                {isLoading ? (isAr ? 'جارٍ التحقق...' : 'جارٍ التحقق...') : (isAr ? 'تحقق من الرمز' : 'تحقق من الرمز')}
+                {isLoading ? (isAr ? 'جارٍ التحقق...' : 'Verifying...') : (isAr ? 'تحقق من الرمز' : 'Verify code')}
               </button>
               <button
                 type="button"
@@ -155,7 +155,7 @@ export function ForgotPasswordPage() {
                 disabled={isLoading}
                 className="w-full py-2.5 text-sm text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-60"
               >
-                {isAr ? 'إعادة إرسال الرمز' : 'إعادة إرسال الرمز'}
+                {isAr ? 'إعادة إرسال الرمز' : 'Resend code'}
               </button>
             </form>
           )}

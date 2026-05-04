@@ -32,7 +32,7 @@ const handleSubmit = async (e: React.FormEvent) => {
   } else if (result.error === 'EMAIL_NOT_VERIFIED') {
     navigate('/verify-email/sent', { state: { email } });
   } else {
-    setError(result.error || (isAr ? 'فشل تسجيل الدخول' : 'فشل تسجيل الدخول'));
+    setError(result.error || (isAr ? 'فشل تسجيل الدخول' : 'Login failed'));
   }
 };
 
@@ -48,7 +48,7 @@ const handleSubmit = async (e: React.FormEvent) => {
           className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
         >
           {isAr ? <ArrowRight className="w-4 h-4" /> : <ArrowLeft className="w-4 h-4" />}
-          <span>{isAr ? 'العودة للرئيسية' : 'العودة إلى الرئيسية'}</span>
+          <span>{isAr ? 'العودة للرئيسية' : 'Back to home'}</span>
         </Link>
         <div className="flex items-center gap-2">
           <button
@@ -75,10 +75,10 @@ const handleSubmit = async (e: React.FormEvent) => {
               <span className="text-white font-black text-xl">A2</span>
             </div>
             <h1 className="text-2xl font-black text-gray-900 dark:text-white">
-              {isAr ? 'مرحباً بعودتك' : 'مرحبًا بعودتك'}
+              {isAr ? 'مرحباً بعودتك' : 'Welcome back'}
             </h1>
             <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">
-              {isAr ? 'سجّل دخولك للوصول إلى لوحة التحكم' : 'سجّل دخولك للوصول إلى لوحة التحكم'}
+              {isAr ? 'سجّل دخولك للوصول إلى لوحة التحكم' : 'Sign in to access your dashboard'}
             </p>
           </div>
 
@@ -96,7 +96,7 @@ const handleSubmit = async (e: React.FormEvent) => {
               {/* Email */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                  {isAr ? 'البريد الإلكتروني' : 'البريد الإلكتروني'}
+                  {isAr ? 'البريد الإلكتروني' : 'Email'}
                 </label>
                 <input
                   type="email"
@@ -126,7 +126,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className={`w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm ${isAr ? 'pr-4 pl-12' : 'pl-4 pr-12'}`}
-                    placeholder={isAr ? 'كلمة مرورك' : 'كلمة المرور'}
+                    placeholder={isAr ? 'كلمة مرورك' : 'Your password'}
                     dir="ltr"
                   />
                   <button
@@ -148,10 +148,10 @@ const handleSubmit = async (e: React.FormEvent) => {
                 {isLoading ? (
                   <>
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>{isAr ? 'جارٍ تسجيل الدخول...' : 'جارٍ تسجيل الدخول...'}</span>
+                    <span>{isAr ? 'جارٍ تسجيل الدخول...' : 'Signing in...'}</span>
                   </>
                 ) : (
-                  <span>{isAr ? 'تسجيل الدخول' : 'تسجيل الدخول'}</span>
+                  <span>{isAr ? 'تسجيل الدخول' : 'Sign in'}</span>
                 )}
               </button>
 

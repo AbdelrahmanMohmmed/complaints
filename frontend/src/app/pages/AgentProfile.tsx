@@ -133,7 +133,7 @@ export function AgentProfile() {
     : (user?.firstName?.[0] || 'A') + (user?.lastName?.[0] || 'G');
 
   const statCards = [
-    { label: isAr ? 'إجمالي التعليقات' : 'إجمالي التعليقات',  value: stats?.total_feedback ?? '—',    icon: MessageSquare, color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-900/20' },
+    { label: isAr ? 'إجمالي التعليقات' : 'Total Feedback',  value: stats?.total_feedback ?? '—',    icon: MessageSquare, color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-900/20' },
     { label: isAr ? 'مفتوح' : 'Open',                      value: stats?.open_count ?? '—',         icon: Clock,         color: 'text-blue-600 dark:text-blue-400',   bg: 'bg-blue-50 dark:bg-blue-900/20'     },
     { label: isAr ? 'قيد المعالجة' : 'In Progress',        value: stats?.in_progress_count ?? '—',  icon: Clock,         color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/20'   },
     { label: isAr ? 'تم الحل' : 'Resolved',                value: stats?.resolved_count ?? '—',     icon: CheckCircle2,  color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },

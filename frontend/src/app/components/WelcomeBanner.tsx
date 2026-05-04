@@ -18,7 +18,7 @@ const roleConfig = {
       subtitle: 'You have full system access across all companies and domains.',
       features: [
         { bold: 'System Overview', text: 'Monitor KPIs across all companies and domains in real-time' },
-        { bold: 'إدارة الشركات', text: 'Activate, suspend, and configure any company on the platform' },
+        { bold: 'Company Management', text: 'Activate, suspend, and configure any company on the platform' },
         { bold: 'Domain Control', text: 'Create and manage industry domains for feedback categorization' },
         { bold: 'All Feedback', text: 'View every feedback item across the entire system with cross-company filters' },
       ],
@@ -46,7 +46,7 @@ const roleConfig = {
       subtitle: 'Manage your company\'s feedback, users, and API integrations.',
       features: [
         { bold: 'Feedback Dashboard', text: 'Full sentiment and category analytics for your company' },
-        { bold: 'إدارة المستخدمين', text: 'Add users, assign roles (Manager / CSS), and deactivate accounts' },
+        { bold: 'User Management', text: 'Add users, assign roles (Manager / CSS), and deactivate accounts' },
         { bold: 'API Integrations', text: 'Connect WhatsApp, Email, Web Forms and other feedback channels' },
         { bold: 'Reports', text: 'Generate and export detailed performance reports' },
       ],
@@ -101,7 +101,7 @@ const roleConfig = {
       title: 'Welcome, Website Configurator!',
       subtitle: 'View and manage the feedback items assigned to you.',
       features: [
-        { bold: 'تعليقاتي', text: 'See only the feedback items assigned specifically to you' },
+        { bold: 'My Feedback', text: 'See only the feedback items assigned specifically to you' },
         { bold: 'Update Status', text: 'Change status to track your progress on each item' },
         { bold: 'Add Notes', text: 'Leave internal notes and comments on feedback for context' },
         { bold: 'Expandable Cards', text: 'Click any feedback card to expand it and take action inline' },

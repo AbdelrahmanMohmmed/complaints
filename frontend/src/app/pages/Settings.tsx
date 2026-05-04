@@ -11,8 +11,9 @@ import { User } from 'lucide-react';
 import { request } from '../../services/api';
 
 export function Settings() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { user, login } = useAuth();
+  const isAr = language === 'ar';
 
   // Profile state
 const [fName, setFName] = useState(user?.firstName || '');
@@ -34,7 +35,7 @@ const [lName, setLName] = useState(user?.lastName || '');
     setProfileError('');
     setProfileSuccess('');
     if (!fName.trim() || !lName.trim() || !email.trim()) {
-      setProfileError('جميع الحقول مطلوبة.');
+      setProfileError(isAr ? 'جميع الحقول مطلوبة.' : 'All fields are required.');
       return;
     }
     setProfileLoading(true);
@@ -43,9 +44,9 @@ const [lName, setLName] = useState(user?.lastName || '');
         method: 'PUT',
         body: JSON.stringify({ f_name: fName.trim(), l_name: lName.trim(), email: email.trim() }),
       });
-      setProfileSuccess('تم تحديث الملف الشخصي بنجاح.');
+      setProfileSuccess(isAr ? 'تم تحديث الملف الشخصي بنجاح.' : 'Profile updated successfully.');
     } catch (err: any) {
-      setProfileError(err?.message || 'فشل تحديث الملف الشخصي.');
+      setProfileError(err?.message || (isAr ? 'فشل تحديث الملف الشخصي.' : 'Failed to update profile.'));
     } finally {
       setProfileLoading(false);
     }
@@ -55,15 +56,15 @@ const [lName, setLName] = useState(user?.lastName || '');
     setPasswordError('');
     setPasswordSuccess('');
     if (!currentPassword || !newPassword || !confirmPassword) {
-      setPasswordError('جميع حقول كلمة المرور مطلوبة.');
+      setPasswordError(isAr ? 'جميع حقول كلمة المرور مطلوبة.' : 'All password fields are required.');
       return;
     }
     if (newPassword !== confirmPassword) {
-      setPasswordError('كلمتا المرور الجديدتان غير متطابقتين.');
+      setPasswordError(isAr ? 'كلمتا المرور الجديدتان غير متطابقتين.' : 'New passwords do not match.');
       return;
     }
     if (newPassword.length < 6) {
-      setPasswordError('يجب أن تتكون كلمة المرور الجديدة من 6 أحرف على الأقل.');
+      setPasswordError(isAr ? 'يجب أن تتكون كلمة المرور الجديدة من 6 أحرف على الأقل.' : 'New password must be at least 6 characters.');
       return;
     }
     setPasswordLoading(true);
@@ -72,12 +73,12 @@ const [lName, setLName] = useState(user?.lastName || '');
         method: 'PUT',
         body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
       });
-      setPasswordSuccess('تم تغيير كلمة المرور بنجاح.');
+      setPasswordSuccess(isAr ? 'تم تغيير كلمة المرور بنجاح.' : 'Password changed successfully.');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (err: any) {
-      setPasswordError(err?.message || 'فشل تغيير كلمة المرور.');
+      setPasswordError(err?.message || (isAr ? 'فشل تغيير كلمة المرور.' : 'Failed to change password.'));
     } finally {
       setPasswordLoading(false);
     }
@@ -90,15 +91,15 @@ const [lName, setLName] = useState(user?.lastName || '');
           {t('nav.settings')}
         </h1>
         <p className="text-gray-500 dark:text-gray-400 mt-1">
-          Manage your account settings and preferences
+          {isAr ? 'إدارة إعدادات الحساب والتفضيلات' : 'Manage your account settings and preferences'}
         </p>
       </div>
 
       {/* Profile */}
       <Card>
         <CardHeader>
-          <CardTitle>Profile Information</CardTitle>
-          <CardDescription>Update your personal information</CardDescription>
+          <CardTitle>{isAr ? 'معلومات الملف الشخصي' : 'Profile information'}</CardTitle>
+          <CardDescription>{isAr ? 'تحديث معلوماتك الشخصية' : 'Update your personal information'}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex items-center gap-4">
@@ -111,17 +112,17 @@ const [lName, setLName] = useState(user?.lastName || '');
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>First Name</Label>
+              <Label>{isAr ? 'الاسم الأول' : 'First name'}</Label>
               <Input value={fName} onChange={(e) => setFName(e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label>Last Name</Label>
+              <Label>{isAr ? 'اسم العائلة' : 'Last name'}</Label>
               <Input value={lName} onChange={(e) => setLName(e.target.value)} />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label>Email</Label>
+            <Label>{isAr ? 'البريد الإلكتروني' : 'Email'}</Label>
             <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
           </div>
 
@@ -130,7 +131,7 @@ const [lName, setLName] = useState(user?.lastName || '');
 
           <div className="flex justify-end">
             <Button onClick={handleSaveProfile} disabled={profileLoading}>
-              {profileLoading ? 'جارٍ الحفظ...' : t('common.save')}
+              {profileLoading ? (isAr ? 'جارٍ الحفظ...' : 'Saving...') : t('common.save')}
             </Button>
           </div>
         </CardContent>
@@ -139,21 +140,21 @@ const [lName, setLName] = useState(user?.lastName || '');
       {/* Password */}
       <Card>
         <CardHeader>
-          <CardTitle>Change Password</CardTitle>
-          <CardDescription>Update your account password</CardDescription>
+          <CardTitle>{isAr ? 'تغيير كلمة المرور' : 'Change password'}</CardTitle>
+          <CardDescription>{isAr ? 'تحديث كلمة مرور الحساب' : 'Update your account password'}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label>Current Password</Label>
-            <Input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} placeholder="أدخل كلمة المرور الحالية" />
+            <Label>{isAr ? 'كلمة المرور الحالية' : 'Current password'}</Label>
+            <Input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} placeholder={isAr ? 'أدخل كلمة المرور الحالية' : 'Enter current password'} />
           </div>
           <div className="space-y-2">
-            <Label>New Password</Label>
-            <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="أدخل كلمة المرور الجديدة" />
+            <Label>{isAr ? 'كلمة المرور الجديدة' : 'New password'}</Label>
+            <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder={isAr ? 'أدخل كلمة المرور الجديدة' : 'Enter new password'} />
           </div>
           <div className="space-y-2">
-            <Label>Confirm Password</Label>
-            <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="تأكيد كلمة المرور الجديدة" />
+            <Label>{isAr ? 'تأكيد كلمة المرور' : 'Confirm password'}</Label>
+            <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder={isAr ? 'تأكيد كلمة المرور الجديدة' : 'Confirm new password'} />
           </div>
 
           {passwordError && <p className="text-sm text-red-500">{passwordError}</p>}
@@ -161,7 +162,7 @@ const [lName, setLName] = useState(user?.lastName || '');
 
           <div className="flex justify-end">
             <Button onClick={handleChangePassword} disabled={passwordLoading}>
-              {passwordLoading ? 'جارٍ التحديث...' : 'تحديث كلمة المرور'}
+              {passwordLoading ? (isAr ? 'جارٍ التحديث...' : 'Updating...') : (isAr ? 'تحديث كلمة المرور' : 'Update password')}
             </Button>
           </div>
         </CardContent>
@@ -171,8 +172,8 @@ const [lName, setLName] = useState(user?.lastName || '');
       {user?.role === 'companyAdmin' && (
         <Card>
           <CardHeader>
-            <CardTitle>Integrations</CardTitle>
-            <CardDescription>Manage external service integrations</CardDescription>
+            <CardTitle>{isAr ? 'التكاملات' : 'Integrations'}</CardTitle>
+            <CardDescription>{isAr ? 'إدارة تكاملات الخدمات الخارجية' : 'Manage external service integrations'}</CardDescription>
           </CardHeader>
           <CardContent>
             <IntegrationSettings />

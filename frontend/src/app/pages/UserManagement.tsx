@@ -38,7 +38,8 @@ const roleColors: Record<string, string> = {
 };
 
 export function UserManagement() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const isAr = language === 'ar';
   const [users, setUsers] = useState<BackendUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -64,7 +65,7 @@ export function UserManagement() {
       const data = await request<BackendUser[]>('/users/');
       setUsers(data);
     } catch (err: any) {
-      setError(err?.message || 'Failed to load users');
+      setError(err?.message || (isAr ? 'فشل تحميل المستخدمين' : 'Failed to load users'));
     } finally {
       setIsLoading(false);
     }
@@ -88,14 +89,14 @@ export function UserManagement() {
       setIsDialogOpen(false);
       setNewUser({ f_name: '', l_name: '', email: '', password: '', role_id: '2' });
     } catch (err: any) {
-      setAddError(err?.message || 'Failed to create user');
+      setAddError(err?.message || (isAr ? 'فشل إنشاء المستخدم' : 'Failed to create user'));
     } finally {
       setAddLoading(false);
     }
   };
 
   const formatDate = (dateString: string) =>
-    new Date(dateString).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    new Date(dateString).toLocaleDateString(isAr ? 'ar-SA' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 
 
 const toggleUserStatus = async (user_id: number) => {
@@ -103,7 +104,7 @@ const toggleUserStatus = async (user_id: number) => {
     const updated = await request<BackendUser>(`/users/${user_id}/status`, { method: 'PATCH' });
     setUsers((prev) => prev.map((u) => u.user_id === user_id ? updated : u));
   } catch (err: any) {
-    alert(err?.message || 'Failed to update status');
+    alert(err?.message || (isAr ? 'فشل تحديث الحالة' : 'Failed to update status'));
   }
 };
 
@@ -122,7 +123,7 @@ const updateUser = async () => {
     setUsers((prev) => prev.map((u) => u.user_id === updated.user_id ? updated : u));
     setIsEditOpen(false);
   } catch (err: any) {
-    alert(err?.message || 'Failed to update user');
+    alert(err?.message || (isAr ? 'فشل تحديث المستخدم' : 'Failed to update user'));
   }
 };
 
@@ -131,7 +132,7 @@ const updateUser = async () => {
       await request(`/users/${user_id}`, { method: 'DELETE' });
       setUsers((prev) => prev.filter((user) => user.user_id !== user_id));
     } catch (err: any) {
-      alert(err?.message || 'Failed to delete user');
+      alert(err?.message || (isAr ? 'فشل حذف المستخدم' : 'Failed to delete user'));
     }
   };
 
@@ -150,7 +151,7 @@ const updateUser = async () => {
           </h1>
 
           <p className="text-gray-500 dark:text-gray-400 mt-1">
-            Manage users, roles, and permissions
+            {isAr ? 'إدارة المستخدمين والأدوار والصلاحيات' : 'Manage users, roles, and permissions'}
           </p>
 
         </div>
@@ -179,7 +180,7 @@ const updateUser = async () => {
               <DialogTitle>{t('users.addUser')}</DialogTitle>
 
               <DialogDescription>
-                Create a new user account with specific role and permissions
+                {isAr ? 'أنشئ حساب مستخدم جديد مع تحديد الدور والصلاحيات' : 'Create a new user account with specific role and permissions'}
               </DialogDescription>
 
             </DialogHeader>
@@ -187,19 +188,19 @@ const updateUser = async () => {
             <div className="space-y-4 py-4">
   <div className="grid grid-cols-2 gap-3">
     <div className="space-y-2">
-      <Label htmlFor="userFirstName">First Name</Label>
+      <Label htmlFor="userFirstName">{isAr ? 'الاسم الأول' : 'First name'}</Label>
       <Input
         id="userFirstName"
-        placeholder="Ali"
+        placeholder={isAr ? 'علي' : 'Ali'}
         value={newUser.f_name}
         onChange={(e) => setNewUser({ ...newUser, f_name: e.target.value })}
       />
     </div>
     <div className="space-y-2">
-      <Label htmlFor="userLastName">Last Name</Label>
+      <Label htmlFor="userLastName">{isAr ? 'اسم العائلة' : 'Last name'}</Label>
       <Input
         id="userLastName"
-        placeholder="Ahmed"
+        placeholder={isAr ? 'أحمد' : 'Ahmed'}
         value={newUser.l_name}
         onChange={(e) => setNewUser({ ...newUser, l_name: e.target.value })}
       />
@@ -218,11 +219,11 @@ const updateUser = async () => {
   </div>
 
   <div className="space-y-2">
-    <Label htmlFor="userPassword">Password</Label>
+    <Label htmlFor="userPassword">{isAr ? 'كلمة المرور' : 'Password'}</Label>
     <Input
       id="userPassword"
       type="password"
-      placeholder="Enter password"
+      placeholder={isAr ? 'أدخل كلمة المرور' : 'Enter password'}
       value={newUser.password}
       onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
     />
@@ -235,7 +236,7 @@ const updateUser = async () => {
       onValueChange={(v) => setNewUser({ ...newUser, role_id: v })}
     >
       <SelectTrigger id="userRole">
-        <SelectValue placeholder="Select role..." />
+        <SelectValue placeholder={isAr ? 'اختر الدور...' : 'Select role...'} />
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="2">{t('role.manager')}</SelectItem>
@@ -252,7 +253,7 @@ const updateUser = async () => {
     {t('common.cancel')}
   </Button>
   <Button onClick={handleAddUser} disabled={addLoading}>
-    {addLoading ? 'Creating...' : t('common.save')}
+    {addLoading ? (isAr ? 'جارٍ الإنشاء...' : 'Creating...') : t('common.save')}
   </Button>
 </div>
 
@@ -275,7 +276,7 @@ const updateUser = async () => {
             <div>
 
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                Total Users
+                {isAr ? 'إجمالي المستخدمين' : 'Total users'}
               </p>
 
               <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">
@@ -297,7 +298,7 @@ const updateUser = async () => {
             <div>
 
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                Active Users
+                {isAr ? 'المستخدمون النشطون' : 'Active users'}
               </p>
 
               <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">
@@ -319,7 +320,7 @@ const updateUser = async () => {
             <div>
 
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                Inactive Users
+                {isAr ? 'المستخدمون غير النشطين' : 'Inactive users'}
               </p>
 
               <p className="text-3xl font-bold text-gray-600 dark:text-gray-400 mt-2">
@@ -458,11 +459,11 @@ const updateUser = async () => {
 
           <DialogHeader>
 
-            <DialogTitle>Edit User</DialogTitle>
+            <DialogTitle>{isAr ? 'تعديل المستخدم' : 'Edit user'}</DialogTitle>
 
             <DialogDescription>
 
-              Update user information
+              {isAr ? 'تحديث معلومات المستخدم' : 'Update user information'}
 
             </DialogDescription>
 
@@ -474,14 +475,14 @@ const updateUser = async () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label>First Name</Label>
+                  <Label>{isAr ? 'الاسم الأول' : 'First name'}</Label>
                   <Input
                     defaultValue={editingUser.f_name}
                     onChange={(e) => setEditingUser({ ...editingUser, f_name: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Last Name</Label>
+                  <Label>{isAr ? 'اسم العائلة' : 'Last name'}</Label>
                   <Input
                     defaultValue={editingUser.l_name}
                     onChange={(e) => setEditingUser({ ...editingUser, l_name: e.target.value })}
@@ -491,7 +492,7 @@ const updateUser = async () => {
 
               <div className="space-y-2">
 
-                <Label>Email</Label>
+                <Label>{isAr ? 'البريد الإلكتروني' : 'Email'}</Label>
 
                 <Input
 
@@ -507,7 +508,7 @@ const updateUser = async () => {
 
               <div className="space-y-2">
 
-                <Label>Role</Label>
+                <Label>{isAr ? 'الدور' : 'Role'}</Label>
 
                 <Select
                   defaultValue={String(editingUser.role_id)}
@@ -515,8 +516,8 @@ const updateUser = async () => {
                 >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="2">Customer Service Supervisor (CSS)</SelectItem>
-                    <SelectItem value="3">Agent</SelectItem>
+                    <SelectItem value="2">{t('role.manager')}</SelectItem>
+                    <SelectItem value="3">{t('role.websiteConfigurator')}</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -531,13 +532,13 @@ const updateUser = async () => {
                       setIsEditOpen(false);
                   }}
                 >
-                  Delete User
+                  {isAr ? 'حذف المستخدم' : 'Delete user'}
                 </Button>
 
                 <div className="flex gap-2">
 
                   <Button variant="outline" onClick={() => setIsEditOpen(false)}>
-                    Cancel
+                    {isAr ? 'إلغاء' : 'Cancel'}
                   </Button>
 
                   <Button onClick={updateUser}>

@@ -119,7 +119,7 @@ export function ManagerDashboard() {
   ];
 
   const kpis = [
-    { label: isAr ? 'إجمالي التعليقات' : 'إجمالي التعليقات',   value: stats.total_feedback,      icon: MessageSquare, color: 'text-blue-600',   bg: 'bg-blue-50 dark:bg-blue-900/20'   },
+    { label: isAr ? 'إجمالي التعليقات' : 'Total feedback',      value: stats.total_feedback,      icon: MessageSquare, color: 'text-blue-600',   bg: 'bg-blue-50 dark:bg-blue-900/20'   },
     { label: isAr ? 'مفتوحة' : 'Open',                      value: stats.open_count,           icon: AlertCircle,   color: 'text-sky-600',    bg: 'bg-sky-50 dark:bg-sky-900/20'     },
     { label: isAr ? 'قيد المعالجة' : 'In Progress',         value: stats.in_progress_count,    icon: Clock,         color: 'text-amber-600',  bg: 'bg-amber-50 dark:bg-amber-900/20' },
     { label: isAr ? 'تم الحل' : 'Resolved',                 value: stats.resolved_count,       icon: CheckCircle,   color: 'text-green-600',  bg: 'bg-green-50 dark:bg-green-900/20' },

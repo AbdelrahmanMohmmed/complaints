@@ -88,7 +88,7 @@ export function ResetPasswordPage() {
           className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
         >
           {isAr ? <ArrowRight className="w-4 h-4" /> : <ArrowLeft className="w-4 h-4" />}
-          <span>{isAr ? 'العودة لتسجيل الدخول' : 'العودة إلى تسجيل الدخول'}</span>
+          <span>{isAr ? 'العودة لتسجيل الدخول' : 'Back to login'}</span>
         </Link>
         <div className="flex items-center gap-2">
           <button onClick={toggleLanguage} className="p-2 text-gray-500 dark:text-gray-400 hover:text-blue-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
@@ -170,7 +170,7 @@ export function ResetPasswordPage() {
               disabled={isLoading}
               className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-semibold rounded-xl disabled:opacity-60"
             >
-              {isLoading ? (isAr ? 'جارٍ الحفظ...' : 'جارٍ الحفظ...') : (isAr ? 'حفظ كلمة المرور' : 'Save Password')}
+              {isLoading ? (isAr ? 'جارٍ الحفظ...' : 'Saving...') : (isAr ? 'حفظ كلمة المرور' : 'Save password')}
             </button>
           </form>
         </div>

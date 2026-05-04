@@ -100,7 +100,7 @@ export function Reports() {
 
   const summaryKpis = [
     {
-      label: isAr ? 'إجمالي التعليقات' : 'إجمالي التعليقات',
+      label: isAr ? 'إجمالي التعليقات' : 'Total Feedback',
       value: summary.total_feedback.toLocaleString(),
       change: summary.total_change,
       trend: summary.total_change.startsWith('+') ? 'up' : 'down',
