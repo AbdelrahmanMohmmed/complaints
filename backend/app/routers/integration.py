@@ -7,6 +7,7 @@ Includes credential validation, encryption, and role-based access control.
 import httpx
 import imaplib
 import json
+from datetime import datetime
 from fastapi import APIRouter, status, HTTPException, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
@@ -17,7 +18,10 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from .. import database, models, oauth2, utils
+from ..config import settings
 from ..schemas import integration
+from ..services.feedback_ingestion import add_feedback_safe
+from ..services.scrap_twitter import fetch_replies
 
 router = APIRouter(prefix="/integrations", tags=["Integrations"])
 
@@ -268,6 +272,188 @@ async def create_integration(
         )
 
 
+# ==========================================================================
+# Auto-Connect / Scrape Endpoints
+# ==========================================================================
+
+
+@router.post(
+    "/facebook/auto",
+    status_code=status.HTTP_201_CREATED,
+    response_model=integration.IntegrationOut,
+)
+async def auto_connect_facebook(
+    current_user: dict = Depends(oauth2.get_current_user_with_company),
+    db: Session = Depends(database.get_db),
+):
+    """Auto-connect Facebook using server-side credentials."""
+
+    if current_user["role_id"] not in ALLOWED_ROLES_MANAGE:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only Manager or Tech Admin can create integrations",
+        )
+
+    company_id = current_user["company_id"]
+    channel_name = "facebook"
+
+    existing = (
+        db.query(models.Api)
+        .filter(
+            models.Api.company_id == company_id, models.Api.channel_name == channel_name
+        )
+        .first()
+    )
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Integration for {channel_name} already configured for this company",
+        )
+
+    api_key = (settings.FACEBOOK_PAGE_ACCESS_TOKEN or "").strip()
+    if not api_key:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Facebook auto-connect is not configured on the server",
+        )
+
+    is_valid, validation_detail, _, _ = await validate_api_credentials(
+        channel_name, api_key=api_key
+    )
+    if not is_valid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=validation_detail or "Invalid facebook credentials",
+        )
+
+    encrypted_key = utils.encrypt_api_key(api_key)
+
+    try:
+        new_integration = models.Api(
+            company_id=company_id,
+            channel_name=channel_name,
+            api_key=encrypted_key,
+            api_base_url=BASE_URLS[channel_name],
+            status="active",
+        )
+        db.add(new_integration)
+        db.commit()
+        db.refresh(new_integration)
+        return new_integration
+
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Failed to create integration",
+        )
+    except Exception as e:
+        db.rollback()
+        print(f"Error creating integration: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unexpected error creating integration",
+        )
+
+
+@router.post("/twitter/scrape", response_model=integration.TwitterScrapeResponse)
+async def scrape_twitter_replies(
+    payload: integration.TwitterScrapeRequest,
+    current_user: dict = Depends(oauth2.get_current_user_with_company),
+    db: Session = Depends(database.get_db),
+):
+    """Scrape replies from a Twitter/X account using server-side cookies."""
+
+    if current_user["role_id"] not in ALLOWED_ROLES_MANAGE:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only Manager or Tech Admin can run scrapes",
+        )
+
+    auth_token = (settings.TWITTER_AUTH_TOKEN or "").strip()
+    ct0 = (settings.TWITTER_CT0 or "").strip()
+    if not auth_token or not ct0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Twitter scraping is not configured on the server",
+        )
+
+    try:
+        replies = await fetch_replies(
+            target_username=payload.username,
+            auth_token=auth_token,
+            ct0=ct0,
+            scroll_count=payload.scroll_count,
+            scroll_delay_s=payload.scroll_delay_s,
+            max_posts=payload.max_posts,
+            goto_timeout_ms=payload.goto_timeout_ms,
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Twitter scrape failed: {str(e)}",
+        )
+
+    company_id = current_user["company_id"]
+    api_integration = (
+        db.query(models.Api)
+        .filter(
+            models.Api.company_id == company_id,
+            models.Api.channel_name == "twitter",
+        )
+        .first()
+    )
+
+    if not api_integration:
+        encrypted_key = utils.encrypt_api_key(auth_token)
+        api_integration = models.Api(
+            company_id=company_id,
+            channel_name="twitter",
+            api_key=encrypted_key,
+            api_base_url=BASE_URLS["twitter"],
+            status="active",
+        )
+        db.add(api_integration)
+        db.commit()
+        db.refresh(api_integration)
+
+    saved_replies = []
+    for reply in replies:
+        feedback_text = (reply.get("reply_text") or "").strip()
+        if not feedback_text:
+            continue
+
+        created_at = datetime.utcnow()
+        reply_date = reply.get("date")
+        if reply_date:
+            try:
+                created_at = datetime.fromisoformat(reply_date.replace("Z", "+00:00"))
+            except (ValueError, AttributeError):
+                created_at = datetime.utcnow()
+
+        saved = add_feedback_safe(
+            db=db,
+            company_id=company_id,
+            api_id=api_integration.api_id,
+            feedback_text=feedback_text,
+            created_at=created_at,
+            customer_name=reply.get("from_user") or None,
+        )
+
+        if saved:
+            saved_replies.append(reply)
+
+    return integration.TwitterScrapeResponse(
+        count=len(saved_replies),
+        replies=saved_replies,
+    )
+
+
 # ============================================================================
 # List Integrations
 # ============================================================================
@@ -428,21 +614,24 @@ def delete_integration(
     if current_user["role_id"] not in ALLOWED_ROLES_MANAGE:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only Manager or Tech Admin can delete integrations"
+            detail="Only Manager or Tech Admin can delete integrations",
         )
 
     company_id = current_user["company_id"]
 
     # Find integration and verify ownership
-    integration = db.query(models.Api).filter(
-        models.Api.api_id == integration_id,
-        models.Api.company_id == company_id,
-    ).first()
+    integration = (
+        db.query(models.Api)
+        .filter(
+            models.Api.api_id == integration_id,
+            models.Api.company_id == company_id,
+        )
+        .first()
+    )
 
     if not integration:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Integration not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Integration not found"
         )
 
     # Delete integration
@@ -454,5 +643,5 @@ def delete_integration(
         print(f"Error deleting integration: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete integration"
+            detail="Failed to delete integration",
         )

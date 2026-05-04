@@ -60,6 +60,12 @@ export function IntegrationSettings() {
   const [newGmailPassword, setNewGmailPassword] = useState('');
   const [addError, setAddError] = useState('');
   const [addLoading, setAddLoading] = useState(false);
+  const [autoLoading, setAutoLoading] = useState(false);
+  const [scrapeUsername, setScrapeUsername] = useState('');
+  const [scrapeMaxPosts, setScrapeMaxPosts] = useState('5');
+  const [scrapeScrolls, setScrapeScrolls] = useState('2');
+  const [scrapeLoading, setScrapeLoading] = useState(false);
+  const [scrapeMessage, setScrapeMessage] = useState('');
 
   // Delete state
   const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -97,6 +103,7 @@ export function IntegrationSettings() {
     }
 
     setAddError('');
+    setScrapeMessage('');
     setAddLoading(true);
     try {
       const payload =
@@ -125,6 +132,73 @@ export function IntegrationSettings() {
       setAddError(err?.message || (isAr ? 'فشل الاتصال. تحقق من بيانات الاعتماد.' : 'Failed to connect. Check your credentials.'));
     } finally {
       setAddLoading(false);
+    }
+  };
+
+  const handleAutoFacebook = async () => {
+    setAddError('');
+    setScrapeMessage('');
+    setAutoLoading(true);
+    try {
+      const created = await request<BackendIntegration>('/integrations/facebook/auto', {
+        method: 'POST',
+      });
+      setIntegrations(prev => [...prev, created]);
+      setIsDialogOpen(false);
+      setNewChannelName('');
+      setNewApiKey('');
+      setNewGmailUsername('');
+      setNewGmailPassword('');
+      setScrapeUsername('');
+      setScrapeMaxPosts('5');
+      setScrapeScrolls('2');
+    } catch (err: any) {
+      setAddError(err?.message || (isAr ? 'فشل الاتصال. تحقق من بيانات الاعتماد.' : 'Failed to connect. Check your credentials.'));
+    } finally {
+      setAutoLoading(false);
+    }
+  };
+
+  const handleScrapeTwitter = async () => {
+    if (!scrapeUsername.trim()) {
+      setAddError(isAr ? 'يرجى إدخال حساب تويتر.' : 'Please enter a Twitter account.');
+      return;
+    }
+
+    const maxPosts = Number(scrapeMaxPosts);
+    const scrollCount = Number(scrapeScrolls);
+
+    if (!Number.isFinite(maxPosts) || maxPosts < 1) {
+      setAddError(isAr ? 'عدد المنشورات غير صالح.' : 'Invalid number of posts.');
+      return;
+    }
+
+    if (!Number.isFinite(scrollCount) || scrollCount < 0) {
+      setAddError(isAr ? 'عدد التمريرات غير صالح.' : 'Invalid number of scrolls.');
+      return;
+    }
+
+    setAddError('');
+    setScrapeMessage('');
+    setScrapeLoading(true);
+    try {
+      const result = await request<{ count: number }>('/integrations/twitter/scrape', {
+        method: 'POST',
+        body: JSON.stringify({
+          username: scrapeUsername.trim(),
+          max_posts: maxPosts,
+          scroll_count: scrollCount,
+        }),
+      });
+      setScrapeMessage(
+        isAr
+          ? `تم جلب ${result.count} رد/ردود بنجاح.`
+          : `Scraped ${result.count} replies successfully.`
+      );
+    } catch (err: any) {
+      setAddError(err?.message || (isAr ? 'فشل جلب الردود.' : 'Failed to scrape replies.'));
+    } finally {
+      setScrapeLoading(false);
     }
   };
 
@@ -170,7 +244,7 @@ export function IntegrationSettings() {
           </p>
         </div>
 
-        <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); setAddError(''); }}>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); setAddError(''); setScrapeMessage(''); }}>
           <DialogTrigger asChild>
             <Button className="gap-2">
               <Plus className="w-4 h-4" />
@@ -239,9 +313,50 @@ export function IntegrationSettings() {
                   </p>
                 </div>
               )}
+              {newChannelName === 'twitter' && (
+                <div className="space-y-3">
+                  <Label className="text-sm text-gray-600 dark:text-gray-400">
+                    {isAr ? 'إعدادات السحب' : 'Scrape settings'}
+                  </Label>
+                  <div className="space-y-2">
+                    <Label>{isAr ? 'الحساب' : 'Account'}</Label>
+                    <Input
+                      type="text"
+                      placeholder={isAr ? 'مثل: FoodHub' : 'e.g. FoodHub'}
+                      value={scrapeUsername}
+                      onChange={(e) => setScrapeUsername(e.target.value)}
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label>{isAr ? 'عدد المنشورات' : 'Posts count'}</Label>
+                      <Input
+                        type="number"
+                        min={1}
+                        value={scrapeMaxPosts}
+                        onChange={(e) => setScrapeMaxPosts(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{isAr ? 'عدد التمريرات' : 'Scrolls count'}</Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={scrapeScrolls}
+                        onChange={(e) => setScrapeScrolls(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
               {addError && (
                 <p className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
                   {addError}
+                </p>
+              )}
+              {scrapeMessage && (
+                <p className="text-sm text-green-600 bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
+                  {scrapeMessage}
                 </p>
               )}
             </div>
@@ -249,6 +364,16 @@ export function IntegrationSettings() {
               <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                 {t('common.cancel')}
               </Button>
+              {newChannelName === 'facebook' && (
+                <Button variant="outline" onClick={handleAutoFacebook} disabled={autoLoading}>
+                  {autoLoading ? (isAr ? 'جارٍ الربط...' : 'Connecting...') : (isAr ? 'ربط تلقائي' : 'Auto connect')}
+                </Button>
+              )}
+              {newChannelName === 'twitter' && (
+                <Button variant="outline" onClick={handleScrapeTwitter} disabled={scrapeLoading}>
+                  {scrapeLoading ? (isAr ? 'جارٍ السحب...' : 'Scraping...') : (isAr ? 'سحب' : 'Scrape')}
+                </Button>
+              )}
               <Button onClick={handleAddIntegration} disabled={addLoading}>
                 {addLoading ? (isAr ? 'جارٍ التحقق...' : 'Validating...') : (isAr ? 'اتصال' : 'Connect')}
               </Button>

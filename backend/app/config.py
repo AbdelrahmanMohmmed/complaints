@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
 
+
 class Settings(BaseSettings):
     """Application configuration loaded from environment variables."""
 
@@ -14,8 +15,13 @@ class Settings(BaseSettings):
     secret_key: str
     algorithm: str
     access_token_expire_minutes: int
-    gmail_user: str          # ← add
+    gmail_user: str  # ← add
     gmail_app_password: str  # ← add
+
+    # Optional third-party auth for auto-connect/scraping
+    FACEBOOK_PAGE_ACCESS_TOKEN: str = ""
+    TWITTER_AUTH_TOKEN: str = ""
+    TWITTER_CT0: str = ""
 
     # ML Model paths (optional - if not provided, models won't be loaded)
     SENTIMENT_MODEL_PATH: str = ""  # Path to SVM sentiment model (.pkl file)
