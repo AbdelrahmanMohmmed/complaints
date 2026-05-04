@@ -31,6 +31,8 @@ export interface Domain {
   id: string;
   name: string;
   description: string;
+  nameAr?: string;
+  descriptionAr?: string;
   totalFeedback: number;
   companies: number;
   createdAt: string;
@@ -298,16 +300,20 @@ export const mockCompanies: Company[] = [
 export const mockDomains: Domain[] = [
   {
     id: '1',  // ← was 'domain-1'
-    name: 'Resturants',
-    description: 'food',
+    name: 'Restaurants',
+    description: 'Food services and dining',
+    nameAr: 'المطاعم',
+    descriptionAr: 'خدمات الطعام والمطاعم',
     totalFeedback: 2450,
     companies: 12,
     createdAt: '2025-01-01T00:00:00Z',
   },
   {
     id: '2',  // ← was 'domain-2'
-    name: 'Senatiary tools',
+    name: 'Sanitary tools',
     description: 'Medical services, pharmaceuticals, health insurance',
+    nameAr: 'مستلزمات صحية',
+    descriptionAr: 'الخدمات الطبية والأدوية والتأمين الصحي',
     totalFeedback: 1830,
     companies: 8,
     createdAt: '2025-01-01T00:00:00Z',

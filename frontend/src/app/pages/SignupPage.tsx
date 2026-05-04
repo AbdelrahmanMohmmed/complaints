@@ -418,8 +418,12 @@ const handleNext = () => {
                       >
                         <Globe className="w-5 h-5 text-blue-500 flex-shrink-0" />
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium text-gray-900 dark:text-white">{d.name}</div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400 truncate">{d.description}</div>
+                          <div className="font-medium text-gray-900 dark:text-white">
+                            {isAr ? (d.nameAr || d.name) : d.name}
+                          </div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                            {isAr ? (d.descriptionAr || d.description) : d.description}
+                          </div>
                         </div>
                         {selectedDomain?.id === d.id && <CheckCircle2 className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />}
                       </button>
@@ -529,7 +533,7 @@ const handleNext = () => {
               <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
                 {isAr ? 'لديك حساب بالفعل؟' : 'Already have an account?'}{' '}
                 <Link to="/login" className="text-blue-600 dark:text-blue-400 font-medium hover:underline">
-                  {isAr ? 'تسجيل الدخول' : 'تسجيل الدخول'}
+                  {isAr ? 'تسجيل الدخول' : 'Log in'}
                 </Link>
               </p>
             </div>
