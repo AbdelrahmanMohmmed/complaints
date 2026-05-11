@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     BERT_MODEL_PATH: str = ""  # Path to BERT problem type model
     ROBERTA_MODEL_PATH: str = ""  # Path to RoBERTa problem type model
 
-    model_config = {"env_file": ".env"}
+    model_config = {"env_file": ".env", "case_sensitive": False}
 
 
 settings = Settings()

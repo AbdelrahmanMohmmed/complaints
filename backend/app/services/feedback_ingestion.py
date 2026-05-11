@@ -19,7 +19,6 @@ from .. import models, utils, database
 from .get_email_messages import fetch_gmail_messages
 from sqlalchemy.orm import Session
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -81,12 +80,16 @@ def add_feedback_safe(
     """
     try:
         # Check for duplicate feedback (same API + same text)
-        existing = db.query(models.Feedback).filter(
-            and_(
-                models.Feedback.api_id == api_id,
-                models.Feedback.feedback_context == feedback_text,
+        existing = (
+            db.query(models.Feedback)
+            .filter(
+                and_(
+                    models.Feedback.api_id == api_id,
+                    models.Feedback.feedback_context == feedback_text,
+                )
             )
-        ).first()
+            .first()
+        )
 
         if existing:
             logger.debug(f"Skipped duplicate feedback from integration {api_id}")
@@ -121,9 +124,9 @@ def mark_integration_expired(db: Session, integration_id: int) -> None:
 
     """
     try:
-        integration = db.query(models.Api).filter(
-            models.Api.api_id == integration_id
-        ).first()
+        integration = (
+            db.query(models.Api).filter(models.Api.api_id == integration_id).first()
+        )
         if integration:
             integration.status = "expired"
             db.commit()
@@ -135,23 +138,23 @@ def mark_integration_expired(db: Session, integration_id: int) -> None:
 
 def strip_html_tags(html_text: str) -> str:
     """Remove HTML tags and decode HTML entities to extract plain text.
-    
+
     Args:
         html_text: HTML text with tags
-        
+
     Returns:
         Plain text without HTML tags
     """
     # Remove HTML tags
-    clean_text = re.sub(r'<[^>]+>', '', html_text)
+    clean_text = re.sub(r"<[^>]+>", "", html_text)
     # Decode common HTML entities
-    clean_text = clean_text.replace('&quot;', '"')
-    clean_text = clean_text.replace('&amp;', '&')
-    clean_text = clean_text.replace('&lt;', '<')
-    clean_text = clean_text.replace('&gt;', '>')
-    clean_text = clean_text.replace('&nbsp;', ' ')
+    clean_text = clean_text.replace("&quot;", '"')
+    clean_text = clean_text.replace("&amp;", "&")
+    clean_text = clean_text.replace("&lt;", "<")
+    clean_text = clean_text.replace("&gt;", ">")
+    clean_text = clean_text.replace("&nbsp;", " ")
     # Remove extra whitespace
-    clean_text = ' '.join(clean_text.split())
+    clean_text = " ".join(clean_text.split())
     return clean_text
 
 
@@ -160,24 +163,30 @@ def strip_html_tags(html_text: str) -> str:
 # ============================================================================
 
 
-async def fetch_facebook_comments(api_key: str, api_base_url: str, db: Session, 
-                                  integration_id: int, company_id: int,
-                                  platform_page_id: str = None) -> int:
+async def fetch_facebook_comments(
+    api_key: str,
+    api_base_url: str,
+    db: Session,
+    integration_id: int,
+    company_id: int,
+    platform_page_id: str = None,
+) -> int:
     """
     Fetch comments from Facebook page.
     GET {api_base_url}/{page_id}/feed?fields=comments&access_token={api_key}
-    
+
     If platform_page_id is provided, fetches from that specific page.
     Otherwise fetches from the authenticated user's feed (legacy behavior).
     """
     comments_added = 0
+    commenter_cache: dict[str, str] = {}
     try:
         # Use platform_page_id if available, otherwise fall back to /me/feed (legacy)
         if platform_page_id:
             url = f"{api_base_url}/{platform_page_id}/feed"
         else:
             url = f"{api_base_url}/me/feed"
-            
+
         params = {
             "fields": "comments.limit(100){message,created_time,from{name,id}}",
             "access_token": api_key,
@@ -243,12 +252,37 @@ async def fetch_facebook_comments(api_key: str, api_base_url: str, db: Session,
                         continue
 
                     # Create new feedback record
+                    commenter = comment.get("from", {}) or {}
+                    commenter_id = commenter.get("id")
+                    customer_name = commenter.get("name")
+
+                    if not customer_name and commenter_id:
+                        if commenter_id in commenter_cache:
+                            customer_name = commenter_cache[commenter_id]
+                        else:
+                            profile_url = f"{api_base_url}/{commenter_id}"
+                            profile_params = {
+                                "fields": "name",
+                                "access_token": api_key,
+                            }
+                            async with httpx.AsyncClient(timeout=API_TIMEOUT) as client:
+                                profile_response = await client.get(
+                                    profile_url, params=profile_params
+                                )
+                            if profile_response.status_code == 200:
+                                profile_data = profile_response.json() or {}
+                                customer_name = profile_data.get("name")
+                                if customer_name:
+                                    commenter_cache[commenter_id] = customer_name
+
+                    if not customer_name:
+                        customer_name = "Facebook User"
                     new_feedback = models.Feedback(
                         company_id=company_id,
                         api_id=integration_id,
-                        feedback_text=feedback_text,
+                        feedback_context=feedback_text,
                         created_at=created_at,
-                        customer_name=comment.get("from", {}).get("name"),
+                        customer_name=customer_name,
                     )
                     db.add(new_feedback)
                     comments_added += 1
@@ -400,7 +434,7 @@ async def fetch_whatsapp_messages(
 ) -> int:
     """
     Fetch open tickets from Freshdesk and save description + created_at to database.
-    
+
     GET {api_base_url}/api/v2/tickets?status=2&limit=100
     Headers: Authorization: Basic {base64(api_key:X)}
     """
@@ -494,6 +528,110 @@ async def fetch_whatsapp_messages(
         db.rollback()
 
     return comments_added
+
+
+async def fetch_freshdesk_tickets(
+    api_key: str,
+    api_base_url: str,
+    db: Session,
+    integration_id: int,
+    company_id: int,
+) -> int:
+    """Fetch Freshdesk tickets and store them as feedback."""
+    tickets_added = 0
+    try:
+        auth_value = base64.b64encode(f"{api_key}:X".encode()).decode()
+        headers = {"Authorization": f"Basic {auth_value}"}
+        url = f"{api_base_url}/api/v2/tickets"
+        params = {"per_page": 100, "include": "description,requester"}
+
+        async with httpx.AsyncClient(timeout=API_TIMEOUT) as client:
+            response = await client.get(url, params=params, headers=headers)
+
+            if response.status_code in [401, 403]:
+                logger.warning(
+                    "Integration %s returned %s - marking as expired",
+                    integration_id,
+                    response.status_code,
+                )
+                mark_integration_expired(db, integration_id)
+                return 0
+
+            if response.status_code != 200:
+                logger.error(
+                    "Freshdesk API returned %s for integration %s",
+                    response.status_code,
+                    integration_id,
+                )
+                return 0
+
+            tickets = response.json() or []
+
+            for ticket in tickets:
+                description = ticket.get("description_text") or ticket.get(
+                    "description"
+                )
+                feedback_text = strip_html_tags(description or "").strip()
+                if not feedback_text:
+                    subject = (ticket.get("subject") or "").strip()
+                    feedback_text = subject
+
+                if not feedback_text:
+                    continue
+
+                created_at_str = ticket.get("created_at")
+                if created_at_str:
+                    try:
+                        created_at = datetime.fromisoformat(
+                            created_at_str.replace("Z", "+00:00")
+                        )
+                    except (ValueError, AttributeError):
+                        created_at = datetime.utcnow()
+                else:
+                    created_at = datetime.utcnow()
+
+                requester = ticket.get("requester") or {}
+                requester_name = (
+                    requester.get("name")
+                    or requester.get("email")
+                    or "Freshdesk Requester"
+                )
+                if add_feedback_safe(
+                    db=db,
+                    company_id=company_id,
+                    api_id=integration_id,
+                    feedback_text=feedback_text,
+                    created_at=created_at,
+                    customer_name=requester_name,
+                ):
+                    tickets_added += 1
+
+        logger.info(
+            "Freshdesk: Added %s new tickets for integration %s",
+            tickets_added,
+            integration_id,
+        )
+
+    except httpx.TimeoutException:
+        logger.error(
+            "Freshdesk API timeout for integration %s - will retry next hour",
+            integration_id,
+        )
+    except httpx.RequestError as e:
+        logger.error(
+            "Freshdesk API request error for integration %s: %s",
+            integration_id,
+            str(e),
+        )
+    except Exception as e:
+        logger.error(
+            "Error processing Freshdesk tickets for integration %s: %s",
+            integration_id,
+            str(e),
+        )
+        db.rollback()
+
+    return tickets_added
 
 
 def fetch_gmail_feedback(
