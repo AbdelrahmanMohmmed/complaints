@@ -116,7 +116,7 @@ class Api(Base):
     """Api model - represents integrated API connections.
 
     Stores credentials and configuration for external feedback sources
-    (Facebook, Twitter, WhatsApp, etc.).
+    (Facebook, Freshdesk, Web Form, etc.).
     """
 
     __tablename__ = "apis"
@@ -126,6 +126,7 @@ class Api(Base):
     api_key = Column(String, nullable=False)
     channel_name = Column(String(50), nullable=False)
     api_base_url = Column(String)
+    platform_page_id = Column(String, nullable=True)  # Facebook page ID or other platform-specific IDs
     status = Column(String(20), default="active")  # active, expired, disabled
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

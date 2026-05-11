@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     TWITTER_AUTH_TOKEN: str = ""
     TWITTER_CT0: str = ""
 
+    # Frontend base URL for OAuth redirects
+    FRONTEND_BASE_URL: str = "http://localhost:5173"
+
     # ML Model paths (optional - if not provided, models won't be loaded)
     SENTIMENT_MODEL_PATH: str = ""  # Path to SVM sentiment model (.pkl file)
     EMOTION_MODEL_PATH: str = ""  # Path to SVM emotion model (.pkle file)

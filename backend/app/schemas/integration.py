@@ -18,12 +18,19 @@ class IntegrationCreate(BaseModel):
     )
 
 
+class FreshdeskCreate(BaseModel):
+    """Schema for creating Freshdesk integration"""
+    domain: str = Field(..., description="Freshdesk domain (e.g. fmstest.freshdesk.com)")
+    api_key: str = Field(..., description="Freshdesk API key (will be encrypted)")
+
+
 class IntegrationOut(BaseModel):
     """Schema for integration response (excludes raw api_key)"""
 
     api_id: int
     channel_name: str
     api_base_url: str
+    platform_page_id: str | None = None
     status: str
     created_at: datetime
 

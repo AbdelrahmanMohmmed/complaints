@@ -31,6 +31,7 @@ const channelIcons: Record<string, React.ComponentType<{ className?: string }>> 
   whatsapp: MessageSquare,
   gmail: Mail,
   email: Mail,
+  freshdesk: Globe,
   phone: Phone,
   web: Globe,
 };
@@ -41,6 +42,7 @@ const channelColors: Record<string, string> = {
   whatsapp: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400',
   gmail: 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400',
   email: 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400',
+  freshdesk: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400',
   phone: 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400',
   web: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400',
 };
@@ -56,6 +58,8 @@ export function IntegrationSettings() {
   // Add form state
   const [newChannelName, setNewChannelName] = useState('');
   const [newApiKey, setNewApiKey] = useState('');
+  const [freshdeskDomain, setFreshdeskDomain] = useState('');
+  const [freshdeskApiKey, setFreshdeskApiKey] = useState('');
   const [newGmailUsername, setNewGmailUsername] = useState('');
   const [newGmailPassword, setNewGmailPassword] = useState('');
   const [addError, setAddError] = useState('');
@@ -97,6 +101,11 @@ export function IntegrationSettings() {
         setAddError(isAr ? 'يرجى إدخال اسم مستخدم Gmail وكلمة مرور التطبيق.' : 'Please enter Gmail username and Gmail app password.');
         return;
       }
+    } else if (newChannelName === 'freshdesk') {
+      if (!freshdeskDomain.trim() || !freshdeskApiKey.trim()) {
+        setAddError(isAr ? 'يرجى إدخال نطاق Freshdesk ومفتاح API.' : 'Please enter Freshdesk domain and API key.');
+        return;
+      }
     } else if (!newApiKey.trim()) {
       setAddError(isAr ? 'يرجى إدخال مفتاح API.' : 'Please enter an API key.');
       return;
@@ -106,26 +115,39 @@ export function IntegrationSettings() {
     setScrapeMessage('');
     setAddLoading(true);
     try {
-      const payload =
-        newChannelName === 'gmail'
-          ? {
-              channel_name: newChannelName,
-              gmail_username: newGmailUsername.trim(),
-              gmail_password: newGmailPassword.trim(),
-            }
-          : {
-              channel_name: newChannelName,
-              api_key: newApiKey.trim(),
-            };
-
-      const created = await request<BackendIntegration>('/integrations/', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      });
+      let created: BackendIntegration;
+      if (newChannelName === 'gmail') {
+        created = await request<BackendIntegration>('/integrations/', {
+          method: 'POST',
+          body: JSON.stringify({
+            channel_name: newChannelName,
+            gmail_username: newGmailUsername.trim(),
+            gmail_password: newGmailPassword.trim(),
+          }),
+        });
+      } else if (newChannelName === 'freshdesk') {
+        created = await request<BackendIntegration>('/integrations/freshdesk', {
+          method: 'POST',
+          body: JSON.stringify({
+            domain: freshdeskDomain.trim(),
+            api_key: freshdeskApiKey.trim(),
+          }),
+        });
+      } else {
+        created = await request<BackendIntegration>('/integrations/', {
+          method: 'POST',
+          body: JSON.stringify({
+            channel_name: newChannelName,
+            api_key: newApiKey.trim(),
+          }),
+        });
+      }
       setIntegrations(prev => [...prev, created]);
       setIsDialogOpen(false);
       setNewChannelName('');
       setNewApiKey('');
+      setFreshdeskDomain('');
+      setFreshdeskApiKey('');
       setNewGmailUsername('');
       setNewGmailPassword('');
     } catch (err: any) {
@@ -140,18 +162,14 @@ export function IntegrationSettings() {
     setScrapeMessage('');
     setAutoLoading(true);
     try {
-      const created = await request<BackendIntegration>('/integrations/facebook/auto', {
-        method: 'POST',
+      const data = await request<{ oauth_url: string }>('/integrations/facebook/connect', {
+        method: 'GET',
       });
-      setIntegrations(prev => [...prev, created]);
-      setIsDialogOpen(false);
-      setNewChannelName('');
-      setNewApiKey('');
-      setNewGmailUsername('');
-      setNewGmailPassword('');
-      setScrapeUsername('');
-      setScrapeMaxPosts('5');
-      setScrapeScrolls('2');
+      if (data?.oauth_url) {
+        window.location.assign(data.oauth_url);
+        return;
+      }
+      setAddError(isAr ? 'تعذر إنشاء رابط فيسبوك.' : 'Failed to generate Facebook link.');
     } catch (err: any) {
       setAddError(err?.message || (isAr ? 'فشل الاتصال. تحقق من بيانات الاعتماد.' : 'Failed to connect. Check your credentials.'));
     } finally {
@@ -270,6 +288,7 @@ export function IntegrationSettings() {
                     <SelectItem value="twitter">{isAr ? 'تويتر / X' : 'Twitter / X'}</SelectItem>
                     <SelectItem value="whatsapp">{isAr ? 'واتساب للأعمال' : 'WhatsApp Business'}</SelectItem>
                     <SelectItem value="gmail">Gmail</SelectItem>
+                    <SelectItem value="freshdesk">Freshdesk</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -295,6 +314,30 @@ export function IntegrationSettings() {
                     <p className="text-xs text-gray-400">
                       {isAr ? 'استخدم كلمة مرور تطبيق Gmail (وليس كلمة مرور Gmail العادية).' : 'Use a Gmail App Password (not your regular Gmail password).'}
                     </p>
+                  </div>
+                </>
+              ) : newChannelName === 'freshdesk' ? (
+                <>
+                  <div className="space-y-2">
+                    <Label>{isAr ? 'نطاق Freshdesk' : 'Freshdesk domain'}</Label>
+                    <Input
+                      type="text"
+                      placeholder="yourcompany.freshdesk.com"
+                      value={freshdeskDomain}
+                      onChange={(e) => setFreshdeskDomain(e.target.value)}
+                    />
+                    <p className="text-xs text-gray-400">
+                      {isAr ? 'يجب أن ينتهي النطاق بـ freshdesk.com' : 'Domain must end with freshdesk.com'}
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{isAr ? 'مفتاح API لـ Freshdesk' : 'Freshdesk API key'}</Label>
+                    <Input
+                      type="password"
+                      placeholder={isAr ? 'الصق مفتاح API من Freshdesk' : 'Paste your Freshdesk API key'}
+                      value={freshdeskApiKey}
+                      onChange={(e) => setFreshdeskApiKey(e.target.value)}
+                    />
                   </div>
                 </>
               ) : (

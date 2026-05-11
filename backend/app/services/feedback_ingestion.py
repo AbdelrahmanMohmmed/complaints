@@ -1,15 +1,17 @@
-"""Feedback ingestion service for fetching feedback from social media platforms.
+"""Feedback ingestion service for fetching feedback from external platforms.
 
 Runs as a scheduled task every hour via APScheduler.
-Supports Facebook, Twitter/X, and WhatsApp as feedback sources.
+Supports Facebook and Freshdesk as feedback sources.
 Handles API credential validation, deduplication, and error recovery.
 """
 
 import logging
+import base64
 from datetime import datetime, timedelta
 import json
 import imaplib
 from typing import Optional
+import re
 
 import httpx
 from sqlalchemy import and_
@@ -131,20 +133,51 @@ def mark_integration_expired(db: Session, integration_id: int) -> None:
         logger.error(f"Error marking integration as expired: {str(e)}")
 
 
+def strip_html_tags(html_text: str) -> str:
+    """Remove HTML tags and decode HTML entities to extract plain text.
+    
+    Args:
+        html_text: HTML text with tags
+        
+    Returns:
+        Plain text without HTML tags
+    """
+    # Remove HTML tags
+    clean_text = re.sub(r'<[^>]+>', '', html_text)
+    # Decode common HTML entities
+    clean_text = clean_text.replace('&quot;', '"')
+    clean_text = clean_text.replace('&amp;', '&')
+    clean_text = clean_text.replace('&lt;', '<')
+    clean_text = clean_text.replace('&gt;', '>')
+    clean_text = clean_text.replace('&nbsp;', ' ')
+    # Remove extra whitespace
+    clean_text = ' '.join(clean_text.split())
+    return clean_text
+
+
 # ============================================================================
 # Platform-Specific Fetch Functions
 # ============================================================================
 
 
 async def fetch_facebook_comments(api_key: str, api_base_url: str, db: Session, 
-                                  integration_id: int, company_id: int) -> int:
+                                  integration_id: int, company_id: int,
+                                  platform_page_id: str = None) -> int:
     """
-    Fetch comments from Facebook.
-    GET {api_base_url}/me/feed?fields=comments&access_token={api_key}
+    Fetch comments from Facebook page.
+    GET {api_base_url}/{page_id}/feed?fields=comments&access_token={api_key}
+    
+    If platform_page_id is provided, fetches from that specific page.
+    Otherwise fetches from the authenticated user's feed (legacy behavior).
     """
     comments_added = 0
     try:
-        url = f"{api_base_url}/me/feed"
+        # Use platform_page_id if available, otherwise fall back to /me/feed (legacy)
+        if platform_page_id:
+            url = f"{api_base_url}/{platform_page_id}/feed"
+        else:
+            url = f"{api_base_url}/me/feed"
+            
         params = {
             "fields": "comments.limit(100){message,created_time,from{name,id}}",
             "access_token": api_key,
@@ -366,10 +399,12 @@ async def fetch_whatsapp_messages(
     api_key: str, api_base_url: str, db: Session, integration_id: int, company_id: int
 ) -> int:
     """
-    Fetch incoming messages from WhatsApp.
-    GET {api_base_url}/messages with Authorization: Bearer {api_key}
+    Fetch open tickets from Freshdesk and save description + created_at to database.
+    
+    GET {api_base_url}/api/v2/tickets?status=2&limit=100
+    Headers: Authorization: Basic {base64(api_key:X)}
     """
-    comments_added = 0
+    tickets_added = 0
     try:
         # WhatsApp message retrieval endpoint
         url = f"{api_base_url}/me/messages"
@@ -558,7 +593,7 @@ def mark_integration_expired(db: Session, integration_id: int):
 async def ingest_feedback() -> None:
     """Main feedback ingestion job for all active integrations.
 
-    Fetches feedback from Facebook, Twitter/X, and WhatsApp APIs.
+    Fetches feedback from Facebook and Freshdesk APIs.
     Processes each active integration and stores feedback with deduplication.
     Marks integrations as expired on authentication failure.
 
@@ -609,17 +644,10 @@ async def ingest_feedback() -> None:
                         db,
                         integration.api_id,
                         integration.company_id,
+                        integration.platform_page_id,
                     )
-                elif channel_name == "twitter":
-                    comments_added = await fetch_twitter_comments(
-                        decrypted_key,
-                        api_base_url,
-                        db,
-                        integration.api_id,
-                        integration.company_id,
-                    )
-                elif channel_name == "whatsapp":
-                    comments_added = await fetch_whatsapp_messages(
+                elif channel_name == "freshdesk":
+                    comments_added = await fetch_freshdesk_tickets(
                         decrypted_key,
                         api_base_url,
                         db,

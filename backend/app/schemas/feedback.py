@@ -1,28 +1,54 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from datetime import datetime
-from typing import Optional
-from pydantic import BaseModel as PydanticBase
+
+
+class WebFormSubmission(BaseModel):
+    """Schema for web form feedback submission"""
+
+    feedback_context: str = Field(
+        ..., min_length=10, max_length=1000, description="Customer complaint/feedback"
+    )
+
+
+class WebFormResponse(BaseModel):
+    """Schema for web form response"""
+
+    message: str
+
+
+class WebFormIntegrationResponse(BaseModel):
+    """Schema for web form integration creation response"""
+
+    form_url: str
+    channel_name: str
+    status: str
 
 
 class FeedbackOut(BaseModel):
+    """Schema for feedback list/detail responses"""
+
     feedback_id: int
     company_id: int
-    api_id: Optional[int] = None  # ← change from int to Optional[int]
-    channel_name: Optional[str] = None
-    category_id: Optional[int] = None
-    customer_name: Optional[str] = None
-    category_name: Optional[str] = None  # ← add this
-    feedback_context: Optional[str] = None
-    status: Optional[str] = None
-    sentiment: Optional[str] = None
-    emotion: Optional[str] = None
-    priority: Optional[str] = None
+    api_id: int | None
+    channel_name: str | None = None
+    category_id: int | None
+    category_name: str | None = None
+    customer_name: str | None = None
+    feedback_context: str | None = None
+    status: str
+    sentiment: str | None = None
+    emotion: str | None = None
+    priority: str | None = None
     created_at: datetime
 
     class Config:
         from_attributes = True
 
 
-class FeedbackDetailsUpdate(PydanticBase):
-    priority: Optional[str] = None
-    category_id: Optional[int] = None
+class FeedbackStatusUpdate(BaseModel):
+    status: str
+
+
+class FeedbackDetailsUpdate(BaseModel):
+    priority: str | None = None
+    category_id: int | None = None
