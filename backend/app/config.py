@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     gmail_app_password: str  # ← add
 
     # Optional third-party auth for auto-connect/scraping
+    FACEBOOK_APP_ID: str = ""
+    FACEBOOK_APP_SECRET: str = ""
+    FACEBOOK_REDIRECT_URI: str = ""
     FACEBOOK_PAGE_ACCESS_TOKEN: str = ""
     TWITTER_AUTH_TOKEN: str = ""
     TWITTER_CT0: str = ""
