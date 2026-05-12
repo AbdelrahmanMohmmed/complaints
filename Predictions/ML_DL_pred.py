@@ -38,7 +38,7 @@ def predict (model_location: str, embedded_text, type = "S", for_ML = True, prob
             pred_probs = model.predict_proba(embedded_text)
             return pred_probs
         else:
-            pred_id = int(model.predict(embedded_text))[0]
+            pred_id = int(model.predict(embedded_text)[0])
     else:
         model = load_model(model_location)
         probs = model.predict(embedded_text)
