@@ -33,9 +33,10 @@ def _is_empty_text(text: str) -> bool:
 def _handle_empty_feedback(feedback: models.Feedback, db: Session) -> None:
     """Mark feedback with empty text as analyzed with neutral defaults."""
     feedback.status = "analyzed"
-    feedback.sentiment = "neutral"
-    feedback.emotion = "neutral"
-    feedback.problem_type = "Service Quality"
+    feedback.sentiment = "Neutral"
+    feedback.emotion = "Neutral"
+    feedback.problem_type = None
+    feedback.priority = "Low"
     feedback.ml_processed_at = func.now()
     db.commit()
     logger.debug(f"Feedback {feedback.feedback_id}: marked as analyzed (empty content)")
@@ -153,3 +154,5 @@ def ai_analysis_service() -> None:
     finally:
         db.close()
         db.close()
+
+
