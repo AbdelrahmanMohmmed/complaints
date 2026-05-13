@@ -13,6 +13,12 @@ from .models import (
     get_tokenizer,
     load_models,
 )
+from .labels import (
+    EMOTION_ID2AR_LABEL,
+    EMOTION_ID2LABEL,
+    PROBLEM_TYPE_ID2AR_LABEL,
+    PROBLEM_TYPE_ID2LABEL,
+)
 
 __all__ = [
     "load_models",
@@ -22,4 +28,8 @@ __all__ = [
     "get_tokenizer",
     "get_bert_model",
     "get_roberta_model",
+    "PROBLEM_TYPE_ID2LABEL",
+    "PROBLEM_TYPE_ID2AR_LABEL",
+    "EMOTION_ID2LABEL",
+    "EMOTION_ID2AR_LABEL",
 ]

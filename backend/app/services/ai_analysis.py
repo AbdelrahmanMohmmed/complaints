@@ -15,6 +15,14 @@ from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
 
 from .. import database, models
+from ..ai.labels import (
+    EMOTION_DEFAULT_ID,
+    EMOTION_DEFAULT_LABEL,
+    EMOTION_LABEL2ID,
+    PROBLEM_TYPE_DEFAULT_ID,
+    PROBLEM_TYPE_DEFAULT_LABEL,
+    PROBLEM_TYPE_LABEL2ID,
+)
 from ..ai.predict import run_ai_pipeline
 
 logger = logging.getLogger(__name__)
@@ -34,8 +42,10 @@ def _handle_empty_feedback(feedback: models.Feedback, db: Session) -> None:
     """Mark feedback with empty text as analyzed with neutral defaults."""
     feedback.status = "analyzed"
     feedback.sentiment = "neutral"
-    feedback.emotion = "neutral"
-    feedback.problem_type = "Service Quality"
+    feedback.emotion = EMOTION_DEFAULT_LABEL
+    feedback.emotion_id = EMOTION_DEFAULT_ID
+    feedback.problem_type = PROBLEM_TYPE_DEFAULT_LABEL
+    feedback.problem_type_id = PROBLEM_TYPE_DEFAULT_ID
     feedback.ml_processed_at = func.now()
     db.commit()
     logger.debug(f"Feedback {feedback.feedback_id}: marked as analyzed (empty content)")
@@ -74,7 +84,15 @@ def _update_feedback_with_results(
     """Update feedback record with AI analysis results and timestamp."""
     feedback.sentiment = results["sentiment"]
     feedback.emotion = results["emotion"]
+    feedback.emotion_id = results.get("emotion_id") or EMOTION_LABEL2ID.get(
+        results.get("emotion", ""), EMOTION_DEFAULT_ID
+    )
     feedback.problem_type = results["problem_type"]
+    feedback.problem_type_id = results.get(
+        "problem_type_id"
+    ) or PROBLEM_TYPE_LABEL2ID.get(
+        results.get("problem_type", ""), PROBLEM_TYPE_DEFAULT_ID
+    )
     feedback.priority = results["priority"]
     feedback.category_id = _resolve_category_id(
         db, feedback.company_id, results.get("problem_type")

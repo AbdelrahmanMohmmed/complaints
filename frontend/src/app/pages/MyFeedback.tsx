@@ -31,6 +31,9 @@ interface BackendFeedback {
   status: string | null;
   sentiment: string | null;
   emotion: string | null;
+  emotion_id: number | null;
+  problem_type: string | null;
+  problem_type_id: number | null;
   priority: string | null;
   created_at: string;
 }
@@ -59,6 +62,26 @@ const channelIcons: Record<string, React.ComponentType<{ className?: string }>> 
   Phone: Phone,
   'Web Form': Globe,
 };
+
+const getProblemTypeLabel = (
+  t: (key: string) => string,
+  problemTypeId?: number | null,
+  fallback?: string | null
+) => (
+  problemTypeId !== null && problemTypeId !== undefined
+    ? t(`problemType.${problemTypeId}`)
+    : (fallback || '—')
+);
+
+const getEmotionLabel = (
+  t: (key: string) => string,
+  emotionId?: number | null,
+  fallback?: string | null
+) => (
+  emotionId !== null && emotionId !== undefined
+    ? t(`emotion.${emotionId}`)
+    : (fallback || '—')
+);
 
 export function MyFeedback() {
   const { t, language } = useLanguage();
@@ -369,12 +392,18 @@ filteredFeedback.map((fb) => {
                       )}
 
                       {/* تفاصيل التعليقات */}
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                         <div className="p-2.5 bg-white dark:bg-gray-700/50 rounded-lg">
                           <p className="text-xs text-gray-400 mb-1">{t('feedback.emotion')}</p>
                           <p className="text-xs font-semibold text-gray-900 dark:text-white capitalize flex items-center gap-1">
                             <Smile className="w-3 h-3" />
-                            {fb.emotion}
+                            {getEmotionLabel(t, fb.emotion_id, fb.emotion)}
+                          </p>
+                        </div>
+                        <div className="p-2.5 bg-white dark:bg-gray-700/50 rounded-lg">
+                          <p className="text-xs text-gray-400 mb-1">{t('feedback.problemType')}</p>
+                          <p className="text-xs font-semibold text-gray-900 dark:text-white">
+                            {getProblemTypeLabel(t, fb.problem_type_id, fb.problem_type)}
                           </p>
                         </div>
                         <div className="p-2.5 bg-white dark:bg-gray-700/50 rounded-lg">

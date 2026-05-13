@@ -126,7 +126,9 @@ class Api(Base):
     api_key = Column(String, nullable=False)
     channel_name = Column(String(50), nullable=False)
     api_base_url = Column(String)
-    platform_page_id = Column(String, nullable=True)  # Facebook page ID or other platform-specific IDs
+    platform_page_id = Column(
+        String, nullable=True
+    )  # Facebook page ID or other platform-specific IDs
     status = Column(String(20), default="active")  # active, expired, disabled
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
@@ -197,7 +199,9 @@ class Feedback(Base):
     # ML Analysis Results
     sentiment = Column(String(20), nullable=True)  # positive, negative, neutral
     emotion = Column(String(20), nullable=True)  # happy, sad, angry, etc.
+    emotion_id = Column(Integer, nullable=True)
     problem_type = Column(String(50), nullable=True)  # Service Quality, Billing, etc.
+    problem_type_id = Column(Integer, nullable=True)
     priority = Column(String(20), nullable=True)  # high, medium, low
 
     # Timestamps

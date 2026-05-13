@@ -29,6 +29,9 @@ interface BackendFeedback {
   status: string;
   sentiment: string | null;
   emotion: string | null;
+  emotion_id: number | null;
+  problem_type: string | null;
+  problem_type_id: number | null;
   priority: string | null;
   created_at: string;
 }
@@ -86,6 +89,26 @@ const displayLabel = (labelKey: string, fallbackValue: string) => {
   }
   return labelKey;
 };
+
+const getProblemTypeLabel = (
+  t: (key: string) => string,
+  problemTypeId?: number | null,
+  fallback?: string | null
+) => (
+  problemTypeId !== null && problemTypeId !== undefined
+    ? t(`problemType.${problemTypeId}`)
+    : (fallback || '—')
+);
+
+const getEmotionLabel = (
+  t: (key: string) => string,
+  emotionId?: number | null,
+  fallback?: string | null
+) => (
+  emotionId !== null && emotionId !== undefined
+    ? t(`emotion.${emotionId}`)
+    : (fallback || '—')
+);
 
 export function FeedbackDetails() {
   const { id } = useParams();
@@ -411,12 +434,20 @@ export function FeedbackDetails() {
                 {
                   icon: Smile,
                   label: t('feedback.emotion'),
-                  value: <span className="text-sm font-medium capitalize">{feedback.emotion || '—'}</span>
+                  value: (
+                    <span className="text-sm font-medium capitalize">
+                      {getEmotionLabel(t, feedback.emotion_id, feedback.emotion)}
+                    </span>
+                  )
                 },
                 {
                   icon: Tag,
-                  label: t('feedback.category'),
-                  value: <span className="text-sm font-medium">{feedback.category_name || '—'}</span>
+                  label: t('feedback.problemType'),
+                  value: (
+                    <span className="text-sm font-medium">
+                      {getProblemTypeLabel(t, feedback.problem_type_id, feedback.problem_type)}
+                    </span>
+                  )
                 },
                 {
                   icon: MessageSquare,

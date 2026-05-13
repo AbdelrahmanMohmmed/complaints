@@ -114,7 +114,7 @@ export function LandingPage() {
       {
         icon: Shield,
         title: 'نظام صلاحيات متعدد الأدوار',
-        desc: 'يدعم أربعة أدوار (مدير النظام، مدير الشركة، مشرف خدمة العملاء (CSS)، الموظف) مع تحكم دقيق في الصلاحيات.',
+        desc: 'يدعم ثلاث أدوار ( مدير الشركة، مشرف خدمة العملاء (CSS)، مهييْ الموقع) مع تحكم دقيق في الصلاحيات.',
         color: 'from-orange-500 to-orange-600',
       },
       {
@@ -147,7 +147,7 @@ export function LandingPage() {
       {
         icon: Shield,
         title: 'Multi-Role Access Control',
-        desc: 'Supports four roles (Super Admin, Company Admin, Customer Service Supervisor (CSS), Agent) with granular permission control.',
+        desc: 'Supports three roles (Company Admin, Customer Service Supervisor (CSS), website configurator) with granular permission control.',
         color: 'from-orange-500 to-orange-600',
       },
       {
@@ -161,12 +161,12 @@ export function LandingPage() {
 
   const steps = isAr
     ? [
-      { step: '01', title: 'اجمع الآراء', desc: 'يجمع النظام الآراء من جميع القنوات (البريد الإلكتروني، الواتساب، الموقع الإلكتروني، والمزيد).' },
+      { step: '01', title: 'اجمع الآراء', desc: 'يجمع النظام الآراء من جميع القنوات (البريد الإلكتروني، تويتر (X) ,فيسبوك ، الموقع الإلكتروني، والمزيد).' },
       { step: '02', title: 'تحليل ذكي', desc: 'يحلل الذكاء الاصطناعي المشاعر والعواطف ويصنف الآراء تلقائياً.' },
       { step: '03', title: 'رؤى وتقارير', desc: 'تحليلات وتقارير شاملة تساعدك على اتخاذ قرارات أفضل.' },
     ]
     : [
-      { step: '01', title: 'Collect feedback', desc: 'The system ingests feedback from all channels — email, WhatsApp, your website, and more.' },
+      { step: '01', title: 'Collect feedback', desc: 'The system ingests feedback from all channels — email, Twitter (X), Facebook, your website, and more.' },
       { step: '02', title: 'AI Analysis', desc: 'Our AI analyzes sentiment, detects emotions, and auto-categorizes each feedback instantly.' },
       { step: '03', title: 'Insights & Reports', desc: 'Get comprehensive analytics and reports to make data-driven decisions.' }
     ];
@@ -419,8 +419,8 @@ export function LandingPage() {
             </p>
             <ul className="space-y-3">
               {(isAr
-                ? ['تحليل مشاعر بدقة 98%', 'دعم ثنائي اللغة عربي / إنجليزي', 'تكامل سهل مع أنظمتك الحالية', 'لوحة تحكم شاملة لكل الأدوار']
-                : ['98% sentiment analysis accuracy', 'Full Arabic & English bilingual support', 'Easy integration with your existing systems', 'Comprehensive dashboards for all roles']
+                ? ['تحليل مشاعر بدقة 80%', 'دعم ثنائي اللغة عربي / إنجليزي', 'تكامل سهل مع أنظمتك الحالية', 'لوحة تحكم شاملة لكل الأدوار']
+                : ['80% sentiment analysis accuracy', 'Full Arabic & English bilingual support', 'Easy integration with your existing systems', 'Comprehensive dashboards for all roles']
               ).map((item, i) => (
                 <li key={i} className="flex items-center gap-3">
                   <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />

@@ -27,13 +27,15 @@ interface BackendFeedback {
   company_id: number;
   api_id: number | null; 
   channel_name?: string | null;
-  category_id: number | null;
+  category_name?: string | null;
   customer_name: string | null;
-  category_name: string | null;  // ← add this
   feedback_context: string | null;
   status: string;
   sentiment: string | null;
   emotion: string | null;
+  emotion_id: number | null;
+  problem_type: string | null;
+  problem_type_id: number | null;
   priority: string | null;
   created_at: string;
 }
@@ -86,6 +88,26 @@ const displayLabel = (labelKey: string, fallbackValue: string) => {
   return labelKey;
 };
 
+const getProblemTypeLabel = (
+  t: (key: string) => string,
+  problemTypeId?: number | null,
+  fallback?: string | null
+) => (
+  problemTypeId !== null && problemTypeId !== undefined
+    ? t(`problemType.${problemTypeId}`)
+    : (fallback || '—')
+);
+
+const getEmotionLabel = (
+  t: (key: string) => string,
+  emotionId?: number | null,
+  fallback?: string | null
+) => (
+  emotionId !== null && emotionId !== undefined
+    ? t(`emotion.${emotionId}`)
+    : (fallback || '—')
+);
+
 export function FeedbackList() {
   const { t, language } = useLanguage();
   const { user } = useAuth();
@@ -96,6 +118,9 @@ export function FeedbackList() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [sentimentFilter, setSentimentFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [channelFilter, setChannelFilter] = useState('all');
+  const [emotionFilter, setEmotionFilter] = useState('all');
   const [companyFilter, setCompanyFilter] = useState('all');
 const [feedbackList, setFeedbackList] = useState<BackendFeedback[]>([]);
 const [isLoading, setIsLoading] = useState(true);
@@ -145,8 +170,18 @@ const filteredFeedback = feedbackList.filter((fb) => {
   const matchesStatus = statusFilter === 'all' || currentStatus === statusFilter;
   const matchesSentiment = sentimentFilter === 'all' || fb.sentiment === sentimentFilter;
   const matchesPriority = priorityFilter === 'all' || currentPriority === priorityFilter;
-  return matchesSearch && matchesStatus && matchesSentiment && matchesPriority;
+  const matchesCategory = categoryFilter === 'all' || (fb.category_name || '—') === categoryFilter;
+  const matchesChannel = channelFilter === 'all' || (fb.channel_name || '—') === channelFilter;
+  const matchesEmotion = emotionFilter === 'all' || String(fb.emotion_id ?? 'none') === emotionFilter;
+  return matchesSearch && matchesStatus && matchesSentiment && matchesPriority && matchesCategory && matchesChannel && matchesEmotion;
 });
+
+  const categoryOptions = Array.from(
+    new Set(feedbackList.map(fb => fb.category_name || '—'))
+  ).filter(name => name && name !== '—');
+  const channelOptions = Array.from(
+    new Set(feedbackList.map(fb => fb.channel_name || '—'))
+  ).filter(name => name && name !== '—');
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString(isAr ? 'ar-SA' : 'en-US', {
@@ -155,14 +190,14 @@ const filteredFeedback = feedbackList.filter((fb) => {
   };
 
 const exportToCSV = () => {
-  const headers = ['ID', 'Customer', 'Feedback', 'Category', 'Sentiment', 'Emotion', 'Priority', 'Status', 'Date'];
+  const headers = ['ID', 'Customer', 'Feedback', 'Problem Type', 'Sentiment', 'Emotion', 'Priority', 'Status', 'Date'];
   const rows = feedbackList.map(fb => [
     fb.feedback_id,
     fb.customer_name || 'Unknown',
     `"${(fb.feedback_context || '').replace(/"/g, '""')}"`,
-    fb.category_name || '—',
+    getProblemTypeLabel(t, fb.problem_type_id, fb.problem_type),
     fb.sentiment || '—',
-    fb.emotion || '—',
+    getEmotionLabel(t, fb.emotion_id, fb.emotion),
     fb.priority || '—',
     feedbackStatuses[fb.feedback_id] || fb.status,
     new Date(fb.created_at).toLocaleDateString('en-US'),
@@ -255,10 +290,10 @@ const handleStatusChange = async (feedbackId: number, newStatus: string) => {
 
       {/* Filters */}
       <Card className="p-4">
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-0">
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3 top-2 -translate-y-0 w-4 h-4 text-gray-400" />
               <Input
                 type="search"
                 placeholder={t('common.search')}
@@ -267,54 +302,110 @@ const handleStatusChange = async (feedbackId: number, newStatus: string) => {
                 className="pl-10"
               />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-[160px]">
-                <SelectValue placeholder={t('filter.status')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t('common.all')}</SelectItem>
-                <SelectItem value="open">{t('status.open')}</SelectItem>
-                <SelectItem value="inProgress">{t('status.inProgress')}</SelectItem>
-                <SelectItem value="resolved">{t('status.resolved')}</SelectItem>
-                <SelectItem value="closed">{t('status.closed')}</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={sentimentFilter} onValueChange={setSentimentFilter}>
-              <SelectTrigger className="w-full sm:w-[160px]">
-                <SelectValue placeholder={t('filter.sentiment')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t('common.all')}</SelectItem>
-                <SelectItem value="positive">{t('sentiment.positive')}</SelectItem>
-                <SelectItem value="negative">{t('sentiment.negative')}</SelectItem>
-                <SelectItem value="neutral">{t('sentiment.neutral')}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-              <SelectTrigger className="w-full sm:w-[150px]">
-                <SelectValue placeholder={t('filter.priority')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t('common.all')}</SelectItem>
-                <SelectItem value="high">{t('priority.high')}</SelectItem>
-                <SelectItem value="medium">{t('priority.medium')}</SelectItem>
-                <SelectItem value="low">{t('priority.low')}</SelectItem>
-              </SelectContent>
-            </Select>
-            {isSuperAdmin && (
-              <Select value={companyFilter} onValueChange={setCompanyFilter}>
-                <SelectTrigger className="w-full sm:w-[180px]">
-                  <SelectValue placeholder={t('filter.company')} />
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400">{t('filter.status')}</label>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full sm:w-[160px]">
+                  <SelectValue placeholder={t('filter.status')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{isAr ? 'جميع الشركات' : 'All Companies'}</SelectItem>
-                  <SelectItem value="company-1">TechCorp Solutions</SelectItem>
-                  <SelectItem value="company-2">Healthcare Plus</SelectItem>
-                  <SelectItem value="company-3">Retail World</SelectItem>
+                  <SelectItem value="all">{t('common.all')}</SelectItem>
+                  <SelectItem value="open">{t('status.open')}</SelectItem>
+                  <SelectItem value="inProgress">{t('status.inProgress')}</SelectItem>
+                  <SelectItem value="resolved">{t('status.resolved')}</SelectItem>
+                  <SelectItem value="closed">{t('status.closed')}</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400">{t('filter.sentiment')}</label>
+              <Select value={sentimentFilter} onValueChange={setSentimentFilter}>
+                <SelectTrigger className="w-full sm:w-[160px]">
+                  <SelectValue placeholder={t('filter.sentiment')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('common.all')}</SelectItem>
+                  <SelectItem value="positive">{t('sentiment.positive')}</SelectItem>
+                  <SelectItem value="negative">{t('sentiment.negative')}</SelectItem>
+                  <SelectItem value="neutral">{t('sentiment.neutral')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400">{t('filter.priority')}</label>
+              <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                <SelectTrigger className="w-full sm:w-[150px]">
+                  <SelectValue placeholder={t('filter.priority')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('common.all')}</SelectItem>
+                  <SelectItem value="critical">{t('priority.critical')}</SelectItem>
+                  <SelectItem value="high">{t('priority.high')}</SelectItem>
+                  <SelectItem value="medium">{t('priority.medium')}</SelectItem>
+                  <SelectItem value="low">{t('priority.low')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400">{t('filter.category')}</label>
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="w-full sm:w-[170px]">
+                  <SelectValue placeholder={t('filter.category')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('common.all')}</SelectItem>
+                  {categoryOptions.map(name => (
+                    <SelectItem key={name} value={name}>{name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400">{t('filter.channel')}</label>
+              <Select value={channelFilter} onValueChange={setChannelFilter}>
+                <SelectTrigger className="w-full sm:w-[170px]">
+                  <SelectValue placeholder={t('filter.channel')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('common.all')}</SelectItem>
+                  {channelOptions.map(name => (
+                    <SelectItem key={name} value={name}>{name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400">{t('feedback.emotion')}</label>
+              <Select value={emotionFilter} onValueChange={setEmotionFilter}>
+                <SelectTrigger className="w-full sm:w-[190px]">
+                  <SelectValue placeholder={t('feedback.emotion')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('common.all')}</SelectItem>
+                  <SelectItem value="0">{t('emotion.0')}</SelectItem>
+                  <SelectItem value="1">{t('emotion.1')}</SelectItem>
+                  <SelectItem value="2">{t('emotion.2')}</SelectItem>
+                  <SelectItem value="3">{t('emotion.3')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {isSuperAdmin && (
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400">{t('filter.company')}</label>
+                <Select value={companyFilter} onValueChange={setCompanyFilter}>
+                  <SelectTrigger className="w-full sm:w-[180px]">
+                    <SelectValue placeholder={t('filter.company')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{isAr ? 'جميع الشركات' : 'All Companies'}</SelectItem>
+                    <SelectItem value="company-1">TechCorp Solutions</SelectItem>
+                    <SelectItem value="company-2">Healthcare Plus</SelectItem>
+                    <SelectItem value="company-3">Retail World</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             )}
           </div>
         </div>
@@ -329,7 +420,7 @@ const handleStatusChange = async (feedbackId: number, newStatus: string) => {
                 <TableHead className="font-semibold hidden sm:table-cell text-xs">{isAr ? 'الرقم' : 'ID'}</TableHead>
                 <TableHead className="font-semibold">{t('feedback.customer')}</TableHead>
                 <TableHead className="hidden md:table-cell font-semibold">{t('feedback.content')}</TableHead>
-                <TableHead className="hidden lg:table-cell font-semibold">{t('feedback.category')}</TableHead>
+                <TableHead className="hidden xl:table-cell font-semibold">{t('feedback.problemType')}</TableHead>
                 <TableHead className="hidden xl:table-cell font-semibold">{t('feedback.channel')}</TableHead>
                 <TableHead className="font-semibold">{t('feedback.sentiment')}</TableHead>
                 <TableHead className="hidden xl:table-cell font-semibold">{t('feedback.emotion')}</TableHead>
@@ -363,8 +454,10 @@ const handleStatusChange = async (feedbackId: number, newStatus: string) => {
       <TableCell className="hidden md:table-cell max-w-xs">
         <div className="truncate text-sm text-gray-600 dark:text-gray-400">{fb.feedback_context || '—'}</div>
       </TableCell>
-      <TableCell className="hidden lg:table-cell">
-        <span className="text-sm text-gray-600 dark:text-gray-400">  {fb.category_name || '—'}</span>
+      <TableCell className="hidden xl:table-cell">
+        <span className="text-sm text-gray-600 dark:text-gray-400">
+          {getProblemTypeLabel(t, fb.problem_type_id, fb.problem_type)}
+        </span>
       </TableCell>
       <TableCell className="hidden xl:table-cell">
         <span className="text-sm text-gray-600 dark:text-gray-400">{fb.channel_name || '—'}</span>
@@ -375,7 +468,9 @@ const handleStatusChange = async (feedbackId: number, newStatus: string) => {
         </Badge>
       </TableCell>
       <TableCell className="hidden xl:table-cell">
-        <span className="text-xs capitalize text-gray-600 dark:text-gray-400">{fb.emotion || '—'}</span>
+        <span className="text-xs capitalize text-gray-600 dark:text-gray-400">
+          {getEmotionLabel(t, fb.emotion_id, fb.emotion)}
+        </span>
       </TableCell>
       <TableCell className="hidden lg:table-cell">
         {isManager ? (
@@ -428,7 +523,7 @@ const handleStatusChange = async (feedbackId: number, newStatus: string) => {
 })}
               {filteredFeedback.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center py-12 text-gray-400">
+                  <TableCell colSpan={11} className="text-center py-12 text-gray-400">
                     <AlertTriangle className="w-8 h-8 mx-auto mb-2 opacity-40" />
                     <p>{isAr ? 'لا توجد تعليقات مطابقة' : 'No feedback items match your filters'}</p>
                   </TableCell>

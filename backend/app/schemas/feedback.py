@@ -38,6 +38,9 @@ class FeedbackOut(BaseModel):
     status: str
     sentiment: str | None = None
     emotion: str | None = None
+    emotion_id: int | None = None
+    problem_type: str | None = None
+    problem_type_id: int | None = None
     priority: str | None = None
     created_at: datetime
 

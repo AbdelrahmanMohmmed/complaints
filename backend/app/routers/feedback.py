@@ -66,6 +66,9 @@ def serialize_feedback(row: tuple[models.Feedback, str | None, str | None]) -> d
         "status": fb.status,
         "sentiment": fb.sentiment,
         "emotion": fb.emotion,
+        "emotion_id": fb.emotion_id,
+        "problem_type": fb.problem_type,
+        "problem_type_id": fb.problem_type_id,
         "priority": fb.priority,
         "created_at": fb.created_at,
     }

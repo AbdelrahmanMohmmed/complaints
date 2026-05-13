@@ -14,7 +14,7 @@ import {
 } from 'recharts';
 import {
   Download, FileText, TrendingUp, TrendingDown,
-  MessageSquare, CheckCircle, Clock, Smile, Filter,
+  MessageSquare, Clock, Smile, Filter,
 } from 'lucide-react';
 import { cn } from '../components/ui/utils';
 
@@ -31,8 +31,12 @@ interface ReportsData {
     neutral_count: number;
   };
   sentiment_trend: { month: string; positive: number; negative: number; neutral: number }[];
-  category_data: { name: string; total: number; positive: number; negative: number; neutral: number }[];
+  category_data: { name: string; total: number; positive: number; negative: number; neutral: number; problem_type_id?: number | null }[];
+  emotion_data: { emotion_id: number; total: number; positive: number; negative: number; neutral: number }[];
   channel_data: { name: string; value: number; color: string }[];
+  priority_data: { name: string; value: number }[];
+  priority_by_category: { name: string; problem_type_id?: number | null; low: number; medium: number; high: number; critical: number }[];
+  priority_trend: { month: string; low: number; medium: number; high: number; critical: number }[];
   agent_data: { name: string; assigned: number; resolved: number; avgTime: number; satisfaction: number }[];
   resolution_trend: { week: string; resolved: number; avgTime: number }[];
 }
@@ -81,6 +85,8 @@ export function Reports() {
     { id: 'sentiment', label: isAr ? 'تحليل المشاعر' : 'Sentiment Analysis' },
     { id: 'category',  label: isAr ? 'التصنيفات' : 'Categories' },
     { id: 'channel',   label: isAr ? 'القنوات' : 'Channels' },
+    { id: 'emotion',   label: t('reports.emotionTab') },
+    { id: 'priority',  label: t('reports.priorityTab') },
   ];
 
   if (isLoading) return (
@@ -96,7 +102,29 @@ export function Reports() {
   );
 
   const { summary } = data;
+  const categoryData = data.category_data.map(cat => ({
+    ...cat,
+    name: cat.problem_type_id !== undefined && cat.problem_type_id !== null
+      ? t(`problemType.${cat.problem_type_id}`)
+      : cat.name,
+  }));
+  const emotionData = data.emotion_data.map(item => ({
+    ...item,
+    name: t(`emotion.${item.emotion_id}`),
+  }));
+  const priorityData = data.priority_data.map(item => ({
+    ...item,
+    name: t(`priority.${item.name}`),
+    key: item.name,
+  }));
+  const priorityByCategory = data.priority_by_category.map(item => ({
+    ...item,
+    name: item.problem_type_id !== undefined && item.problem_type_id !== null
+      ? t(`problemType.${item.problem_type_id}`)
+      : item.name,
+  }));
   const totalSentiment = summary.positive_count + summary.negative_count + summary.neutral_count || 1;
+  const negativeRate = totalSentiment ? Math.round((summary.negative_count / totalSentiment) * 100) : 0;
 
   const summaryKpis = [
     {
@@ -109,15 +137,6 @@ export function Reports() {
       bg: 'bg-blue-50 dark:bg-blue-900/20',
     },
     {
-      label: isAr ? 'معدل الحل' : 'Resolution Rate',
-      value: `${summary.resolution_rate}%`,
-      change: summary.resolution_rate_change,
-      trend: 'up',
-      icon: CheckCircle,
-      color: 'text-green-600 dark:text-green-400',
-      bg: 'bg-green-50 dark:bg-green-900/20',
-    },
-    {
       label: isAr ? 'نسبة الإيجابية' : 'Positive Rate',
       value: `${summary.sentiment_pct}%`,
       change: summary.sentiment_change,
@@ -127,8 +146,8 @@ export function Reports() {
       bg: 'bg-violet-50 dark:bg-violet-900/20',
     },
     {
-      label: isAr ? 'تعليقات سلبية' : 'Negative Feedback',
-      value: summary.negative_count.toLocaleString(),
+      label: t('reports.negativeRate'),
+      value: `${negativeRate}%`,
       change: '',
       trend: 'down',
       icon: Clock,
@@ -308,7 +327,7 @@ export function Reports() {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={data.category_data} layout="vertical" margin={{ left: 10 }}>
+                <BarChart data={categoryData} layout="vertical" margin={{ left: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
                   <XAxis type="number" tick={{ fontSize: 11 }} />
                   <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={130} />
@@ -327,7 +346,7 @@ export function Reports() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4 max-h-80 overflow-y-auto pr-1">
-                {data.category_data.map(cat => (
+                {categoryData.map(cat => (
                   <div key={cat.name} className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-semibold text-gray-900 dark:text-white">{cat.name}</span>
@@ -344,7 +363,7 @@ export function Reports() {
                     </div>
                   </div>
                 ))}
-                {data.category_data.length === 0 && (
+                {categoryData.length === 0 && (
                   <p className="text-center text-gray-400 text-sm py-8">No category data available</p>
                 )}
               </div>
@@ -406,6 +425,113 @@ export function Reports() {
                     ));
                   })()
               }
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Emotion Tab */}
+      {activeTab === 'emotion' && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">{t('reports.emotionDistribution')}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={280}>
+                <PieChart>
+                  <Pie
+                    data={emotionData.map(item => ({ name: item.name, value: item.total }))}
+                    cx="50%" cy="50%" innerRadius={55} outerRadius={90} dataKey="value" paddingAngle={3}
+                  >
+                    {['#f59e0b', '#ef4444', '#6b7280', '#10b981'].map((color, i) => <Cell key={i} fill={color} />)}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">{t('reports.emotionBySentiment')}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={emotionData} layout="vertical" margin={{ left: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
+                  <XAxis type="number" tick={{ fontSize: 11 }} />
+                  <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={130} />
+                  <Tooltip />
+                  <Legend wrapperStyle={{ fontSize: '12px' }} />
+                  <Bar dataKey="positive" fill="#10b981" name={t('sentiment.positive')} stackId="a" />
+                  <Bar dataKey="negative" fill="#ef4444" name={t('sentiment.negative')} stackId="a" />
+                  <Bar dataKey="neutral"  fill="#6b7280" name={t('sentiment.neutral')}  stackId="a" radius={[0,4,4,0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Priority Tab */}
+      {activeTab === 'priority' && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">{t('reports.priorityDistribution')}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={280}>
+                <PieChart>
+                  <Pie
+                    data={priorityData}
+                    cx="50%" cy="50%" innerRadius={55} outerRadius={90} dataKey="value" paddingAngle={3}
+                  >
+                    {['#6b7280', '#f59e0b', '#ef4444', '#dc2626'].map((color, i) => <Cell key={i} fill={color} />)}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">{t('reports.priorityByCategory')}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={priorityByCategory} layout="vertical" margin={{ left: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
+                  <XAxis type="number" tick={{ fontSize: 11 }} />
+                  <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={130} />
+                  <Tooltip />
+                  <Legend wrapperStyle={{ fontSize: '12px' }} />
+                  <Bar dataKey="low" fill="#6b7280" name={t('priority.low')} stackId="a" />
+                  <Bar dataKey="medium" fill="#f59e0b" name={t('priority.medium')} stackId="a" />
+                  <Bar dataKey="high" fill="#ef4444" name={t('priority.high')} stackId="a" />
+                  <Bar dataKey="critical" fill="#dc2626" name={t('priority.critical')} stackId="a" radius={[0,4,4,0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+          <Card className="lg:col-span-2">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">{t('reports.priorityTrend')}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={data.priority_trend}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
+                  <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 11 }} />
+                  <Tooltip />
+                  <Legend wrapperStyle={{ fontSize: '12px' }} />
+                  <Line type="monotone" dataKey="low" stroke="#6b7280" strokeWidth={2} name={t('priority.low')} />
+                  <Line type="monotone" dataKey="medium" stroke="#f59e0b" strokeWidth={2} name={t('priority.medium')} />
+                  <Line type="monotone" dataKey="high" stroke="#ef4444" strokeWidth={2} name={t('priority.high')} />
+                  <Line type="monotone" dataKey="critical" stroke="#dc2626" strokeWidth={2} name={t('priority.critical')} />
+                </LineChart>
+              </ResponsiveContainer>
             </CardContent>
           </Card>
         </div>

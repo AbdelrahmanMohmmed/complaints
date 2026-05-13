@@ -4,26 +4,27 @@ import { useAuth } from '../../contexts/AuthContext';
 import { request } from '../../../services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import {
-  LineChart, Line, PieChart, Pie, Cell, BarChart, Bar,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+  PieChart, Pie, Cell, BarChart, Bar,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 import {
-  MessageSquare, Clock, AlertCircle, CheckCircle, Building2, Smile, TrendingDown
+  MessageSquare, Building2, Smile, TrendingDown
 } from 'lucide-react';
 import { cn } from '../../components/ui/utils';
 
 interface DashboardStats {
   total_feedback: number;
-  open_count: number;
-  in_progress_count: number;
-  resolved_count: number;
   closed_count: number;
   high_priority_count: number;
   positive_count: number;
   negative_count: number;
   neutral_count: number;
+  frustrated_count: number;
+  neutral_emotion_count: number;
+  disgusted_count: number;
+  satisfied_count: number;
   monthly_data: { month: string; complaints: number; resolved: number }[];
-  category_data: { name: string; value: number }[];
+  category_data: { name: string; value: number; problem_type_id?: number | null }[];
 }
 
 const SENTIMENT_COLORS = {
@@ -123,13 +124,29 @@ export function CompanyAdminDashboard() {
     { name: t('sentiment.neutral'),  value: stats.neutral_count,  color: SENTIMENT_COLORS.neutral  },
   ];
 
+  const categoryData = stats.category_data.map(item => ({
+    ...item,
+    name: item.problem_type_id !== undefined && item.problem_type_id !== null
+      ? t(`problemType.${item.problem_type_id}`)
+      : item.name,
+  }));
+
+  const totalEmotions = stats.frustrated_count + stats.disgusted_count + stats.neutral_emotion_count + stats.satisfied_count || 1;
+  const emotionData = [
+    { name: t('emotion.0'), value: stats.frustrated_count },
+    { name: t('emotion.2'), value: stats.disgusted_count },
+    { name: t('emotion.1'), value: stats.neutral_emotion_count },
+    { name: t('emotion.3'), value: stats.satisfied_count },
+  ];
+  const frustrationRate = Math.round((stats.frustrated_count / totalEmotions) * 100);
+  const disgustedRate = Math.round((stats.disgusted_count / totalEmotions) * 100);
+
   const kpis = [
     { label: t('dashboard.totalFeedback'), value: stats.total_feedback, icon: MessageSquare, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
-    { label: t('status.open'), value: stats.open_count, icon: AlertCircle, color: 'text-sky-600', bg: 'bg-sky-50 dark:bg-sky-900/20' },
-    { label: t('status.inProgress'), value: stats.in_progress_count, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20' },
-    { label: t('status.resolved'), value: stats.resolved_count, icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/20' },
     { label: t('dashboard.highPriority'), value: stats.high_priority_count, icon: TrendingDown, color: 'text-red-600', bg: 'bg-red-50 dark:bg-red-900/20' },
     { label: t('sentiment.negative'), value: stats.negative_count, icon: Smile, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20' },
+    { label: t('dashboard.frustrationRate'), value: `${frustrationRate}%`, icon: Smile, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20' },
+    { label: t('dashboard.disgustedRate'), value: `${disgustedRate}%`, icon: Smile, color: 'text-rose-600', bg: 'bg-rose-50 dark:bg-rose-900/20' },
   ];
 
   return (
@@ -201,22 +218,20 @@ export function CompanyAdminDashboard() {
           </CardContent>
         </Card>
 
-        {/* Monthly Line Chart */}
+        {/* Emotion Breakdown (Vertical Bar) */}
         <Card>
           <CardHeader>
-            <CardTitle>{isAr ? 'التعليقات عبر الزمن' : 'Feedback over time'}</CardTitle>
+            <CardTitle>{t('dashboard.emotionBreakdown')}</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={stats.monthly_data}>
+              <BarChart data={emotionData} layout="vertical" margin={{ left: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
+                <XAxis type="number" />
+                <YAxis type="category" dataKey="name" width={120} />
                 <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="complaints" stroke="#3b82f6" strokeWidth={2} />
-                <Line type="monotone" dataKey="resolved" stroke="#10b981" strokeWidth={2} />
-              </LineChart>
+                <Bar dataKey="value" radius={[4, 4, 4, 4]} fill="#f59e0b" />
+              </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
@@ -224,7 +239,7 @@ export function CompanyAdminDashboard() {
       </div>
 
       {/* Category Breakdown */}
-      {stats.category_data.length > 0 && (
+      {categoryData.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle>{t('dashboard.categoryDistribution')}</CardTitle>
@@ -232,7 +247,7 @@ export function CompanyAdminDashboard() {
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart 
-                data={stats.category_data} 
+                data={categoryData} 
                 margin={{ top: 5, right: 20, left: -5, bottom: isAr ? 80 : 80 }}
               >
                 <CartesianGrid strokeDasharray="3 3" />
@@ -247,7 +262,7 @@ export function CompanyAdminDashboard() {
                 <YAxis tickMargin={isAr ? 12 : 12} width={isAr ? 44 : 44} />
                 <Tooltip />
                 <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                  {stats.category_data.map((_, index) => (
+                  {categoryData.map((_, index) => (
                     <Cell key={index} fill={BAR_COLORS[index % BAR_COLORS.length]} />
                   ))}
                 </Bar>

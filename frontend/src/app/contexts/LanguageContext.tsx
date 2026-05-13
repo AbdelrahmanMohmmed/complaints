@@ -87,6 +87,8 @@ const translations = {
     'dashboard.teamPerformance': 'Team Performance',
     'dashboard.resolutionTrend': 'Resolution Trend',
     'dashboard.feedbackVolume': 'Feedback Volume',
+    'dashboard.frustrationRate': 'Frustration Rate',
+    'dashboard.disgustedRate': 'Disgusted Rate',
     
     // Feedback
     'feedback.title': 'Feedback Management',
@@ -96,6 +98,7 @@ const translations = {
     'feedback.emotion': 'Emotion',
     'feedback.priority': 'Priority',
     'feedback.category': 'Category',
+    'feedback.problemType': 'Problem Type',
     'feedback.channel': 'Channel',
     'feedback.assignedTo': 'Assigned To',
     'feedback.createdAt': 'Created At',
@@ -119,11 +122,28 @@ const translations = {
     'sentiment.positive': 'Positive',
     'sentiment.negative': 'Negative',
     'sentiment.neutral': 'Neutral',
+
+    // Emotion
+    'emotion.0': 'Frustrated',
+    'emotion.1': 'Neutral',
+    'emotion.2': 'Disgusted',
+    'emotion.3': 'Satisfied',
     
     // Priority
     'priority.low': 'Low',
     'priority.medium': 'Medium',
     'priority.high': 'High',
+    'priority.critical': 'Critical',
+
+    // Problem Type
+    'problemType.0': 'Delivery Issue',
+    'problemType.1': 'Food Quality',
+    'problemType.2': 'Hygiene',
+    'problemType.3': 'Service Quality',
+    'problemType.4': 'Pricing',
+    'problemType.5': 'Order Accuracy',
+    'problemType.6': 'Bad Atmosphere',
+    'problemType.7': 'Menu',
     
     // Users
     'users.title': 'User Management',
@@ -182,6 +202,14 @@ const translations = {
     'reports.agentReport': 'Agent Performance Report',
     'reports.channelReport': 'Channel Distribution Report',
     'reports.summary': 'Summary',
+    'reports.negativeRate': 'Negative Rate',
+    'reports.emotionTab': 'Emotions',
+    'reports.priorityTab': 'Priority',
+    'reports.emotionDistribution': 'Emotion Distribution',
+    'reports.emotionBySentiment': 'Emotion by Sentiment',
+    'reports.priorityDistribution': 'Priority Distribution',
+    'reports.priorityByCategory': 'Priority by Category',
+    'reports.priorityTrend': 'Priority Trend',
     
     // Filters
     'filter.dateRange': 'Date Range',
@@ -271,6 +299,8 @@ const translations = {
     'dashboard.teamPerformance': 'أداء الفريق',
     'dashboard.resolutionTrend': 'اتجاه الحل',
     'dashboard.feedbackVolume': 'حجم التعليقات',
+    'dashboard.frustrationRate': 'نسبة الإحباط',
+    'dashboard.disgustedRate': 'نسبة الاشمئزاز',
     
     // Feedback
     'feedback.title': 'إدارة التعليقات',
@@ -280,6 +310,7 @@ const translations = {
     'feedback.emotion': 'العاطفة',
     'feedback.priority': 'الأولوية',
     'feedback.category': 'التصنيف',
+    'feedback.problemType': 'نوع المشكلة',
     'feedback.channel': 'القناة',
     'feedback.assignedTo': 'مُعيّن إلى',
     'feedback.createdAt': 'تاريخ الإنشاء',
@@ -303,11 +334,28 @@ const translations = {
     'sentiment.positive': 'إيجابي',
     'sentiment.negative': 'سلبي',
     'sentiment.neutral': 'محايد',
+
+    // Emotion
+    'emotion.0': 'محبط',
+    'emotion.1': 'محايد',
+    'emotion.2': 'مشمئز',
+    'emotion.3': 'راضٍ',
     
     // Priority
     'priority.low': 'منخفض',
     'priority.medium': 'متوسط',
     'priority.high': 'عالي',
+    'priority.critical': 'حرج',
+
+    // Problem Type
+    'problemType.0': 'مشكله توصيل',
+    'problemType.1': 'جودة الطعام',
+    'problemType.2': 'النظافة',
+    'problemType.3': 'جودة الخدمة',
+    'problemType.4': 'الأسعار',
+    'problemType.5': 'دقة الطلب',
+    'problemType.6': 'أجواء سيئة',
+    'problemType.7': 'قائمة الطعام',
     
     // Users
     'users.title': 'إدارة المستخدمين',
@@ -366,6 +414,14 @@ const translations = {
     'reports.agentReport': 'تقرير أداء الموظفين',
     'reports.channelReport': 'تقرير توزيع القنوات',
     'reports.summary': 'الملخص',
+    'reports.negativeRate': 'نسبة السلبية',
+    'reports.emotionTab': 'العواطف',
+    'reports.priorityTab': 'الأولوية',
+    'reports.emotionDistribution': 'توزيع العواطف',
+    'reports.emotionBySentiment': 'العواطف حسب المشاعر',
+    'reports.priorityDistribution': 'توزيع الأولوية',
+    'reports.priorityByCategory': 'الأولوية حسب التصنيف',
+    'reports.priorityTrend': 'اتجاه الأولوية',
     
     // Filters
     'filter.dateRange': 'نطاق التاريخ',

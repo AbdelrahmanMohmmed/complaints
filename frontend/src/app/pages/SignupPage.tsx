@@ -22,6 +22,8 @@ import {
   Mail,
   UserPlus,
   Facebook,
+  TwitterIcon,
+  Twitter,
 } from 'lucide-react';
 
 const STEPS = [
@@ -32,8 +34,7 @@ const STEPS = [
 
 const API_OPTIONS = [
   { id: 'facebook' as const, labelEn: 'Facebook', labelAr: 'فيسبوك', Icon: Facebook, required: true },
-  { id: 'whatsapp' as const, labelEn: 'WhatsApp', labelAr: 'واتساب', Icon: MessageSquare, required: true },
-  { id: 'x' as const, labelEn: 'X (Twitter)', labelAr: 'إكس (تويتر)', Icon: MessageSquare, required: true },
+  { id: 'x' as const, labelEn: 'X (Twitter)', labelAr: 'تويتر', Icon:Twitter, required: true },
   { id: 'email' as const, labelEn: 'Email', labelAr: 'البريد', Icon: Mail, required: false },
 ];
 
