@@ -1,4 +1,5 @@
 # Data
+/data/
 google-chrome-stable_current_amd64.deb
 /downloaded_files
 /venv
@@ -183,7 +184,7 @@ cython_debug/
 #  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
-#.idea/
+.idea/
 
 # Ruff stuff:
 .ruff_cache/
@@ -194,4 +195,4 @@ cython_debug/
 /backend/models
 /backend/__pycache__
 .idea
-/data/
+
