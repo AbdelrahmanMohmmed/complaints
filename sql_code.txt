@@ -1,0 +1,7 @@
+-- Insert Domains
+INSERT INTO domains (domain_name) VALUES ('food'), ('health_tools');
+
+-- Insert default Roles (helpful for your User creation later)
+INSERT INTO roles (role_name) VALUES ('Admin'), ('Manager'), ('Employee');
+
+UPDATE users SET is_verified = true WHERE created_at < NOW();

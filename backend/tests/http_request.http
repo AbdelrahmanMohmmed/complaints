@@ -1,0 +1,52 @@
+GET http://127.0.0.1:8000
+Accept : application/json
+
+POST http://127.0.0.1:8000/users
+content-Type :application/json
+
+{
+"company_id": 2,
+  "role_id": 2,
+  "f_name": "garen",
+  "l_name": "yegar",
+  "email": "fukoff2@gmail.com",
+  "password": "wakeupBich"
+}
+
+# ============================================================================
+# Facebook OAuth Testing
+# ============================================================================
+
+### Step 1: Login to Get JWT Token
+POST http://localhost:8000/api/v1/login/
+Content-Type: application/x-www-form-urlencoded
+
+username=alwa%40gmail.com&password=ali123
+
+### Step 2: Get Facebook OAuth URL (Copy JWT token from Step 1 response)
+GET http://127.0.0.1:8000/api/v1/integrations/facebook/connect
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMSIsImV4cCI6MTc3NzUyMzE1MH0.IvtjZQeLc_4LLfIru1b6SWwNFXUolzsJ2JoF6k4thwQ
+
+### Step 3: Open Facebook OAuth URL in Browser
+# The response from Step 2 will give you an oauth_url
+# Copy that URL and open it in your browser (NO token needed)
+# You'll see Facebook login and page selection
+# After approval, Facebook redirects to the callback (your backend handles it)
+
+### Step 4: Verify Integration Saved
+GET http://127.0.0.1:8000/api/v1/integrations
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMSIsImV4cCI6MTc3NzE4MDk4N30.MN5HJ3Q3TzVAMUyTUvLEoojSui4WNMsl0p-MUbBJ9H4
+
+
+# ============================================================================
+# Alternative Login Format (JSON instead of URL-encoded)
+# ============================================================================
+
+### Login Alternative - JSON format
+POST http://127.0.0.1:8000/auth/login
+Content-Type: application/json
+
+{
+  "username": "alwa@gmail.com",
+  "password": "ali123"
+}
