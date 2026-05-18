@@ -22,6 +22,9 @@ from ..ai.labels import (
     PROBLEM_TYPE_DEFAULT_ID,
     PROBLEM_TYPE_DEFAULT_LABEL,
     PROBLEM_TYPE_LABEL2ID,
+    SENTIMENT_DEFAULT_ID,
+    SENTIMENT_DEFAULT_LABEL,
+    SENTIMENT_LABEL2ID,
 )
 from ..ai.predict import run_ai_pipeline
 
@@ -41,7 +44,8 @@ def _is_empty_text(text: str) -> bool:
 def _handle_empty_feedback(feedback: models.Feedback, db: Session) -> None:
     """Mark feedback with empty text as analyzed with neutral defaults."""
     feedback.status = "analyzed"
-    feedback.sentiment = "neutral"
+    feedback.sentiment = SENTIMENT_DEFAULT_LABEL
+    feedback.sentiment_id = SENTIMENT_DEFAULT_ID
     feedback.emotion = EMOTION_DEFAULT_LABEL
     feedback.emotion_id = EMOTION_DEFAULT_ID
     feedback.problem_type = PROBLEM_TYPE_DEFAULT_LABEL
@@ -83,6 +87,9 @@ def _update_feedback_with_results(
 ) -> None:
     """Update feedback record with AI analysis results and timestamp."""
     feedback.sentiment = results["sentiment"]
+    feedback.sentiment_id = results.get("sentiment_id") or SENTIMENT_LABEL2ID.get(
+        results.get("sentiment", ""), SENTIMENT_DEFAULT_ID
+    )
     feedback.emotion = results["emotion"]
     feedback.emotion_id = results.get("emotion_id") or EMOTION_LABEL2ID.get(
         results.get("emotion", ""), EMOTION_DEFAULT_ID

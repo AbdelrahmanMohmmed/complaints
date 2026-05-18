@@ -219,22 +219,44 @@ export function CompanyAdminDashboard() {
         </Card>
 
         {/* Emotion Breakdown (Vertical Bar) */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('dashboard.emotionBreakdown')}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={emotionData} layout="vertical" margin={{ left: 10 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" />
-                <YAxis type="category" dataKey="name" width={120} />
-                <Tooltip />
-                <Bar dataKey="value" radius={[4, 4, 4, 4]} fill="#f59e0b" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+<Card>
+  <CardHeader>
+    <CardTitle>{t('dashboard.emotionBreakdown')}</CardTitle>
+  </CardHeader>
+  <CardContent>
+    <ResponsiveContainer width="100%" height={300}>
+      <BarChart 
+        data={emotionData} 
+        margin={{ top: 10, right: 20, left: isAr ? 10 : 10, bottom: isAr ? 10 : 10 }}
+      >
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis 
+          dataKey="name" 
+          angle={isAr ? -35 : -35}
+          textAnchor="end"
+          height={isAr ? 60 : 60}
+          interval={0}
+          tick={{ 
+            fontSize: 12,
+            dy: isAr ? 12 : 5
+          }}
+        />
+        <YAxis 
+          tickMargin={8}
+          tick={{ 
+            fontSize: 12,
+            dx: isAr ? -15 : 0,
+            textAnchor: 'end'
+          }}
+          axisLine={{ stroke: '#9ca3af', strokeWidth: 1 }}
+          tickLine={{ stroke: '#9ca3af' }}
+        />
+        <Tooltip />
+        <Bar dataKey="value" radius={[4, 4, 0, 0]} fill="#f59e0b" />
+      </BarChart>
+    </ResponsiveContainer>
+  </CardContent>
+</Card>
 
       </div>
 

@@ -63,8 +63,8 @@ export function SignupPage() {
   const [selectedDomain, setSelectedDomain] = useState<Domain | null>(null);
   const [domainLabel, setDomainLabel] = useState('');
 
-  // Step 3: At least one of Facebook, WhatsApp, X; Email optional
-  const [apis, setApis] = useState({ facebook: false, whatsapp: false, x: false, email: false });
+    // Step 3: At least one of Facebook, X; Email optional
+    const [apis, setApis] = useState({ facebook: false, x: false, email: false });
   const validateStep1 = (): string => {
   const phoneClean = form.phone.replace(/[\s\-\(\)]/g, '');
   if (!form.f_name.trim() || !form.l_name.trim() || !form.company.trim()) {
@@ -105,7 +105,7 @@ export function SignupPage() {
   const strengthColors = ['bg-red-400', 'bg-orange-400', 'bg-yellow-400', 'bg-emerald-400'];
   const strengthLabels = isAr ? ['ضعيفة', 'مقبولة', 'جيدة', 'قوية'] : ['Weak', 'Fair', 'Good', 'Strong'];
 
-  const atLeastOneApi = apis.facebook || apis.whatsapp || apis.x;
+  const atLeastOneApi = apis.facebook || apis.x;
   // const displayDomainLabel = domainLabel.trim() || selectedDomain?.name || '';
 
 
@@ -462,7 +462,7 @@ const handleNext = () => {
                 </div>
               )}
 
-              {/* Step 3: At least one API (Facebook, WhatsApp, X); Email optional */}
+              {/* Step 3: At least one API (Facebook, X); Email optional */}
               {step === 3 && (
                 <div className={`space-y-4 ${isAr ? 'text-right' : ''}`}>
                   <p className="text-sm text-gray-600 dark:text-gray-400">

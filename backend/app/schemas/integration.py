@@ -6,7 +6,7 @@ from typing import Literal, Optional
 class IntegrationCreate(BaseModel):
     """Schema for creating a new API integration"""
 
-    channel_name: Literal["facebook", "twitter", "whatsapp", "gmail"]
+    channel_name: Literal["facebook", "twitter", "gmail"]
     api_key: Optional[str] = Field(
         default=None, description="API key for token-based platforms"
     )
@@ -20,7 +20,10 @@ class IntegrationCreate(BaseModel):
 
 class FreshdeskCreate(BaseModel):
     """Schema for creating Freshdesk integration"""
-    domain: str = Field(..., description="Freshdesk domain (e.g. fmstest.freshdesk.com)")
+
+    domain: str = Field(
+        ..., description="Freshdesk domain (e.g. fmstest.freshdesk.com)"
+    )
     api_key: str = Field(..., description="Freshdesk API key (will be encrypted)")
 
 

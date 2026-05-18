@@ -47,7 +47,7 @@ const roleConfig = {
       features: [
         { bold: 'Feedback Dashboard', text: 'Full sentiment and category analytics for your company' },
         { bold: 'User Management', text: 'Add users, assign roles (Manager / CSS), and deactivate accounts' },
-        { bold: 'API Integrations', text: 'Connect WhatsApp, Email, Web Forms and other feedback channels' },
+        { bold: 'API Integrations', text: 'Connect Email, Web Forms and other feedback channels' },
         { bold: 'Reports', text: 'Generate and export detailed performance reports' },
       ],
     },
@@ -57,7 +57,7 @@ const roleConfig = {
       features: [
         { bold: 'لوحة التعليقات', text: 'تحليلات كاملة للمشاعر والتصنيفات لشركتك' },
         { bold: 'إدارة المستخدمين', text: 'إضافة مستخدمين وتعيين الأدوار وتعطيل الحسابات' },
-        { bold: 'تكاملات API', text: 'ربط واتساب والبريد والنماذج الإلكترونية وقنوات التعليقات الأخرى' },
+        { bold: 'تكاملات API', text: 'ربط البريد والنماذج الإلكترونية وقنوات التعليقات الأخرى' },
         { bold: 'التقارير', text: 'إنشاء وتصدير تقارير أداء مفصّلة' },
       ],
     },

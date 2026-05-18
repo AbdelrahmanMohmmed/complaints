@@ -1,7 +1,7 @@
 """Feedback routes - receive and manage customer feedback from various sources."""
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 from collections import defaultdict
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request
@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from .. import database, models, oauth2
 from ..schemas import feedback
-from ..config import settings
+from app.ai.predict import run_ai_pipeline
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -65,6 +65,7 @@ def serialize_feedback(row: tuple[models.Feedback, str | None, str | None]) -> d
         "feedback_context": fb.feedback_context,
         "status": fb.status,
         "sentiment": fb.sentiment,
+        "sentiment_id": fb.sentiment_id,
         "emotion": fb.emotion,
         "emotion_id": fb.emotion_id,
         "problem_type": fb.problem_type,
@@ -232,7 +233,14 @@ def get_form(
     <div id="form-section">
       <div class="company-name">{company_name}</div>
       <div class="subtitle">We value your feedback</div>
-      <label>Share your complaint or feedback</label>
+            <label>Customer name (optional)</label>
+            <input
+                id="customer-name"
+                placeholder="Your name"
+                maxlength="100"
+                style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:14px;margin-bottom:16px;"
+            />
+            <label>Share your complaint or feedback</label>
       <textarea
         id="complaint"
         placeholder="Type your complaint here... (supports Arabic, English, and Franco)"
@@ -270,7 +278,8 @@ def get_form(
     }}
 
     async function submitForm() {{
-      const text = document.getElementById("complaint").value.trim();
+    const text = document.getElementById("complaint").value.trim();
+    const customerName = document.getElementById("customer-name").value.trim();
       const btn = document.getElementById("submit-btn");
       const errorMsg = document.getElementById("error-msg");
       btn.disabled = true;
@@ -280,7 +289,7 @@ def get_form(
         const response = await fetch(`/api/v1/feedback/form/${{token}}`, {{
           method: "POST",
           headers: {{ "Content-Type": "application/json" }},
-          body: JSON.stringify({{ feedback_context: text }})
+                    body: JSON.stringify({{ feedback_context: text, customer_name: customerName || null }})
         }});
         if (response.ok) {{
           document.getElementById("form-section").style.display = "none";
@@ -399,6 +408,27 @@ async def submit_form(
         db.add(new_feedback)
         db.commit()
         db.refresh(new_feedback)
+
+        # Run AI pipeline synchronously for immediate feedback to frontend
+        try:
+            ai_result = run_ai_pipeline(feedback_context)
+            # Update feedback record with AI results
+            new_feedback.sentiment = ai_result.get("sentiment")
+            new_feedback.sentiment_id = ai_result.get("sentiment_id")
+            new_feedback.emotion = ai_result.get("emotion")
+            new_feedback.emotion_id = ai_result.get("emotion_id")
+            new_feedback.problem_type = ai_result.get("problem_type")
+            new_feedback.problem_type_id = ai_result.get("problem_type_id")
+            new_feedback.priority = ai_result.get("priority")
+            new_feedback.status = "processed"
+            db.commit()
+            db.refresh(new_feedback)
+        except Exception as e:
+            logger.exception(
+                "AI pipeline failed for feedback_id=%s: %s",
+                new_feedback.feedback_id,
+                str(e),
+            )
 
         logger.info(
             f"Web form feedback received from company_id={integration.company_id}, "

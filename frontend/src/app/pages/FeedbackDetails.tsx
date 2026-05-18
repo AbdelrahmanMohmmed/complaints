@@ -28,6 +28,7 @@ interface BackendFeedback {
   feedback_context: string | null;
   status: string;
   sentiment: string | null;
+  sentiment_id: number | null;
   emotion: string | null;
   emotion_id: number | null;
   problem_type: string | null;
@@ -45,6 +46,12 @@ const sentimentColors: Record<string, string> = {
   positive: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
   negative: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
   neutral: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400',
+};
+
+const SENTIMENT_ID_TO_KEY: Record<number, 'negative' | 'neutral' | 'positive'> = {
+  0: 'negative',
+  1: 'neutral',
+  2: 'positive',
 };
 
 const statusColors: Record<string, string> = {
@@ -109,6 +116,17 @@ const getEmotionLabel = (
     ? t(`emotion.${emotionId}`)
     : (fallback || '—')
 );
+
+const getSentimentKey = (
+  sentimentId?: number | null,
+  sentiment?: string | null
+) => {
+  if (sentimentId !== null && sentimentId !== undefined) {
+    return SENTIMENT_ID_TO_KEY[sentimentId] || 'neutral';
+  }
+  if (sentiment) return sentiment.toLowerCase();
+  return 'neutral';
+};
 
 export function FeedbackDetails() {
   const { id } = useParams();
@@ -216,7 +234,7 @@ export function FeedbackDetails() {
   );
 
   const backPath = isAgent ? '/app/my-feedback' : '/app/feedback';
-  const sentiment = feedback.sentiment || 'neutral';
+  const sentimentKey = getSentimentKey(feedback.sentiment_id, feedback.sentiment);
 
   return (
     <div className="space-y-6">
@@ -253,8 +271,8 @@ export function FeedbackDetails() {
                     {isAr ? 'من: ' : 'From: '}{feedback.customer_name || 'Unknown'}
                   </p>
                 </div>
-                <Badge className={cn('capitalize', sentimentColors[sentiment])}>
-                  {t(`sentiment.${sentiment}`)}
+                <Badge className={cn('capitalize', sentimentColors[sentimentKey])}>
+                  {t(`sentiment.${sentimentKey}`)}
                 </Badge>
               </div>
             </CardHeader>
@@ -429,7 +447,7 @@ export function FeedbackDetails() {
                 {
                   icon: TrendingUp,
                   label: t('feedback.sentiment'),
-                  value: <Badge className={cn('capitalize', sentimentColors[sentiment])}>{t(`sentiment.${sentiment}`)}</Badge>
+                  value: <Badge className={cn('capitalize', sentimentColors[sentimentKey])}>{t(`sentiment.${sentimentKey}`)}</Badge>
                 },
                 {
                   icon: Smile,

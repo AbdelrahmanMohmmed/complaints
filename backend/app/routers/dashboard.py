@@ -1,7 +1,5 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from sqlalchemy import func
-from typing import List
 from datetime import datetime, timedelta
 from .. import models, database, oauth2
 from ..ai.labels import (
@@ -238,7 +236,6 @@ def get_reports(
     apis = db.query(models.Api).filter(models.Api.company_id == company_id).all()
     channel_colors = {
         "facebook": "#1d4ed8",
-        "whatsapp": "#16a34a",
         "twitter": "#0ea5e9",
         "email": "#f97316",
     }

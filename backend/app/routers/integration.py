@@ -39,7 +39,6 @@ router = APIRouter(prefix="/integrations", tags=["Integrations"])
 BASE_URLS = {
     "facebook": "https://graph.facebook.com",
     "twitter": "https://api.twitter.com/2",
-    "whatsapp": "https://graph.facebook.com/v17.0",
     "gmail": "imap.gmail.com",
 }
 
@@ -120,14 +119,6 @@ async def validate_api_credentials(
             params = {"query": "test", "max_results": 10}
             async with httpx.AsyncClient(timeout=10) as client:
                 response = await client.get(url, headers=headers, params=params)
-                return response.status_code == 200, "", None, None
-
-        elif channel_name == "whatsapp":
-            # WhatsApp: GET /me with Bearer token
-            url = f"{BASE_URLS['whatsapp']}/me"
-            headers = {"Authorization": f"Bearer {api_key}"}
-            async with httpx.AsyncClient(timeout=10) as client:
-                response = await client.get(url, headers=headers)
                 return response.status_code == 200, "", None, None
 
         elif channel_name == "gmail":

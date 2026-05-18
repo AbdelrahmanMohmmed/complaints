@@ -41,6 +41,93 @@ interface ReportsData {
   resolution_trend: { week: string; resolved: number; avgTime: number }[];
 }
 
+// Helper function for random colors
+// Helper function to generate consistent unique colors based on channel name
+// Helper function to generate consistent unique colors based on channel name
+const getChannelColor = (name: string, index: number) => {
+  // Predefined color map for common channels with UNIQUE colors
+  const colorMap: { [key: string]: string } = {
+    'Facebook': '#1877f2',      // Blue
+    'Twitter': '#1da1f2',       // Light Blue
+    'X': '#1da1f2',             // Light Blue
+    'Instagram': '#e4405f',     // Pink/Red
+    'WhatsApp': '#25d366',      // Green
+    'Telegram': '#26a5e4',      // Blue
+    'Email': '#ea4335',         // Red
+    'Gmail': '#ea4335',         // Red (Gmail red)
+    'Freshdesk': '#ff6c37',     // Orange (unique)
+    'Webform': '#8b5cf6',       // Purple (unique)
+    'Live Chat': '#10b981',     // Emerald Green
+    'Phone': '#f59e0b',         // Amber
+    'SMS': '#ec4899',           // Pink
+    'Mobile App': '#06b6d4',    // Cyan
+    'Website': '#3b82f6',       // Blue
+    'API': '#6366f1',           // Indigo
+    'Slack': '#4a154b',         // Dark Purple
+    'Microsoft Teams': '#6264a7', // Purple Blue
+    'Zendesk': '#03363d',       // Dark Teal
+    'Intercom': '#2e6ab8',      // Blue
+    'Zoho': '#e42527',          // Red
+    'HubSpot': '#ff7a59',       // Orange
+    'Helpdesk': '#ff6c37',      // Orange
+  };
+  
+  // If channel has a predefined color, use it
+  if (colorMap[name]) {
+    return colorMap[name];
+  }
+  
+  // For new channels, generate a unique color based on the name
+  const uniqueColors = [
+    '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', 
+    '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#14b8a6',
+    '#6366f1', '#d946ef', '#f43f5e', '#0ea5e9', '#eab308',
+    '#a855f7', '#22c55e', '#fb923c', '#2dd4bf', '#c084fc'
+  ];
+  
+  // Use a hash of the name to pick a consistent color
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = ((hash << 5) - hash) + name.charCodeAt(i);
+    hash |= 0;
+  }
+  const colorIndex = Math.abs(hash) % uniqueColors.length;
+  return uniqueColors[colorIndex];
+};
+type RenderCustomLabelProps = {
+  cx: number;
+  cy: number;
+  midAngle: number;
+  innerRadius?: number;
+  outerRadius: number;
+  percent: number;
+  name: string;
+  isAr: boolean;
+};
+
+const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, name, isAr }: RenderCustomLabelProps): React.ReactElement => {
+  const RADIAN = Math.PI / 180;
+  const radius = (outerRadius ?? 0) + (isAr ? 30 : 25);
+  const x = (cx ?? 0) + radius * Math.cos(-midAngle * RADIAN);
+  const y = (cy ?? 0) + radius * Math.sin(-midAngle * RADIAN);
+
+  const displayName = isAr && name && name.length > 15 ? name.substring(0, 12) + '...' : name;
+
+  return (
+    <text
+      x={x}
+      y={y}
+      fill={isAr ? "#1f2937" : "#374151"}
+      textAnchor={x > cx ? 'start' : 'end'}
+      dominantBaseline="central"
+      fontSize={isAr ? 12 : 12}
+      fontWeight={50}
+    >
+      {`${displayName}: ${(percent * 100).toFixed(0)}%`}
+    </text>
+  );
+};
+
 export function Reports() {
   const { t, language } = useLanguage();
   const { user } = useAuth();
@@ -50,21 +137,28 @@ export function Reports() {
 
   const [data, setData] = useState<ReportsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
+  
   useEffect(() => {
-    const fetch = async () => {
-      setIsLoading(true);
-      try {
-        const result = await request<ReportsData>(`/dashboard/reports?date_range=${dateRange}`);
-        setData(result);
-      } catch (err) {
-        console.error('Failed to fetch reports', err);
-      } finally {
-        setIsLoading(false);
+  const fetch = async () => {
+    setIsLoading(true);
+    try {
+      const result = await request<ReportsData>(`/dashboard/reports?date_range=${dateRange}`);
+      // Ensure channel data has unique colors
+      if (result && result.channel_data) {
+        result.channel_data = result.channel_data.map((channel, index) => ({
+          ...channel,
+          color:  getChannelColor(channel.name, index)
+        }));
       }
-    };
-    fetch();
-  }, [dateRange]);
+      setData(result);
+    } catch (err) {
+      console.error('Failed to fetch reports', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  fetch();
+}, [dateRange]);
 
   const exportCSV = () => {
     if (!data) return;
@@ -155,6 +249,12 @@ export function Reports() {
       bg: 'bg-amber-50 dark:bg-amber-900/20',
     },
   ];
+
+  // Ensure channel data has colors
+  const channelDataWithColors = data.channel_data?.map((channel, index) => ({
+    ...channel,
+    color: getChannelColor(channel.name, index)
+  })) || [];
 
   return (
     <div className="space-y-6">
@@ -327,10 +427,27 @@ export function Reports() {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={categoryData} layout="vertical" margin={{ left: 10 }}>
+                <BarChart 
+                  data={categoryData} 
+                  layout="vertical" 
+                  margin={{ left: isAr ? 50 : 10, right: 20, top: 10, bottom: 10 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
                   <XAxis type="number" tick={{ fontSize: 11 }} />
-                  <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={130} />
+                  <YAxis 
+                    type="category" 
+                    dataKey="name" 
+                    width={isAr ? 50 : 130}
+                    tick={{ 
+                      fontSize: 10,
+                      dx: isAr ? -20 : 0,
+                      textAnchor: isAr ? 'start' : 'end'
+                    }}
+                    tickMargin={isAr ? 25 : 8}
+                    tickLine={false}
+                    axisLine={false}
+                    interval={0}
+                  />
                   <Tooltip />
                   <Legend wrapperStyle={{ fontSize: '12px' }} />
                   <Bar dataKey="positive" fill="#10b981" name={t('sentiment.positive')} stackId="a" />
@@ -357,7 +474,7 @@ export function Reports() {
                       <div className="bg-red-500"   style={{ width: `${cat.total ? (cat.negative / cat.total) * 100 : 0}%` }} />
                       <div className="bg-gray-400"  style={{ width: `${cat.total ? (cat.neutral  / cat.total) * 100 : 0}%` }} />
                     </div>
-                    <div className="flex justify-between mt-1 text-xs">
+                    <div className="flex justify-between mt-1 text-xs" dir={isAr ? 'rtl' : 'ltr'}>
                       <span className="text-green-600">{cat.total ? Math.round((cat.positive / cat.total) * 100) : 0}% +</span>
                       <span className="text-red-600">{cat.total ? Math.round((cat.negative / cat.total) * 100) : 0}% -</span>
                     </div>
@@ -373,62 +490,66 @@ export function Reports() {
       )}
 
       {/* Channel Tab */}
-      {activeTab === 'channel' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">{isAr ? 'توزيع قنوات التلقي' : 'Feedback Channels Distribution'}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={280}>
-                <PieChart>
-                  <Pie
-                    data={data.channel_data}
-                    cx="50%" cy="50%" outerRadius={100} dataKey="value"
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                    labelLine={false}
-                  >
-                    {data.channel_data.map((entry, i) => <Cell key={i} fill={entry.color} />)}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">{isAr ? 'تفاصيل القنوات' : 'Channel Details'}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {data.channel_data.length === 0
-                ? <p className="text-center text-gray-400 text-sm py-8">No channel data available</p>
-                : (() => {
-                    const total = data.channel_data.reduce((s, c) => s + c.value, 0) || 1;
-                    return data.channel_data.map(channel => (
-                      <div key={channel.name}>
-                        <div className="flex items-center justify-between mb-1.5">
-                          <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: channel.color }} />
-                            <span className="text-sm font-medium text-gray-900 dark:text-white">{channel.name}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-gray-500">{channel.value}</span>
-                            <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                              {Math.round((channel.value / total) * 100)}%
-                            </span>
-                          </div>
-                        </div>
-                        <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                          <div className="h-full rounded-full" style={{ width: `${(channel.value / total) * 100}%`, backgroundColor: channel.color }} />
-                        </div>
-                      </div>
-                    ));
-                  })()
-              }
-            </CardContent>
-          </Card>
-        </div>
-      )}
+{activeTab === 'channel' && (
+  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base">{isAr ? 'توزيع قنوات التلقي' : 'Feedback Channels Distribution'}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ResponsiveContainer width="110%" height={330}>
+          <PieChart>
+            <Pie
+              data={channelDataWithColors}
+              cx="50%" cy="50%" 
+              outerRadius={isAr ? 110 : 120}   // ← smaller pie in Arabic
+              dataKey="value"
+              labelLine={false}
+              label={(props) => renderCustomLabel({ ...props, isAr })}  // ← USE IT HERE
+            >
+              {channelDataWithColors.map((entry, i) => (
+                <Cell key={i} fill={entry.color} stroke="#fff" strokeWidth={2} />
+              ))}
+            </Pie>
+            <Tooltip />
+          </PieChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base">{isAr ? 'تفاصيل القنوات' : 'Channel Details'}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {channelDataWithColors.length === 0
+          ? <p className="text-center text-gray-400 text-sm py-8">No channel data available</p>
+          : (() => {
+              const total = channelDataWithColors.reduce((s, c) => s + c.value, 0) || 1;
+              return channelDataWithColors.map(channel => (
+                <div key={channel.name}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: channel.color }} />
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">{channel.name}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-500">{channel.value}</span>
+                      <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                        {Math.round((channel.value / total) * 100)}%
+                      </span>
+                    </div>
+                  </div>
+                  <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full" style={{ width: `${(channel.value / total) * 100}%`, backgroundColor: channel.color }} />
+                  </div>
+                </div>
+              ));
+            })()
+        }
+      </CardContent>
+    </Card>
+  </div>
+)}
 
       {/* Emotion Tab */}
       {activeTab === 'emotion' && (
@@ -457,10 +578,27 @@ export function Reports() {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={emotionData} layout="vertical" margin={{ left: 10 }}>
+                <BarChart 
+                  data={emotionData} 
+                  layout="vertical" 
+                  margin={{ left: isAr ? 50 : 10, right: 20, top: 10, bottom: 10 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
                   <XAxis type="number" tick={{ fontSize: 11 }} />
-                  <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={130} />
+                  <YAxis 
+                    type="category" 
+                    dataKey="name" 
+                    width={isAr ? 50 : 130}
+                    tick={{ 
+                      fontSize: 10,
+                      dx: isAr ? -20 : 0,
+                      textAnchor: isAr ? 'start' : 'end'
+                    }}
+                    tickMargin={isAr ? 25 : 8}
+                    tickLine={false}
+                    axisLine={false}
+                    interval={0}
+                  />
                   <Tooltip />
                   <Legend wrapperStyle={{ fontSize: '12px' }} />
                   <Bar dataKey="positive" fill="#10b981" name={t('sentiment.positive')} stackId="a" />
@@ -500,10 +638,27 @@ export function Reports() {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={priorityByCategory} layout="vertical" margin={{ left: 10 }}>
+                <BarChart 
+                  data={priorityByCategory} 
+                  layout="vertical" 
+                  margin={{ left: isAr ? 50 : 10, right: 20, top: 10, bottom: 10 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
                   <XAxis type="number" tick={{ fontSize: 11 }} />
-                  <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={130} />
+                  <YAxis 
+                    type="category" 
+                    dataKey="name" 
+                    width={isAr ? 50 : 130}
+                    tick={{ 
+                      fontSize: 10,
+                      dx: isAr ? -20 : 0,
+                      textAnchor: isAr ? 'start' : 'end'
+                    }}
+                    tickMargin={isAr ? 25 : 8}
+                    tickLine={false}
+                    axisLine={false}
+                    interval={0}
+                  />
                   <Tooltip />
                   <Legend wrapperStyle={{ fontSize: '12px' }} />
                   <Bar dataKey="low" fill="#6b7280" name={t('priority.low')} stackId="a" />

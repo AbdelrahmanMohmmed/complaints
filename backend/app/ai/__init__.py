@@ -1,18 +1,16 @@
-"""AI predictions and priority scoring module.
+"""AI predictions and priority scoring module with ensemble voting.
 
-Provides sentiment analysis, emotion detection, priority scoring, and problem type classification.
-Models are loaded from paths configured in environment variables.
+Provides:
+- Arabic hard voting ensemble (5 models)
+- English weighted soft voting ensemble (3-5 models)
+- Language-aware orchestration
+- Priority scoring using sigmoid-based function
+
+Models are loaded on-demand by language modules when imported.
+No need to pre-load all models at startup.
 """
 
-from .models import (
-    get_bert_model,
-    get_emotion_model,
-    get_ft_model,
-    get_roberta_model,
-    get_sentiment_model,
-    get_tokenizer,
-    load_models,
-)
+from .models import load_models
 from .labels import (
     EMOTION_ID2AR_LABEL,
     EMOTION_ID2LABEL,
@@ -22,12 +20,6 @@ from .labels import (
 
 __all__ = [
     "load_models",
-    "get_sentiment_model",
-    "get_emotion_model",
-    "get_ft_model",
-    "get_tokenizer",
-    "get_bert_model",
-    "get_roberta_model",
     "PROBLEM_TYPE_ID2LABEL",
     "PROBLEM_TYPE_ID2AR_LABEL",
     "EMOTION_ID2LABEL",

@@ -49,3 +49,14 @@ EMOTION_ID2AR_LABEL = {
     2: "مشمئز",
     3: "راضٍ",
 }
+
+# English label mapping for sentiment (3 categories)
+SENTIMENT_ID2LABEL = {
+    0: "negative",
+    1: "neutral",
+    2: "positive",
+}
+
+SENTIMENT_DEFAULT_ID = 1
+SENTIMENT_DEFAULT_LABEL = SENTIMENT_ID2LABEL[SENTIMENT_DEFAULT_ID]
+SENTIMENT_LABEL2ID = {label: label_id for label_id, label in SENTIMENT_ID2LABEL.items()}

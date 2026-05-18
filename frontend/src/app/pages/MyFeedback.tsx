@@ -30,6 +30,7 @@ interface BackendFeedback {
   feedback_context: string | null;
   status: string | null;
   sentiment: string | null;
+  sentiment_id: number | null;
   emotion: string | null;
   emotion_id: number | null;
   problem_type: string | null;
@@ -54,6 +55,12 @@ const sentimentDotColors: Record<string, string> = {
   positive: 'bg-green-500',
   negative: 'bg-red-500',
   neutral: 'bg-gray-400',
+};
+
+const SENTIMENT_ID_TO_KEY: Record<number, 'negative' | 'neutral' | 'positive'> = {
+  0: 'negative',
+  1: 'neutral',
+  2: 'positive',
 };
 
 const channelIcons: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -82,6 +89,17 @@ const getEmotionLabel = (
     ? t(`emotion.${emotionId}`)
     : (fallback || '—')
 );
+
+const getSentimentKey = (
+  sentimentId?: number | null,
+  sentiment?: string | null
+) => {
+  if (sentimentId !== null && sentimentId !== undefined) {
+    return SENTIMENT_ID_TO_KEY[sentimentId] || 'neutral';
+  }
+  if (sentiment) return sentiment.toLowerCase();
+  return 'neutral';
+};
 
 export function MyFeedback() {
   const { t, language } = useLanguage();
@@ -316,11 +334,14 @@ filteredFeedback.map((fb) => {
             </p>
 
             <div className="flex flex-wrap items-center gap-2 mt-2">
-              {fb.sentiment && (
-                <Badge className={cn('text-xs', sentimentColors[fb.sentiment])}>
-                  {t(`sentiment.${fb.sentiment}`)}
-                </Badge>
-              )}
+              <Badge
+                className={cn(
+                  'text-xs',
+                  sentimentColors[getSentimentKey(fb.sentiment_id, fb.sentiment)]
+                )}
+              >
+                {t(`sentiment.${getSentimentKey(fb.sentiment_id, fb.sentiment)}`)}
+              </Badge>
               <span className="text-xs text-gray-400">{formatDate(fb.created_at)}</span>
               {notes.length > 0 && (
                 <span className="flex items-center gap-1 text-xs text-orange-500 dark:text-orange-400">

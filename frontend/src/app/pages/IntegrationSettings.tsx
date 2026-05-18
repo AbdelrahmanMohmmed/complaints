@@ -13,7 +13,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '../components/ui/select';
 import {
-  Plus, Plug, MessageSquare, Mail, Phone, Globe, CheckCircle,
+  Plus, Plug, Mail, Phone, Globe, CheckCircle,
   XCircle, Trash2, RefreshCw, Twitter, Facebook,
 } from 'lucide-react';
 import { cn } from '../components/ui/utils';
@@ -28,23 +28,23 @@ interface BackendIntegration {
 const channelIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   facebook: Facebook,
   twitter: Twitter,
-  whatsapp: MessageSquare,
   gmail: Mail,
   email: Mail,
   freshdesk: Globe,
   phone: Phone,
   web: Globe,
+  webform: Globe,
 };
 
 const channelColors: Record<string, string> = {
   facebook: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400',
   twitter: 'bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400',
-  whatsapp: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400',
   gmail: 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400',
   email: 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400',
   freshdesk: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400',
   phone: 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400',
   web: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400',
+  webform: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400',
 };
 
 export function IntegrationSettings() {
@@ -70,6 +70,9 @@ export function IntegrationSettings() {
   const [scrapeScrolls, setScrapeScrolls] = useState('2');
   const [scrapeLoading, setScrapeLoading] = useState(false);
   const [scrapeMessage, setScrapeMessage] = useState('');
+  const [webformLoading, setWebformLoading] = useState(false);
+  const [webformUrl, setWebformUrl] = useState('');
+  const [webformError, setWebformError] = useState('');
 
   // Delete state
   const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -177,6 +180,23 @@ export function IntegrationSettings() {
     }
   };
 
+  const handleCreateWebform = async () => {
+    setWebformError('');
+    setWebformUrl('');
+    setWebformLoading(true);
+    try {
+      const data = await request<{ form_url: string }>('/integrations/webform', {
+        method: 'POST',
+      });
+      setWebformUrl(data.form_url);
+      fetchIntegrations();
+    } catch (err: any) {
+      setWebformError(err?.message || (isAr ? 'فشل إنشاء نموذج الويب.' : 'Failed to create web form.'));
+    } finally {
+      setWebformLoading(false);
+    }
+  };
+
   const handleScrapeTwitter = async () => {
     if (!scrapeUsername.trim()) {
       setAddError(isAr ? 'يرجى إدخال حساب تويتر.' : 'Please enter a Twitter account.');
@@ -260,16 +280,47 @@ export function IntegrationSettings() {
           <p className="text-gray-500 dark:text-gray-400 mt-1">
             {isAr ? 'ربط القنوات الخارجية لاستقبال التعليقات' : 'Connect external channels to receive feedback'}
           </p>
+          {(webformError || webformUrl) && (
+            <div className="mt-3 space-y-2">
+              {webformError && (
+                <p className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
+                  {webformError}
+                </p>
+              )}
+              {webformUrl && (
+                <div className="text-sm text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-900/30 p-3 rounded-lg">
+                  <p className="font-semibold mb-1">
+                    {isAr ? 'رابط نموذج الويب' : 'Web form URL'}
+                  </p>
+                  <a className="text-blue-600 dark:text-blue-400 break-all" href={webformUrl} target="_blank" rel="noreferrer">
+                    {webformUrl}
+                  </a>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
-        <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); setAddError(''); setScrapeMessage(''); }}>
-          <DialogTrigger asChild>
-            <Button className="gap-2">
-              <Plus className="w-4 h-4" />
-              {t('integrations.addIntegration')}
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Button
+            variant="outline"
+            className="gap-2"
+            onClick={handleCreateWebform}
+            disabled={webformLoading}
+          >
+            <Globe className="w-4 h-4" />
+            {webformLoading
+              ? (isAr ? 'جارٍ الإنشاء...' : 'Creating...')
+              : (isAr ? 'إنشاء نموذج ويب' : 'Create Web Form')}
+          </Button>
+          <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); setAddError(''); setScrapeMessage(''); }}>
+            <DialogTrigger asChild>
+              <Button className="gap-2">
+                <Plus className="w-4 h-4" />
+                {t('integrations.addIntegration')}
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
             <DialogHeader>
               <DialogTitle>{t('integrations.addIntegration')}</DialogTitle>
               <DialogDescription>
@@ -286,7 +337,6 @@ export function IntegrationSettings() {
                   <SelectContent>
                     <SelectItem value="facebook">{isAr ? 'فيسبوك' : 'Facebook'}</SelectItem>
                     <SelectItem value="twitter">{isAr ? 'تويتر / X' : 'Twitter / X'}</SelectItem>
-                    <SelectItem value="whatsapp">{isAr ? 'واتساب للأعمال' : 'WhatsApp Business'}</SelectItem>
                     <SelectItem value="gmail">Gmail</SelectItem>
                     <SelectItem value="freshdesk">Freshdesk</SelectItem>
                   </SelectContent>
@@ -352,7 +402,6 @@ export function IntegrationSettings() {
                   <p className="text-xs text-gray-400">
                     {newChannelName === 'facebook' && (isAr ? 'استخدم رمز وصول صفحة فيسبوك' : 'Use your Facebook Page Access Token')}
                     {newChannelName === 'twitter' && (isAr ? 'استخدم رمز Bearer لتويتر (تطبيق فقط)' : 'Use your Twitter Bearer Token (app-only)')}
-                    {newChannelName === 'whatsapp' && (isAr ? 'استخدم رمز Bearer لـ WhatsApp Cloud API' : 'Use your WhatsApp Cloud API Bearer Token')}
                   </p>
                 </div>
               )}
@@ -421,8 +470,9 @@ export function IntegrationSettings() {
                 {addLoading ? (isAr ? 'جارٍ التحقق...' : 'Validating...') : (isAr ? 'اتصال' : 'Connect')}
               </Button>
             </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* Stats */}

@@ -198,6 +198,7 @@ class Feedback(Base):
 
     # ML Analysis Results
     sentiment = Column(String(20), nullable=True)  # positive, negative, neutral
+    sentiment_id = Column(Integer, nullable=True)
     emotion = Column(String(20), nullable=True)  # happy, sad, angry, etc.
     emotion_id = Column(Integer, nullable=True)
     problem_type = Column(String(50), nullable=True)  # Service Quality, Billing, etc.

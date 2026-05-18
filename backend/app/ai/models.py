@@ -1,33 +1,16 @@
-"""Model loading utilities for AI predictions.
+"""Model loading utilities for ensemble AI predictions.
 
-Loads models from provided paths and provides access to them.
-Models can be optionally loaded at startup if paths are configured.
+With the ensemble architecture, models are loaded on-demand by each language
+module (Arabic or English) when their respective modules are imported.
+This function validates configuration and logs status.
 """
 
 import logging
 import os
-import pickle
-from pathlib import Path
 from typing import Optional
-
-import fasttext
-import keras
-import numpy as np
+from app.config import settings
 
 logger = logging.getLogger(__name__)
-
-# Global model instances
-_sentiment_model = None
-_emotion_model = None
-_ft_model = None
-_tokenizer = None
-_bert_model = None
-_roberta_model = None
-
-
-# ============================================================================
-# Model Loading
-# ============================================================================
 
 
 def load_models(
@@ -37,162 +20,107 @@ def load_models(
     bert_model_path: str = "",
     roberta_model_path: str = "",
 ) -> bool:
-    """Load all AI models from provided paths.
+    """Validate ensemble model configuration and log status.
 
-    Called during application initialization with paths from configuration.
-    Models are optional - if a path is empty or file doesn't exist, it's skipped.
+    With the ensemble architecture, models are loaded on-demand by language modules.
+    This function is kept for backward compatibility and validates that required
+    paths are configured.
 
     Args:
-        sentiment_model_path: Path to sentiment SVM model (.pkl file)
-        emotion_model_path: Path to emotion SVM model (.pkle file)
-        fasttext_model_path: Path to FastText model (.bin file)
-        bert_model_path: Path to BERT problem type model directory
-        roberta_model_path: Path to RoBERTa problem type model directory
+        sentiment_model_path: (deprecated) Old parameter, ignored
+        emotion_model_path: (deprecated) Old parameter, ignored
+        fasttext_model_path: (deprecated) Old parameter, ignored
+        bert_model_path: (deprecated) Old parameter, ignored
+        roberta_model_path: (deprecated) Old parameter, ignored
 
     Returns:
-        True if at least one model was loaded, False if none were loaded
+        True if required ensemble model paths are configured, False otherwise
     """
-    global _sentiment_model, _emotion_model, _ft_model, _tokenizer
-    global _bert_model, _roberta_model
-
-    models_loaded = False
-
     try:
-        logger.info("Loading AI models from provided paths...")
-
-        # Load sentiment model (SVM)
-        if sentiment_model_path and os.path.exists(sentiment_model_path):
-            try:
-                with open(sentiment_model_path, "rb") as f:
-                    _sentiment_model = pickle.load(f)
-                logger.info(f"Sentiment model loaded: {sentiment_model_path}")
-                models_loaded = True
-            except Exception as e:
-                logger.warning(f"Failed to load sentiment model: {str(e)}")
-        elif sentiment_model_path:
-            logger.warning(f"Sentiment model path not found: {sentiment_model_path}")
-
-        # Load emotion model (SVM)
-        if emotion_model_path and os.path.exists(emotion_model_path):
-            try:
-                with open(emotion_model_path, "rb") as f:
-                    _emotion_model = pickle.load(f)
-                logger.info(f"Emotion model loaded: {emotion_model_path}")
-                models_loaded = True
-            except Exception as e:
-                logger.warning(f"Failed to load emotion model: {str(e)}")
-        elif emotion_model_path:
-            logger.warning(f"Emotion model path not found: {emotion_model_path}")
-
-        # Load FastText model
-        if fasttext_model_path and os.path.exists(fasttext_model_path):
-            try:
-                _ft_model = fasttext.load_model(fasttext_model_path)
-                logger.info(f"FastText model loaded: {fasttext_model_path}")
-                models_loaded = True
-            except Exception as e:
-                logger.warning(f"Failed to load FastText model: {str(e)}")
-        elif fasttext_model_path:
-            logger.warning(f"FastText model path not found: {fasttext_model_path}")
-
-        # Load BERT model
-        if bert_model_path and os.path.exists(bert_model_path):
-            try:
-                from .bert_pred import load_bert_model
-
-                if load_bert_model(bert_model_path):
-                    logger.info(f"BERT model loaded: {bert_model_path}")
-                    models_loaded = True
-                else:
-                    logger.warning(f"Failed to load BERT model from: {bert_model_path}")
-            except Exception as e:
-                logger.warning(f"Could not load BERT model: {str(e)}")
-        elif bert_model_path:
-            logger.warning(f"BERT model path not found: {bert_model_path}")
-
-        # Load RoBERTa model
-        if roberta_model_path and os.path.exists(roberta_model_path):
-            try:
-                from .roberta_pred import load_roberta_model
-
-                if load_roberta_model(roberta_model_path):
-                    logger.info(f"RoBERTa model loaded: {roberta_model_path}")
-                    models_loaded = True
-                else:
-                    logger.warning(f"Failed to load RoBERTa model from: {roberta_model_path}")
-            except Exception as e:
-                logger.warning(f"Could not load RoBERTa model: {str(e)}")
-        elif roberta_model_path:
-            logger.warning(f"RoBERTa model path not found: {roberta_model_path}")
-
-        if models_loaded:
-            logger.info("AI models loaded successfully")
+        logger.info("=" * 80)
+        logger.info("ENSEMBLE AI MODEL CONFIGURATION VALIDATION")
+        logger.info("=" * 80)
+        
+        # Check Arabic models
+        logger.info("\nArabic Models:")
+        arabic_models = {
+            "FastText": settings.AR_FASTTEXT_PATH,
+            "Tokenizer": settings.AR_TOKENIZER_PATH,
+            "Problem LR-F": settings.AR_PROBLEM_LR_F_PATH,
+            "Problem GRU": settings.AR_PROBLEM_GRU_PATH,
+            "Problem LR-A": settings.AR_PROBLEM_LR_A_PATH,
+            "Problem SVM-A": settings.AR_PROBLEM_SVM_A_PATH,
+            "Emotion LR-F": settings.AR_EMOTION_LR_F_PATH,
+            "Emotion BiLSTM": settings.AR_EMOTION_BILSTM_PATH,
+            "Emotion LR-A": settings.AR_EMOTION_LR_A_PATH,
+            "Emotion SVM-A": settings.AR_EMOTION_SVM_A_PATH,
+            "Sentiment LR-F": settings.AR_SENTIMENT_LR_F_PATH,
+            "Sentiment BiLSTM": settings.AR_SENTIMENT_BILSTM_PATH,
+            "Sentiment SVM-A": settings.AR_SENTIMENT_SVM_A_PATH,
+            "Sentiment LR-A": settings.AR_SENTIMENT_LR_A_PATH,
+            "AraBERT Problem": settings.AR_ARABERT_PROBLEM_PATH,
+            "AraBERT Emotion": settings.AR_ARABERT_EMOTION_PATH,
+            "AraBERT Sentiment": settings.AR_ARABERT_SENTIMENT_PATH,
+        }
+        
+        arabic_configured = all(path != "" for path in arabic_models.values())
+        for model_name, path in arabic_models.items():
+            if path:
+                exists = os.path.exists(path)
+                status = "✓" if exists else "✗ (FILE NOT FOUND)"
+            else:
+                exists = False
+                status = "✗ (NOT CONFIGURED)"
+            logger.info(f"  {status} {model_name}: {path if path else 'NOT CONFIGURED'}")
+        
+        # Check English models
+        logger.info("\nEnglish Models:")
+        english_models = {
+            "FastText": settings.EN_FASTTEXT_PATH,
+            "Tokenizer": settings.EN_TOKENIZER_PATH,
+            "Problem LR": settings.EN_PROBLEM_LR_PATH,
+            "Problem RF": settings.EN_PROBLEM_RF_PATH,
+            "Problem SVM": settings.EN_PROBLEM_SVM_PATH,
+            "Emotion BiLSTM": settings.EN_EMOTION_BILSTM_PATH,
+            "Emotion LR": settings.EN_EMOTION_LR_PATH,
+            "Sentiment SVM": settings.EN_SENTIMENT_SVM_PATH,
+            "Sentiment GRU": settings.EN_SENTIMENT_GRU_PATH,
+            "RoBERTa Problem": settings.EN_ROBERTA_PROBLEM_PATH,
+            "RoBERTa Emotion": settings.EN_ROBERTA_EMOTION_PATH,
+            "RoBERTa Sentiment": settings.EN_ROBERTA_SENTIMENT_PATH,
+            "BERT Problem": settings.EN_BERT_PROBLEM_PATH,
+        }
+        
+        english_configured = all(path != "" for path in english_models.values())
+        for model_name, path in english_models.items():
+            if path:
+                exists = os.path.exists(path)
+                status = "✓" if exists else "✗ (FILE NOT FOUND)"
+            else:
+                exists = False
+                status = "✗ (NOT CONFIGURED)"
+            logger.info(f"  {status} {model_name}: {path if path else 'NOT CONFIGURED'}")
+        
+        logger.info("\n" + "=" * 80)
+        if arabic_configured and english_configured:
+            logger.info("✓ ALL ENSEMBLE MODELS CONFIGURED AND READY")
+            logger.info("=" * 80)
+            return True
+        elif arabic_configured or english_configured:
+            if arabic_configured:
+                logger.warning("✓ Arabic ensemble configured, English ensemble NOT CONFIGURED")
+            else:
+                logger.warning("✓ English ensemble configured, Arabic ensemble NOT CONFIGURED")
+            logger.info("=" * 80)
+            return True
         else:
-            logger.warning("No AI models were loaded. Check configuration paths.")
-
-        return models_loaded
-
+            logger.error("✗ NO ENSEMBLE MODELS CONFIGURED")
+            logger.error("Please configure model paths in .env file:")
+            logger.error("  - Arabic models: AR_FASTTEXT_PATH, AR_TOKENIZER_PATH, AR_LR_F_PATH, etc.")
+            logger.error("  - English models: EN_FASTTEXT_PATH, EN_TOKENIZER_PATH, EN_LR_PATH, etc.")
+            logger.info("=" * 80)
+            return False
+    
     except Exception as e:
-        logger.error(f"Error loading models: {str(e)}", exc_info=True)
+        logger.error(f"Error validating ensemble configuration: {str(e)}", exc_info=True)
         return False
-
-
-# ============================================================================
-# Model Access
-# ============================================================================
-
-
-def get_sentiment_model():
-    """Get the loaded sentiment model.
-
-    Raises:
-        RuntimeError: If model not loaded
-    """
-    if _sentiment_model is None:
-        raise RuntimeError("Sentiment model not loaded. Configure SENTIMENT_MODEL_PATH in .env")
-    return _sentiment_model
-
-
-def get_emotion_model():
-    """Get the loaded emotion model.
-
-    Raises:
-        RuntimeError: If model not loaded
-    """
-    if _emotion_model is None:
-        raise RuntimeError("Emotion model not loaded. Configure EMOTION_MODEL_PATH in .env")
-    return _emotion_model
-
-
-def get_ft_model():
-    """Get the loaded FastText model.
-
-    Raises:
-        RuntimeError: If model not loaded
-    """
-    if _ft_model is None:
-        raise RuntimeError(
-            "FastText model not loaded. Configure FASTTEXT_MODEL_PATH in .env"
-        )
-    return _ft_model
-
-
-def get_tokenizer():
-    """Get the loaded tokenizer.
-
-    Raises:
-        RuntimeError: If tokenizer not loaded
-    """
-    if _tokenizer is None:
-        raise RuntimeError("Tokenizer not loaded. Call load_models() first.")
-    return _tokenizer
-
-
-def get_bert_model():
-    """Get the loaded BERT model. Returns None if not loaded."""
-    return _bert_model
-
-
-def get_roberta_model():
-    """Get the loaded RoBERTa model. Returns None if not loaded."""
-    return _roberta_model

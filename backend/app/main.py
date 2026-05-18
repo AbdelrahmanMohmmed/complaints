@@ -94,20 +94,14 @@ async def startup_event() -> None:
     global scheduler
 
     try:
-        # Load AI models from configured paths
-        logger.info("Loading AI models from configured paths...")
-        models_loaded = load_models(
-            sentiment_model_path=settings.SENTIMENT_MODEL_PATH,
-            emotion_model_path=settings.EMOTION_MODEL_PATH,
-            fasttext_model_path=settings.FASTTEXT_MODEL_PATH,
-            bert_model_path=settings.BERT_MODEL_PATH,
-            roberta_model_path=settings.ROBERTA_MODEL_PATH,
-        )
+        # Validate AI model configuration (models load lazily on first use)
+        logger.info("Validating AI model configuration...")
+        models_loaded = load_models()
 
         if models_loaded:
-            logger.info("AI models loaded successfully")
+            logger.info("AI model configuration validated successfully")
         else:
-            logger.warning("Some or all AI models could not be loaded. Check .env paths.")
+            logger.warning("Some AI models are not configured. Check .env paths.")
 
         # Initialize scheduler
         scheduler = BackgroundScheduler()

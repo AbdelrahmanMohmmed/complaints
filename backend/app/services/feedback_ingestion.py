@@ -30,7 +30,6 @@ logger = logging.getLogger(__name__)
 PLATFORM_URLS = {
     "facebook": "https://graph.facebook.com",
     "twitter": "https://api.twitter.com/2",
-    "whatsapp": "https://graph.facebook.com/v17.0",
     "gmail": "imap.gmail.com",
 }
 
@@ -423,107 +422,6 @@ async def fetch_twitter_comments(
     except Exception as e:
         logger.error(
             f"Error processing Twitter mentions for integration {integration_id}: {str(e)}"
-        )
-        db.rollback()
-
-    return comments_added
-
-
-async def fetch_whatsapp_messages(
-    api_key: str, api_base_url: str, db: Session, integration_id: int, company_id: int
-) -> int:
-    """
-    Fetch open tickets from Freshdesk and save description + created_at to database.
-
-    GET {api_base_url}/api/v2/tickets?status=2&limit=100
-    Headers: Authorization: Basic {base64(api_key:X)}
-    """
-    tickets_added = 0
-    try:
-        # WhatsApp message retrieval endpoint
-        url = f"{api_base_url}/me/messages"
-        headers = {"Authorization": f"Bearer {api_key}"}
-
-        params = {"limit": 100, "fields": "from,message,timestamp"}
-
-        async with httpx.AsyncClient(timeout=API_TIMEOUT) as client:
-            response = await client.get(url, params=params, headers=headers)
-
-            # Handle authentication failures
-            if response.status_code in [401, 403]:
-                logger.warning(
-                    f"Integration {integration_id} returned {response.status_code} - marking as expired"
-                )
-                mark_integration_expired(db, integration_id)
-                return 0
-
-            if response.status_code != 200:
-                logger.error(
-                    f"WhatsApp API returned {response.status_code} for integration {integration_id}"
-                )
-                return 0
-
-            data = response.json()
-
-            # Process messages
-            for message in data.get("data", []):
-                feedback_text = message.get("message", "").strip()
-                if not feedback_text:
-                    continue
-
-                # Parse timestamp from WhatsApp
-                timestamp = message.get("timestamp")
-                if not timestamp:
-                    created_at = datetime.utcnow()
-                else:
-                    try:
-                        created_at = datetime.fromtimestamp(int(timestamp))
-                    except (ValueError, TypeError):
-                        created_at = datetime.utcnow()
-
-                # Deduplicate
-                existing = (
-                    db.query(models.Feedback)
-                    .filter(
-                        and_(
-                            models.Feedback.api_id == integration_id,
-                            models.Feedback.created_at == created_at,
-                            models.Feedback.feedback_context == feedback_text,
-                        )
-                    )
-                    .first()
-                )
-
-                if existing:
-                    continue
-
-                # Create new feedback record
-                new_feedback = models.Feedback(
-                    company_id=company_id,
-                    api_id=integration_id,
-                    feedback_text=feedback_text,
-                    created_at=created_at,
-                    customer_name=message.get("from", {}).get("name"),
-                )
-                db.add(new_feedback)
-                comments_added += 1
-
-            db.commit()
-            logger.info(
-                f"WhatsApp: Added {comments_added} new messages for integration {integration_id}"
-            )
-
-    except httpx.TimeoutException:
-        logger.error(
-            f"WhatsApp API timeout for integration {integration_id} - will retry next hour"
-        )
-    except httpx.RequestError as e:
-        logger.error(
-            f"WhatsApp API request error for integration {integration_id}: {str(e)}"
-        )
-    except Exception as e:
-        logger.error(
-            f"Error processing WhatsApp messages for integration {integration_id}: {str(e)}"
         )
         db.rollback()
 

@@ -32,6 +32,7 @@ interface BackendFeedback {
   feedback_context: string | null;
   status: string;
   sentiment: string | null;
+  sentiment_id: number | null;
   emotion: string | null;
   emotion_id: number | null;
   problem_type: string | null;
@@ -43,6 +44,12 @@ const sentimentColors: Record<string, string> = {
   positive: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
   negative: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
   neutral: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400',
+};
+
+const SENTIMENT_ID_TO_KEY: Record<number, 'negative' | 'neutral' | 'positive'> = {
+  0: 'negative',
+  1: 'neutral',
+  2: 'positive',
 };
 
 const statusColors: Record<string, string> = {
@@ -108,6 +115,19 @@ const getEmotionLabel = (
     : (fallback || '—')
 );
 
+const getSentimentKey = (
+  sentimentId?: number | null,
+  sentiment?: string | null
+) => {
+  if (sentimentId !== null && sentimentId !== undefined) {
+    return SENTIMENT_ID_TO_KEY[sentimentId] || 'neutral';
+  }
+  if (sentiment) return sentiment.toLowerCase();
+  return 'neutral';
+};
+
+const PAGE_SIZE_OPTIONS = [20, 30, 50];
+
 export function FeedbackList() {
   const { t, language } = useLanguage();
   const { user } = useAuth();
@@ -128,6 +148,8 @@ const [feedbackStatuses, setFeedbackStatuses] = useState<Record<number, string>>
 const [feedbackPriorities, setFeedbackPriorities] = useState<Record<number, string>>({});
 const [assignDialogOpen, setAssignDialogOpen] = useState(false);
 const [selectedFeedback, setSelectedFeedback] = useState<BackendFeedback | null>(null);
+const [currentPage, setCurrentPage] = useState(1);
+const [pageSize, setPageSize] = useState(20);
 
   const [selectedAgentId, setSelectedAgentId] = useState('');
 
@@ -168,13 +190,30 @@ const filteredFeedback = feedbackList.filter((fb) => {
     feedbackPriorities[fb.feedback_id] || fb.priority || 'low'
   );
   const matchesStatus = statusFilter === 'all' || currentStatus === statusFilter;
-  const matchesSentiment = sentimentFilter === 'all' || fb.sentiment === sentimentFilter;
+  const sentimentKey = getSentimentKey(fb.sentiment_id, fb.sentiment);
+  const matchesSentiment = sentimentFilter === 'all' || sentimentKey === sentimentFilter;
   const matchesPriority = priorityFilter === 'all' || currentPriority === priorityFilter;
   const matchesCategory = categoryFilter === 'all' || (fb.category_name || '—') === categoryFilter;
   const matchesChannel = channelFilter === 'all' || (fb.channel_name || '—') === channelFilter;
   const matchesEmotion = emotionFilter === 'all' || String(fb.emotion_id ?? 'none') === emotionFilter;
   return matchesSearch && matchesStatus && matchesSentiment && matchesPriority && matchesCategory && matchesChannel && matchesEmotion;
 });
+
+  const totalPages = Math.max(1, Math.ceil(filteredFeedback.length / pageSize));
+  const paginatedFeedback = filteredFeedback.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, sentimentFilter, priorityFilter, categoryFilter, channelFilter, emotionFilter, pageSize]);
+
+  React.useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   const categoryOptions = Array.from(
     new Set(feedbackList.map(fb => fb.category_name || '—'))
@@ -191,12 +230,12 @@ const filteredFeedback = feedbackList.filter((fb) => {
 
 const exportToCSV = () => {
   const headers = ['ID', 'Customer', 'Feedback', 'Problem Type', 'Sentiment', 'Emotion', 'Priority', 'Status', 'Date'];
-  const rows = feedbackList.map(fb => [
+  const rows = filteredFeedback.map(fb => [
     fb.feedback_id,
     fb.customer_name || 'Unknown',
     `"${(fb.feedback_context || '').replace(/"/g, '""')}"`,
     getProblemTypeLabel(t, fb.problem_type_id, fb.problem_type),
-    fb.sentiment || '—',
+    t(`sentiment.${getSentimentKey(fb.sentiment_id, fb.sentiment)}`),
     getEmotionLabel(t, fb.emotion_id, fb.emotion),
     fb.priority || '—',
     feedbackStatuses[fb.feedback_id] || fb.status,
@@ -434,11 +473,12 @@ const handleStatusChange = async (feedbackId: number, newStatus: string) => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredFeedback.map((fb) => {
+              {paginatedFeedback.map((fb) => {
   const currentStatus = normalizeStatus(feedbackStatuses[fb.feedback_id] || fb.status);
   const currentPriority = normalizePriority(
     feedbackPriorities[fb.feedback_id] || fb.priority || 'low'
   );
+  const sentimentKey = getSentimentKey(fb.sentiment_id, fb.sentiment);
   return (
     <TableRow
       key={fb.feedback_id}
@@ -463,8 +503,8 @@ const handleStatusChange = async (feedbackId: number, newStatus: string) => {
         <span className="text-sm text-gray-600 dark:text-gray-400">{fb.channel_name || '—'}</span>
       </TableCell>
       <TableCell>
-        <Badge className={cn('capitalize text-xs', sentimentColors[fb.sentiment || 'neutral'])}>
-          {t(`sentiment.${fb.sentiment || 'neutral'}`)}
+        <Badge className={cn('capitalize text-xs', sentimentColors[sentimentKey])}>
+          {t(`sentiment.${sentimentKey}`)}
         </Badge>
       </TableCell>
       <TableCell className="hidden xl:table-cell">
@@ -521,7 +561,7 @@ const handleStatusChange = async (feedbackId: number, newStatus: string) => {
     </TableRow>
   );
 })}
-              {filteredFeedback.length === 0 && (
+              {paginatedFeedback.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={11} className="text-center py-12 text-gray-400">
                     <AlertTriangle className="w-8 h-8 mx-auto mb-2 opacity-40" />
@@ -537,9 +577,38 @@ const handleStatusChange = async (feedbackId: number, newStatus: string) => {
       {/* Results Count */}
       <div className="text-xs text-gray-500 dark:text-gray-400">
         {isAr
-  ? `عرض ${filteredFeedback.length} من أصل ${feedbackList.length} تعليق`
-  : `Showing ${filteredFeedback.length} of ${feedbackList.length} feedback items`
+  ? `عرض ${paginatedFeedback.length} من أصل ${filteredFeedback.length} تعليق (الكل: ${feedbackList.length})`
+  : `Showing ${paginatedFeedback.length} of ${filteredFeedback.length} filtered items (total: ${feedbackList.length})`
 }
+      </div>
+
+      {/* Pagination Controls */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-500 dark:text-gray-400">{isAr ? 'عدد العناصر في الصفحة' : 'Rows per page'}</span>
+          <Select value={String(pageSize)} onValueChange={(value) => setPageSize(Number(value))}>
+            <SelectTrigger className="w-[110px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PAGE_SIZE_OPTIONS.map((option) => (
+                <SelectItem key={option} value={String(option)}>{option}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setCurrentPage((page) => Math.max(1, page - 1))} disabled={currentPage <= 1}>
+            {isAr ? 'السابق' : 'Previous'}
+          </Button>
+          <span className="text-sm text-gray-500 dark:text-gray-400">
+            {isAr ? `الصفحة ${currentPage} من ${totalPages}` : `Page ${currentPage} of ${totalPages}`}
+          </span>
+          <Button variant="outline" onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))} disabled={currentPage >= totalPages}>
+            {isAr ? 'التالي' : 'Next'}
+          </Button>
+        </div>
       </div>
 
       {/* Assign Dialog (Manager only) */}

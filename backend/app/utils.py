@@ -1,13 +1,11 @@
 import bcrypt
 import logging
 from cryptography.fernet import Fernet
-from .config import settings
 import random
 import smtplib
 import ssl
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-import os
 from .config import settings
 
 logger = logging.getLogger(__name__)

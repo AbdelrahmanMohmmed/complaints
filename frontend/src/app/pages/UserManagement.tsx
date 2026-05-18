@@ -410,21 +410,24 @@ const updateUser = async () => {
 
                   </TableCell>
 
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Switch
-                          checked={user.is_active}
-                          onCheckedChange={() => toggleUserStatus(user.user_id)}
-                        />
-                        <Badge className={cn(
-                          user.is_active
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                            : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400'
-                        )}>
-                          {user.is_active ? t('common.active') : t('common.inactive')}
-                        </Badge>
-                      </div>
-                    </TableCell>
+<TableCell>
+  <div className={cn("flex items-center gap-2", isAr && "flex-row-reverse")}>
+    {/* Remove the scale-x-[-1] wrapper */}
+    <Switch
+      checked={user.is_active}
+      onCheckedChange={() => toggleUserStatus(user.user_id)}
+      className={isAr ? "[&>span]:data-[state=checked]:translate-x-[-14px]" : ""}
+    />
+    <Badge className={cn(
+      "whitespace-nowrap",
+      user.is_active
+        ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+        : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400'
+    )}>
+      {user.is_active ? t('common.active') : t('common.inactive')}
+    </Badge>
+  </div>
+</TableCell>
 
                     <TableCell className="hidden lg:table-cell">
                       <div className="text-sm text-gray-600 dark:text-gray-400">

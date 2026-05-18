@@ -74,7 +74,7 @@ export interface LoginResponse {
 }
 
 /** API channel types for signup (at least one required except Email which is optional) */
-export type SignupApiChannel = 'facebook' | 'whatsapp' | 'x' | 'email';
+export type SignupApiChannel = 'facebook' | 'x' | 'email';
 
 /**
  * Signup Request (multi-step)
@@ -89,7 +89,7 @@ export interface SignupRequest {
   password: string;
   domainId: number;
   domainLabel?: string;
-  apis: { facebook: boolean; whatsapp: boolean; x: boolean; email: boolean };
+  apis: { facebook: boolean; x: boolean; email: boolean };
   extraUser?: { name: string; email: string; role: 'manager' | 'websiteConfigurator' };
 }
 
