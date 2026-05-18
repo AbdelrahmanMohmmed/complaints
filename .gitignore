@@ -190,3 +190,8 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+/frontend/node_modules
+/backend/models
+/backend/__pycache__
+.idea
+/data/
