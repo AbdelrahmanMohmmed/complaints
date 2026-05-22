@@ -196,6 +196,9 @@ export async function login(email: string, password: string): Promise<LoginRespo
   localStorage.setItem('ara2kom-access-token', data.access_token);
   tokenStorage.setTokens(data.access_token);
 
+  // Give the backend a moment before the follow-up request.
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+
   // Fetch real user info including role_id
   const me = await request<{
     user_id: number;
@@ -234,23 +237,7 @@ function mapRoleIdToRole(role_id: number): UserRole {
     default: return 'websiteConfigurator';
   }
 }
-/**
- * Logout Function
- * 
- * TODO (Backend - FastAPI):
- * - Endpoint: POST /api/v1/auth/logout (optional, for audit)
- * - Is optional from backend perspective (tokens are stateless)
- * - Frontend clears all tokens regardless of response
- * 
- * - If rate-limiting token blacklist, send access_token to blacklist
- * - Otherwise, no-op; token naturally expires
- * 
- * Frontend side:
- * - Clear access token from memory
- * - Clear refresh token (HTTP-only cookie auto-cleared by browser if Set-Cookie with max-age=0)
- * - Clear user from state
- * - Redirect to login page
- */
+
 export async function logout(): Promise<void> {
   // TODO: Replace with actual API call (optional):
   // await request('/auth/logout', {
