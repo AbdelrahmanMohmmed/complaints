@@ -10,7 +10,7 @@
  * - Coordinate with AuthContext for state management
  */
 import { UserRole } from '../app/contexts/AuthContext';
-import { request } from './api';
+import { BASE_URL, request } from './api';
 import {
   User,
   LoginRequest,
@@ -178,16 +178,23 @@ export async function login(email: string, password: string): Promise<LoginRespo
   formData.append('username', email);
   formData.append('password', password);
 
-  const response = await request<{ access_token: string; token_type: string }>('/login', {
+  const response = await fetch(`${BASE_URL}/login`, {
     method: 'POST',
-    body: formData.toString(),
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    skipAuth: true,
+    body: formData.toString(),
   });
 
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    const message = (errorData as { detail?: string }).detail || 'Login failed';
+    throw new Error(message);
+  }
+
+  const data = (await response.json()) as { access_token: string; token_type: string };
+
   // Store token first so /users/me can use it
-  localStorage.setItem('ara2kom-access-token', response.access_token);
-  tokenStorage.setTokens(response.access_token);
+  localStorage.setItem('ara2kom-access-token', data.access_token);
+  tokenStorage.setTokens(data.access_token);
 
   // Fetch real user info including role_id
   const me = await request<{
@@ -208,11 +215,11 @@ export async function login(email: string, password: string): Promise<LoginRespo
     companyId: String(me.company_id),
   };
 
-  tokenStorage.setTokens(response.access_token, undefined, user);
+  tokenStorage.setTokens(data.access_token, undefined, user);
   localStorage.setItem('ara2kom-user', JSON.stringify(user));
 
   return {
-    access_token: response.access_token,
+    access_token: data.access_token,
     refresh_token: '',
     user,
   };
