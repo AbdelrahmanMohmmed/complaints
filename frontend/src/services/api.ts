@@ -26,6 +26,9 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
   if (!headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
+  if (!headers.has('ngrok-skip-browser-warning')) {
+    headers.set('ngrok-skip-browser-warning', '1');
+  }
 
   if (!skipAuth) {
     const token = getAccessToken();
