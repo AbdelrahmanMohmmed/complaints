@@ -185,18 +185,7 @@ export function LandingPage() {
   //     { value: '24/7', label: 'Always Available' },
   //   ];
 
-  // const testimonials = isAr
-  //   ? [
-  //     { name: 'خالد العمري', role: 'مدير خدمة العملاء', company: 'شركة الفجر للتقنية', quote: 'أحدث Ara2kom تحولاً جذرياً في طريقة إدارتنا للآراء. انخفضت أوقات الاستجابة بنسبة 70%.', rating: 5 },
-  //     { name: 'Amira Benali', role: 'VP Customer Experience', company: 'Riyad Telecom', quote: 'The bilingual support and AI insights are game-changing for our Saudi and international teams.', rating: 5 },
-  //     { name: 'سلمى النجار', role: 'مديرة العمليات', company: 'بنك الأمان', quote: 'واجهة سهلة الاستخدام ورؤى عميقة. الأفضل في مجاله على الإطلاق.', rating: 5 },
-  //   ]
-  //   : [
-  //     { name: 'Khalid Al-Omari', role: 'Customer Service Director', company: 'Al-Fajr Technology', quote: 'Ara2kom transformed how we handle feedback. Our response times dropped by 70% in the first month.', rating: 5 },
-  //     { name: 'Amira Benali', role: 'VP Customer Experience', company: 'Riyad Telecom', quote: 'The bilingual support and AI-powered insights are game-changing for our diverse teams.', rating: 5 },
-  //     { name: 'Salma Al-Najjar', role: 'Operations Manager', company: 'Amanah Bank', quote: 'Easy to use and incredibly insightful. The best feedback analytics platform we\'ve ever used.', rating: 5 },
-  //   ];
-
+ 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950 transition-colors duration-300" dir={isAr ? 'rtl' : 'ltr'}>
       {/* ── NAVBAR ── */}
