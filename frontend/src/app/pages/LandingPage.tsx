@@ -367,7 +367,7 @@ export function LandingPage() {
                   to="/login"
                   className="inline-flex items-center justify-center gap-2 px-8 py-4 border-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 font-semibold rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
                 >
-                  <span>{isAr ? 'تسجيل الدخول' : 'Sign Up'}</span>
+                  <span>{isAr ? 'تسجيل الدخول' : 'Login'}</span>
                 </Link>
               </div>
 
