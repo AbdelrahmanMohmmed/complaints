@@ -7,7 +7,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useEffect } from 'react';
 import { request } from '../../services/api';
-import { Card, CardContent } from '../components/ui/card';
+import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -20,7 +20,7 @@ import {
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
 } from '../components/ui/dialog';
-import { Search, Download, UserCheck, AlertTriangle, Building2 } from 'lucide-react';
+import { Search, Download, UserCheck, AlertTriangle } from 'lucide-react';
 import { cn } from '../components/ui/utils';
 interface BackendFeedback {
   feedback_id: number;
@@ -141,11 +141,14 @@ export function FeedbackList() {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [channelFilter, setChannelFilter] = useState('all');
   const [emotionFilter, setEmotionFilter] = useState('all');
-  const [companyFilter, setCompanyFilter] = useState('all');
+  // const [companFilter, setCompanyFilter] = useState('all');
   const [feedbackList, setFeedbackList] = useState<BackendFeedback[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [feedbackStatuses, setFeedbackStatuses] = useState<Record<number, string>>({});
   const [feedbackPriorities, setFeedbackPriorities] = useState<Record<number, string>>({});
+  const [feedbackProblemTypes, setFeedbackProblemTypes] = useState<Record<number, number | null>>({});
+  const [feedbackSentiments, setFeedbackSentiments] = useState<Record<number, number | null>>({});
+  const [feedbackEmotions, setFeedbackEmotions] = useState<Record<number, number | null>>({});
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [selectedFeedback, setSelectedFeedback] = useState<BackendFeedback | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -160,7 +163,7 @@ export function FeedbackList() {
 
   const agents: any[] = []; // TODO: fetch from /users/ when needed
   const isManager = user?.role === 'manager';
-  const isSupervisor = user?.role === 'customerServiceSupervisor';
+  const isManagerOrSupervisor = user?.role === 'manager' || user?.role === 'customerServiceSupervisor';
   const [fetchError, setFetchError] = useState('');
 
   useEffect(() => {
@@ -171,6 +174,9 @@ export function FeedbackList() {
         setFeedbackList(data);
         setFeedbackStatuses(Object.fromEntries(data.map(fb => [fb.feedback_id, fb.status || 'open'])));
         setFeedbackPriorities(Object.fromEntries(data.map(fb => [fb.feedback_id, fb.priority || 'low'])));
+        setFeedbackProblemTypes(Object.fromEntries(data.map(fb => [fb.feedback_id, fb.problem_type_id ?? null])));
+        setFeedbackSentiments(Object.fromEntries(data.map(fb => [fb.feedback_id, fb.sentiment_id ?? null])));
+        setFeedbackEmotions(Object.fromEntries(data.map(fb => [fb.feedback_id, fb.emotion_id ?? null])));
       } catch (err: any) {
         console.error('Failed to fetch feedback', err);
         setFetchError(err?.message || 'Failed to load feedback');
@@ -276,11 +282,47 @@ export function FeedbackList() {
     setFeedbackPriorities(prev => ({ ...prev, [feedbackId]: newPriority }));
   };
 
+  const handleProblemTypeChange = async (feedbackId: number, newProblemTypeId: number | null) => {
+    setFeedbackProblemTypes(prev => ({ ...prev, [feedbackId]: newProblemTypeId }));
+    try {
+      await request(`/feedback/${feedbackId}/problem-type`, {
+        method: 'PATCH',
+        body: JSON.stringify({ problem_type_id: newProblemTypeId }),
+      });
+    } catch (err) {
+      console.error('Failed to update problem type', err);
+    }
+  };
+
+  const handleSentimentChange = async (feedbackId: number, newSentimentId: number | null) => {
+    setFeedbackSentiments(prev => ({ ...prev, [feedbackId]: newSentimentId }));
+    try {
+      await request(`/feedback/${feedbackId}/sentiment`, {
+        method: 'PATCH',
+        body: JSON.stringify({ sentiment_id: newSentimentId }),
+      });
+    } catch (err) {
+      console.error('Failed to update sentiment', err);
+    }
+  };
+
+  const handleEmotionChange = async (feedbackId: number, newEmotionId: number | null) => {
+    setFeedbackEmotions(prev => ({ ...prev, [feedbackId]: newEmotionId }));
+    try {
+      await request(`/feedback/${feedbackId}/emotion`, {
+        method: 'PATCH',
+        body: JSON.stringify({ emotion_id: newEmotionId }),
+      });
+    } catch (err) {
+      console.error('Failed to update emotion', err);
+    }
+  };
+
   const pageTitle = t('feedback.title');
 
-  const pageSubtitle = isManager
-    ? (isAr ? 'إدارة تعليقات فريقك وتوزيعها' : 'Manage your  feedback')
-    : (isAr ? 'عرض وإدارة التعليقات' : 'View and manage feedback');
+  const pageSubtitle = isManagerOrSupervisor
+    ? (isAr ? 'عرض وإدارة التعليقات' : 'View and manage feedback')
+    : (isAr ? 'عرض تعليقاتك' : 'View your feedback');
 
   return (
     <div className="space-y-6">
@@ -293,7 +335,7 @@ export function FeedbackList() {
           <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">{pageSubtitle}</p>
         </div>
         <div className="flex gap-2">
-          {(isManager) && (
+          {(isManagerOrSupervisor) && (
             <Button variant="outline" size="sm" className="gap-2" onClick={exportToCSV}>
               <Download className="w-4 h-4" />
               {t('common.export')}
@@ -302,17 +344,7 @@ export function FeedbackList() {
         </div>
       </div>
 
-      {/* Role-specific Info Banners */}
-      {/* {isManager && (
-        <div className="flex items-start gap-3 p-4 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800 rounded-xl text-sm text-emerald-800 dark:text-emerald-300">
-          <UserCheck className="w-4 h-4 flex-shrink-0 mt-0.5" />
-          <span>
-            {isAr
-              ? 'يمكنك إسناد التعليقات للموظفين وتغيير الأولوية والحالة. انقر على أي تعليق للتفاصيل.'
-              : 'As Customer Service Supervisor (CSS), you can assign feedback to agents, set priorities, and change statuses. Click a row to view details.'}
-          </span>
-        </div>
-      )} */}
+   
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
@@ -331,7 +363,7 @@ export function FeedbackList() {
         </div>
 
         {/* Filters */}
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
+        {/* <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[150px] h-11">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
@@ -342,7 +374,7 @@ export function FeedbackList() {
             <SelectItem value="resolved">{isAr ? 'تم الحل' : 'Resolved'}</SelectItem>
             <SelectItem value="closed">{isAr ? 'مغلق' : 'Closed'}</SelectItem>
           </SelectContent>
-        </Select>
+        </Select> */}
 
         <Select value={sentimentFilter} onValueChange={setSentimentFilter}>
           <SelectTrigger className="w-[150px] h-11">
@@ -421,7 +453,6 @@ export function FeedbackList() {
                 <TableHead className="font-semibold">{t('feedback.sentiment')}</TableHead>
                 <TableHead className="hidden xl:table-cell font-semibold">{t('feedback.emotion')}</TableHead>
                 <TableHead className="hidden lg:table-cell font-semibold">{t('feedback.priority')}</TableHead>
-                <TableHead className="font-semibold">{t('common.status')}</TableHead>
                 <TableHead className="hidden sm:table-cell font-semibold">{t('common.date')}</TableHead>
               </TableRow>
             </TableHeader>
@@ -448,25 +479,79 @@ export function FeedbackList() {
                       <div className="truncate text-sm text-gray-600 dark:text-gray-400">{fb.feedback_context || '—'}</div>
                     </TableCell>
                     <TableCell className="hidden xl:table-cell">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">
-                        {getProblemTypeLabel(t, fb.problem_type_id, fb.problem_type)}
-                      </span>
+                      {isManagerOrSupervisor ? (
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <Select
+                            value={String(feedbackProblemTypes[fb.feedback_id] ?? -1)}
+                            onValueChange={(val) => handleProblemTypeChange(fb.feedback_id, val === '-1' ? null : Number(val))}
+                          >
+                            <SelectTrigger className="h-7 w-[140px] text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="0" className="text-xs">{t('problemType.0')}</SelectItem>
+                              <SelectItem value="1" className="text-xs">{t('problemType.1')}</SelectItem>
+                              <SelectItem value="2" className="text-xs">{t('problemType.2')}</SelectItem>
+                              <SelectItem value="3" className="text-xs">{t('problemType.3')}</SelectItem>
+                              <SelectItem value="4" className="text-xs">{t('problemType.4')}</SelectItem>
+                              <SelectItem value="5" className="text-xs">{t('problemType.5')}</SelectItem>
+                              <SelectItem value="6" className="text-xs">{t('problemType.6')}</SelectItem>
+                              <SelectItem value="7" className="text-xs">{t('problemType.7')}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                          {getProblemTypeLabel(t, feedbackProblemTypes[fb.feedback_id] ?? fb.problem_type_id, fb.problem_type)}
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell className="hidden xl:table-cell">
                       <span className="text-sm text-gray-600 dark:text-gray-400">{fb.channel_name || '—'}</span>
                     </TableCell>
                     <TableCell>
-                      <Badge className={cn('capitalize text-xs', sentimentColors[sentimentKey])}>
-                        {t(`sentiment.${sentimentKey}`)}
-                      </Badge>
+                      {isManagerOrSupervisor ? (
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <Select
+                            value={String(feedbackSentiments[fb.feedback_id] ?? -1)}
+                            onValueChange={(val) => handleSentimentChange(fb.feedback_id, val === '-1' ? null : Number(val))}
+                          >
+                            <SelectTrigger className="h-7 w-[100px] text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="0" className="text-xs">{t('sentiment.negative')}</SelectItem>
+                              <SelectItem value="1" className="text-xs">{t('sentiment.neutral')}</SelectItem>
+                              <SelectItem value="2" className="text-xs">{t('sentiment.positive')}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      ) : (
+                        <Badge className={cn('capitalize text-xs', sentimentColors[sentimentKey])}>
+                          {t(`sentiment.${sentimentKey}`)}
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell className="hidden xl:table-cell">
-                      <span className="text-xs capitalize text-gray-600 dark:text-gray-400">
-                        {getEmotionLabel(t, fb.emotion_id, fb.emotion)}
-                      </span>
+                      {isManagerOrSupervisor ? (
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <Select
+                            value={String(feedbackEmotions[fb.feedback_id] ?? -1)}
+                            onValueChange={(val) => handleEmotionChange(fb.feedback_id, val === '-1' ? null : Number(val))}
+                          >
+                            <SelectTrigger className="h-7 w-[110px] text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="0" className="text-xs">{t('emotion.0')}</SelectItem>
+                              <SelectItem value="1" className="text-xs">{t('emotion.1')}</SelectItem>
+                              <SelectItem value="2" className="text-xs">{t('emotion.2')}</SelectItem>
+                              <SelectItem value="3" className="text-xs">{t('emotion.3')}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      ) : (
+                        <span className="text-xs capitalize text-gray-600 dark:text-gray-400">
+                          {getEmotionLabel(t, feedbackEmotions[fb.feedback_id] ?? fb.emotion_id, fb.emotion)}
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell className="hidden lg:table-cell">
-                      {isManager ? (
+                      {isManagerOrSupervisor ? (
                         <div onClick={(e) => e.stopPropagation()}>
                           <Select
                             value={currentPriority}
@@ -483,28 +568,6 @@ export function FeedbackList() {
                       ) : (
                         <Badge className={cn('capitalize text-xs', priorityColors[currentPriority])}>
                           {displayLabel(t(`priority.${currentPriority}`), currentPriority)}
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {isManager ? (
-                        <div onClick={(e) => e.stopPropagation()}>
-                          <Select
-                            value={currentStatus}
-                            onValueChange={(val) => handleStatusChange(fb.feedback_id, val)}
-                          >
-                            <SelectTrigger className="h-7 w-[120px] text-xs"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="open" className="text-xs">{t('status.open')}</SelectItem>
-                              <SelectItem value="inProgress" className="text-xs">{t('status.inProgress')}</SelectItem>
-                              <SelectItem value="resolved" className="text-xs">{t('status.resolved')}</SelectItem>
-                              <SelectItem value="closed" className="text-xs">{t('status.closed')}</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      ) : (
-                        <Badge className={cn('capitalize text-xs', statusColors[currentStatus])}>
-                          {displayLabel(t(`status.${currentStatus}`), currentStatus)}
                         </Badge>
                       )}
                     </TableCell>

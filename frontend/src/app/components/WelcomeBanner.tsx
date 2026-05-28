@@ -43,22 +43,20 @@ const roleConfig = {
     dotColor: 'text-blue-600 dark:text-blue-400',
     en: {
       title: 'Welcome, Customer Service Supervisor!',
-      subtitle: 'Oversee your team\'s feedback handling and performance.',
+      subtitle: 'View and manage all feedback, correct AI predictions',
       features: [
-        { bold: 'View Dashboard', text: 'Monitor overall feedback metrics and trends' },
-        { bold: 'Monitor Feedback', text: 'Track all feedback items and their status updates' },
-        { bold: 'View Reports', text: 'Analyze team performance and resolution metrics' },
-        { bold: 'Team Oversight', text: 'Supervise feedback handling and team productivity' },
+        { bold: 'View All Feedback', text: 'Monitor all feedback items with advanced filtering by sentiment, priority, category, and channel' },
+        { bold: 'Manage & Correct', text: 'Edit problem type and priority to correct AI predictions and ensure accurate categorization' },
+        { bold: 'Export Data', text: 'Export feedback reports as CSV for analysis and team performance tracking' },
       ],
     },
     ar: {
       title: 'مرحباً، مشرف خدمة العملاء!',
-      subtitle: 'الإشراف على معالجة التعليقات وأداء الفريق.',
+      subtitle: 'عرض وإدارة جميع التعليقات وتصحيح التنبؤات والإشراف على الفريق.',
       features: [
-        { bold: 'عرض لوحة التحكم', text: 'مراقبة مقاييس التعليقات والاتجاهات العامة' },
-        { bold: 'مراقبة التعليقات', text: 'تتبع جميع التعليقات وحالاتها' },
-        { bold: 'عرض التقارير', text: 'تحليل أداء الفريق والمقاييس' },
-        { bold: 'الإشراف على الفريق', text: 'الإشراف على معالجة التعليقات والإنتاجية' },
+        { bold: 'عرض جميع التعليقات', text: 'مراقبة جميع التعليقات مع تصفية متقدمة حسب المشاعر والأولوية والفئة' },
+        { bold: 'الإدارة والتصحيح', text: 'تعديل نوع المشكلة والأولوية لتصحيح التنبؤات وضمان التصنيف الدقيق' },
+        { bold: 'تصدير البيانات', text: 'تصدير تقارير التعليقات كـ CSV لتحليل أداء الفريق' },
       ],
     },
   },
@@ -123,7 +121,7 @@ export function WelcomeBanner() {
             <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
               {content.features.map((f, i) => (
                 <li key={i} className="flex items-start gap-1.5 text-sm">
-                  <span className={`${config.dotColor} font-black mt-0.5`}>›</span>
+                  <span className={`${config.dotColor} font-black mt-0.5`}>•</span>
                   <span className={config.textColor + ' opacity-80'}>
                     <strong className={config.textColor + ' opacity-100'}>{f.bold}:</strong>{' '}{f.text}
                   </span>

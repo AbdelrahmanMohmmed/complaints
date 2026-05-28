@@ -166,15 +166,12 @@ export function CompanyAdminDashboard() {
       <div className="rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-800 p-8 text-white">
         <div className="flex justify-between items-center flex-wrap gap-4">
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Building2 className="w-5 h-5 text-blue-200" />
-              <span className="text-sm text-blue-200">{t('Manager')}</span>
-            </div>
+           
             <h1 className="text-3xl font-black">{t('dashboard.title')}</h1>
             <p className="text-blue-200 text-sm">
               {isAr
-                ? 'إدارة تعليقات شركتك وأداء فريقك'
-                : "Manage your company's feedback and performance"}
+                ? 'إدارة تعليقات شركتك '
+                : "Manage your company's feedback "}
             </p>
           </div>
         </div>

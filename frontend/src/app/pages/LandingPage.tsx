@@ -325,7 +325,7 @@ export function LandingPage() {
 
               <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-400 mb-8 max-w-xl leading-relaxed">
                 {isAr
-                  ? 'منصة ذكاء اصطناعي متكاملة لتحليل آراء العملاء وقياس المشاعر وتصنيف المشكلات تلقائياً — لمساعدتك على تقديم خدمة عملاء استثنائية.'
+                  ? 'منصة ذكاء اصطناعي متكاملة لتحليل آراء العملاء وقياس المشاعر وتصنيف المشكلات تلقائياً — لمساعدتك على تقديم خدمة عملاء استثنائية على نطاق واسع.'
                   : 'An AI-powered platform for analyzing customer feedback, measuring sentiment, and auto-classifying issues — helping you deliver exceptional customer service at scale.'}
               </p>
 
@@ -413,14 +413,7 @@ export function LandingPage() {
             <div className="inline-flex items-center gap-2 text-blue-600 dark:text-blue-400 text-sm font-semibold mb-4 bg-blue-50 dark:bg-blue-900/20 px-4 py-1.5 rounded-full">
               <span>{isAr ? 'المميزات' : 'Features'}</span>
             </div>
-            <h2 className="text-3xl sm:text-4xl font-black text-gray-900 dark:text-white mb-4">
-              {isAr ? 'كل ما تحتاجه لإدارة آراء العملاء' : 'Everything You Need to Manage Customer feedback'}
-            </h2>
-            <p className="text-lg text-gray-600 dark:text-gray-400">
-              {isAr
-                ? 'منصة متكاملة تجمع الذكاء الاصطناعي والتحليلات المتقدمة وإدارة الفريق في مكان واحد.'
-                : 'An all-in-one platform combining AI, advanced analytics, and team management in one place.'}
-            </p>
+            
           </div>
 
           <div className="flex flex-wrap justify-center gap-8 max-w-6xl mx-auto">
@@ -451,6 +444,110 @@ export function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* ── DOMAINS ── */}
+  
+<section className="py-24 bg-white dark:bg-gray-950">
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+    {/* Section Header */}
+    <div className={`max-w-3xl mb-12 ${isAr ? 'text-right' : ''}`}>
+      
+      <div className="inline-flex items-center gap-2 text-blue-600 dark:text-blue-400 text-sm font-semibold mb-4 bg-blue-50 dark:bg-blue-900/20 px-4 py-1.5 rounded-full">
+        <span>{isAr ? 'الصناعات' : 'Industries'}</span>
+      </div>
+
+      <h2 className="text-3xl sm:text-4xl font-black text-gray-900 dark:text-white mb-6 leading-tight">
+        {isAr
+          ? 'نبدأ بالمطاعم ونتوسع قريباً'
+          : 'Starting with Restaurants — More Industries Soon'}
+      </h2>
+
+      <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl leading-relaxed">
+        {isAr
+          ? 'نقدم حالياً حلاً متخصصاً وموثوقاً لقطاع المطاعم، مع خطط للتوسع قريباً إلى قطاعات أخرى مرتبطة بالخدمات وتجربة العملاء.'
+          : 'We currently provide a specialized and reliable solution for the restaurant industry, with plans to expand soon into other service and customer-experience focused industries.'}
+      </p>
+    </div>
+
+    {/* Industry Cards */}
+    <div className="flex flex-col sm:flex-row justify-center items-stretch gap-8 max-w-4xl mx-auto">
+
+      {/* Restaurants */}
+      <div className={`relative group flex-1 ${isAr ? 'text-right' : ''}`}>
+        
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl blur-lg opacity-20 group-hover:opacity-35 transition-opacity duration-300" />
+
+        <div className="relative h-full bg-white dark:bg-gray-900 rounded-2xl p-8 border-2 border-blue-600 dark:border-blue-500 shadow-lg hover:-translate-y-1 transition-all duration-300">
+
+          <div className={`inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl mb-4 ${isAr ? 'float-right ml-4' : 'float-left mr-4'}`}>
+            <span className="text-white text-2xl">🍽️</span>
+          </div>
+
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3 pt-2">
+            {isAr ? 'المطاعم' : 'Restaurants'}
+          </h3>
+
+          <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed clear-both">
+            {isAr
+              ? 'الحل الأمثل لتحليل آراء العملاء والتحكم في جودة الخدمة. متاح الآن وجاهز للاستخدام.'
+              : 'The perfect solution for analyzing customer feedback and managing service quality. Available now and ready to use.'}
+          </p>
+
+          <div className="mt-4 inline-flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-sm font-semibold">
+            <span>●</span>
+            <span>{isAr ? 'متاح الآن' : 'Available Now'}</span>
+          </div>
+
+        </div>
+      </div>
+
+      {/* Kitchen & Bathroom Supplies */}
+      <div className={`relative group flex-1 ${isAr ? 'text-right' : ''}`}>
+        
+        <div className="absolute inset-0 bg-gradient-to-r from-teal-500 to-cyan-600 rounded-2xl blur-lg opacity-15 group-hover:opacity-25 transition-opacity duration-300" />
+
+        <div className="relative h-full bg-gray-50 dark:bg-gray-800 rounded-2xl p-8 border-2 border-dashed border-gray-300 dark:border-gray-600 opacity-90 hover:-translate-y-1 transition-all duration-300">
+
+          <div className={`inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-xl mb-4 ${isAr ? 'float-right ml-4' : 'float-left mr-4'}`}>
+            <span className="text-white text-2xl">🚿</span>
+          </div>
+
+          <h3 className="text-xl font-bold text-gray-700 dark:text-gray-200 mb-3 pt-2 leading-snug">
+            {isAr
+              ? 'مستلزمات المطابخ والحمامات'
+              : 'Kitchen & Bathroom Supplies'}
+          </h3>
+
+          <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed clear-both">
+            {isAr
+              ? 'حل قادم قريباً للشركات والمتاجر المتخصصة في مستلزمات المطابخ والحمامات والأدوات الصحية.'
+              : 'A coming-soon solution for businesses specialized in kitchen, bathroom, and sanitary supplies.'}
+          </p>
+
+          <div className="mt-4 inline-flex items-center gap-2 text-teal-600 dark:text-teal-400 text-sm font-semibold">
+            <span>●</span>
+            <span>{isAr ? 'قريباً' : 'Coming Soon'}</span>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    {/* Footer Text */}
+    <div className="text-center mt-12">
+      <p className="text-gray-600 dark:text-gray-400 text-sm">
+        {isAr
+          ? '🚀 لديك صناعة أخرى في الاعتبار؟ تواصل معنا واعرف متى ستكون متاحة!'
+          : '🚀 Have another industry in mind? Contact us to learn when it will be available!'}
+      </p>
+    </div>
+
+  </div>
+</section>
+
+
 
       {/* ── HOW IT WORKS ── */}
       <section id="how-it-works" className="py-24 bg-gray-50 dark:bg-gray-900">
