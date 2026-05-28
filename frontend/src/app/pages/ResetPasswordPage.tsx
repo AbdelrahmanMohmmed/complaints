@@ -77,18 +77,18 @@ export function ResetPasswordPage() {
     }
 
     setSuccess(isAr ? 'تم تحديث كلمة المرور بنجاح' : 'Password updated successfully');
-    setTimeout(() => navigate('/login'), 1200);
+    setTimeout(() => navigate('/sign-in'), 1200);
   };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col" dir={isAr ? 'rtl' : 'ltr'}>
       <div className="flex items-center justify-between px-6 py-4">
         <Link
-          to="/login"
+          to="/sign-in"
           className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
         >
           {isAr ? <ArrowRight className="w-4 h-4" /> : <ArrowLeft className="w-4 h-4" />}
-          <span>{isAr ? 'العودة لتسجيل الدخول' : 'Back to login'}</span>
+          <span>{isAr ? 'العودة لتسجيل الدخول' : 'Back to Sign In'}</span>
         </Link>
         <div className="flex items-center gap-2">
           <button onClick={toggleLanguage} className="p-2 text-gray-500 dark:text-gray-400 hover:text-blue-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">

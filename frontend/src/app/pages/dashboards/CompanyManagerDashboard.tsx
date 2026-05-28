@@ -28,7 +28,7 @@ interface DashboardStats {
 }
 
 const SENTIMENT_COLORS = {
-  positive: '#10b981',
+  positive: '#6956ac',
   negative: '#ef4444',
   neutral: '#6b7280',
 };
@@ -40,20 +40,24 @@ type SentimentLabelProps = {
   cx?: number;
   cy?: number;
   midAngle?: number;
+  innerRadius?: number;
   outerRadius?: number;
   name?: string;
   value?: number | string;
   percent?: number;
+  isAr?: boolean;
 };
 
 const renderSentimentLabel = ({
   cx,
   cy,
   midAngle,
+  innerRadius,
   outerRadius,
   name,
   value,
   percent,
+  isAr,
 }: SentimentLabelProps) => {
   if (
     percent === undefined ||
@@ -66,22 +70,26 @@ const renderSentimentLabel = ({
     return null;
   }
 
-  const LABEL_OFFSET = 40;
-  const x = cx + (outerRadius + LABEL_OFFSET) * Math.cos(-midAngle * RADIAN);
-  const y = cy + (outerRadius + LABEL_OFFSET) * Math.sin(-midAngle * RADIAN);
+  const LABEL_OFFSET = isAr ? 30 : 25;
+  const radius = (outerRadius ?? 0) + LABEL_OFFSET;
+  const x = (cx ?? 0) + radius * Math.cos(-midAngle * RADIAN);
+  const y = (cy ?? 0) + radius * Math.sin(-midAngle * RADIAN);
 
-  return (
-    <text
-      x={x}
-      y={y}
-      textAnchor={x > cx ? 'start' : 'end'}
-      dominantBaseline="central"
-      fontSize={14}
-      fill="currentColor"
-    >
-      {`${name}: ${value}`}
-    </text>
-  );
+  const displayName = isAr && name && name.length > 15 ? name.substring(0, 12) + '...' : name;
+
+  // return (
+  //   <text
+  //     x={x}
+  //     y={y}
+  //     fill={isAr ? "#21416e" : "#374151"}
+  //     textAnchor={x > cx ? 'start' : 'end'}
+  //     dominantBaseline="central"
+  //     fontSize={isAr ? 12 : 12}
+  //     fontWeight={500}
+  //   >
+  //     {`${displayName}: ${(percent * 100).toFixed(0)}%`}
+  //   </text>
+  // );
 };
 
 export function CompanyAdminDashboard() {
@@ -124,6 +132,8 @@ export function CompanyAdminDashboard() {
     { name: t('sentiment.neutral'),  value: stats.neutral_count,  color: SENTIMENT_COLORS.neutral  },
   ];
 
+  const renderSentimentLabelWithAr = (props: any) => renderSentimentLabel({ ...props, isAr });
+
   const categoryData = stats.category_data.map(item => ({
     ...item,
     name: item.problem_type_id !== undefined && item.problem_type_id !== null
@@ -158,7 +168,7 @@ export function CompanyAdminDashboard() {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <Building2 className="w-5 h-5 text-blue-200" />
-              <span className="text-sm text-blue-200">{t('role.companyAdmin')}</span>
+              <span className="text-sm text-blue-200">{t('Manager')}</span>
             </div>
             <h1 className="text-3xl font-black">{t('dashboard.title')}</h1>
             <p className="text-blue-200 text-sm">
@@ -171,8 +181,8 @@ export function CompanyAdminDashboard() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
-        {kpis.map((kpi, i) => (
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-4 w-full">
+          {kpis.map((kpi, i) => (
           <Card key={i}>
             <CardContent className="p-4">
               <div className="flex flex-col gap-2">
@@ -193,28 +203,68 @@ export function CompanyAdminDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Sentiment Pie */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('dashboard.sentimentDistribution')}</CardTitle>
+        <Card className="border border-border/50 bg-card/50 backdrop-blur-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold">{t('dashboard.sentimentDistribution')}</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={280}>
+            <ResponsiveContainer width="100%" height={220}>
               <PieChart>
                 <Pie 
                   data={sentimentData} 
                   dataKey="value" 
-                  innerRadius={60} 
-                  outerRadius={90} 
-                  label={renderSentimentLabel}
-                  labelLine={{ stroke: '#9ca3af', strokeWidth: 1 }}
+                  innerRadius={55} 
+                  outerRadius={80} 
+                  label={renderSentimentLabelWithAr}
+                  labelLine={false}
                 >
                   {sentimentData.map((entry, index) => (
                     <Cell key={index} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#99a8c7',
+                    border: '1px solid #374151',
+                    borderRadius: '12px',
+                    color: '#fff',
+                  }}
+                />
               </PieChart>
             </ResponsiveContainer>
+            <div className="space-y-2 mt-4">
+              {(() => {
+                const total = stats.positive_count + stats.negative_count + stats.neutral_count || 1;
+                return [
+                  { label: t('sentiment.positive'), value: stats.positive_count, color: SENTIMENT_COLORS.positive },
+                  { label: t('sentiment.neutral'), value: stats.neutral_count, color: SENTIMENT_COLORS.neutral },
+                  { label: t('sentiment.negative'), value: stats.negative_count, color: SENTIMENT_COLORS.negative },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    className="flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: item.color }}
+                      />
+                      <span className="text-xs text-muted-foreground">
+                        {item.label}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">
+                        {item.value}
+                      </span>
+                      <span className="text-xs font-semibold text-foreground">
+                        {Math.round((item.value / total) * 100)}%
+                      </span>
+                    </div>
+                  </div>
+                ));
+              })()}
+            </div>
           </CardContent>
         </Card>
 

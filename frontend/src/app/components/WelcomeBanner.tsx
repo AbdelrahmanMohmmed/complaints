@@ -1,67 +1,11 @@
 import React, { useState } from 'react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
-import { X, Shield, Building2, UserCog, Users } from 'lucide-react';
+import { X, UserCog, Plug, Activity } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 
 const roleConfig = {
-  superAdmin: {
-    icon: Shield,
-    gradient: 'from-violet-50 to-purple-50 dark:from-violet-950/20 dark:to-purple-950/20',
-    border: 'border-violet-200 dark:border-violet-800',
-    iconBg: 'from-violet-600 to-purple-700',
-    textColor: 'text-violet-800 dark:text-violet-200',
-    dotColor: 'text-violet-600 dark:text-violet-400',
-    en: {
-      title: 'Welcome, Super Admin!',
-      subtitle: 'You have full system access across all companies and domains.',
-      features: [
-        { bold: 'System Overview', text: 'Monitor KPIs across all companies and domains in real-time' },
-        { bold: 'Company Management', text: 'Activate, suspend, and configure any company on the platform' },
-        { bold: 'Domain Control', text: 'Create and manage industry domains for feedback categorization' },
-        { bold: 'All Feedback', text: 'View every feedback item across the entire system with cross-company filters' },
-      ],
-    },
-    ar: {
-      title: 'مرحباً، مدير النظام!',
-      subtitle: 'لديك صلاحية وصول كاملة لجميع الشركات والمجالات.',
-      features: [
-        { bold: 'نظرة عامة على النظام', text: 'مراقبة مؤشرات الأداء عبر جميع الشركات في الوقت الفعلي' },
-        { bold: 'إدارة الشركات', text: 'تفعيل وتعليق وإعداد أي شركة على المنصة' },
-        { bold: 'التحكم بالمجالات', text: 'إنشاء وإدارة مجالات الصناعة لتصنيف التعليقات' },
-        { bold: 'جميع التعليقات', text: 'عرض كل تعليق في النظام مع فلاتر متعددة الشركات' },
-      ],
-    },
-  },
-  companyAdmin: {
-    icon: Building2,
-    gradient: 'from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20',
-    border: 'border-blue-200 dark:border-blue-800',
-    iconBg: 'from-blue-600 to-indigo-700',
-    textColor: 'text-blue-800 dark:text-blue-200',
-    dotColor: 'text-blue-600 dark:text-blue-400',
-    en: {
-      title: 'Welcome, Company Admin!',
-      subtitle: 'Manage your company\'s feedback, users, and API integrations.',
-      features: [
-        { bold: 'Feedback Dashboard', text: 'Full sentiment and category analytics for your company' },
-        { bold: 'User Management', text: 'Add users, assign roles (Manager / CSS), and deactivate accounts' },
-        { bold: 'API Integrations', text: 'Connect Email, Web Forms and other feedback channels' },
-        { bold: 'Reports', text: 'Generate and export detailed performance reports' },
-      ],
-    },
-    ar: {
-      title: 'مرحباً، مدير الشركة!',
-      subtitle: 'إدارة تعليقات شركتك والمستخدمين وتكاملات API.',
-      features: [
-        { bold: 'لوحة التعليقات', text: 'تحليلات كاملة للمشاعر والتصنيفات لشركتك' },
-        { bold: 'إدارة المستخدمين', text: 'إضافة مستخدمين وتعيين الأدوار وتعطيل الحسابات' },
-        { bold: 'تكاملات API', text: 'ربط البريد والنماذج الإلكترونية وقنوات التعليقات الأخرى' },
-        { bold: 'التقارير', text: 'إنشاء وتصدير تقارير أداء مفصّلة' },
-      ],
-    },
-  },
   manager: {
     icon: UserCog,
     gradient: 'from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20',
@@ -70,28 +14,56 @@ const roleConfig = {
     textColor: 'text-emerald-800 dark:text-emerald-200',
     dotColor: 'text-emerald-600 dark:text-emerald-400',
     en: {
-      title: 'Welcome, Customer Service Supervisor (CSS)!',
-      subtitle: 'Oversee your team\'s feedback handling and performance.',
+      title: 'Welcome, Manager!',
+      subtitle: 'Manage your company\'s feedback, users, and integrations.',
       features: [
-        { bold: 'Assign Feedback', text: 'Distribute feedback to CSSs and monitor workload' },
-        { bold: 'Set Priority', text: 'Mark urgent feedback as high priority to ensure timely resolution' },
-        { bold: 'Change Status', text: 'Update status from Open → In Progress → Resolved → Closed' },
-        { bold: 'Reports & Analytics', text: 'View team performance, CSS metrics, and resolution trends' },
+        { bold: 'Feedback Dashboard', text: 'Full sentiment and category analytics for your company' },
+        { bold: 'User Management', text: 'Add users, assign roles, and manage your team' },
+        { bold: 'API Integrations', text: 'Connect Email, Web Forms and other feedback channels' },
+        { bold: 'Reports', text: 'Generate and export detailed performance reports' },
       ],
     },
     ar: {
-      title: 'مرحباً، مشرف خدمة العملاء (CSS)!',
-      subtitle: 'الإشراف على معالجة التعليقات وأداء فريقك.',
+      title: 'مرحباً، المدير!',
+      subtitle: 'إدارة تعليقات شركتك والمستخدمين والتكاملات.',
       features: [
-        { bold: 'إسناد التعليقات', text: 'توزيع التعليقات على الموظفين ومراقبة عبء العمل' },
-        { bold: 'تحديد الأولوية', text: 'تصنيف التعليقات العاجلة بأولوية عالية لضمان الحل السريع' },
-        { bold: 'تغيير الحالة', text: 'تحديث الحالة من مفتوح → قيد المعالجة → تم الحل → مغلق' },
-        { bold: 'التقارير والتحليلات', text: 'عرض أداء الفريق ومقاييس الموظفين واتجاهات الحل' },
+        { bold: 'لوحة التعليقات', text: 'تحليلات كاملة للمشاعر والتصنيفات' },
+        { bold: 'إدارة المستخدمين', text: 'إضافة مستخدمين وتعيين الأدوار' },
+        { bold: 'تكاملات API', text: 'ربط البريد والنماذج الإلكترونية' },
+        { bold: 'التقارير', text: 'إنشاء وتصدير التقارير' },
+      ],
+    },
+  },
+  customerServiceSupervisor: {
+    icon: Activity,
+    gradient: 'from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20',
+    border: 'border-blue-200 dark:border-blue-800',
+    iconBg: 'from-blue-600 to-indigo-700',
+    textColor: 'text-blue-800 dark:text-blue-200',
+    dotColor: 'text-blue-600 dark:text-blue-400',
+    en: {
+      title: 'Welcome, Customer Service Supervisor!',
+      subtitle: 'Oversee your team\'s feedback handling and performance.',
+      features: [
+        { bold: 'View Dashboard', text: 'Monitor overall feedback metrics and trends' },
+        { bold: 'Monitor Feedback', text: 'Track all feedback items and their status updates' },
+        { bold: 'View Reports', text: 'Analyze team performance and resolution metrics' },
+        { bold: 'Team Oversight', text: 'Supervise feedback handling and team productivity' },
+      ],
+    },
+    ar: {
+      title: 'مرحباً، مشرف خدمة العملاء!',
+      subtitle: 'الإشراف على معالجة التعليقات وأداء الفريق.',
+      features: [
+        { bold: 'عرض لوحة التحكم', text: 'مراقبة مقاييس التعليقات والاتجاهات العامة' },
+        { bold: 'مراقبة التعليقات', text: 'تتبع جميع التعليقات وحالاتها' },
+        { bold: 'عرض التقارير', text: 'تحليل أداء الفريق والمقاييس' },
+        { bold: 'الإشراف على الفريق', text: 'الإشراف على معالجة التعليقات والإنتاجية' },
       ],
     },
   },
   websiteConfigurator: {
-    icon: Users,
+    icon: Plug,
     gradient: 'from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20',
     border: 'border-orange-200 dark:border-orange-800',
     iconBg: 'from-orange-500 to-amber-600',
@@ -99,22 +71,22 @@ const roleConfig = {
     dotColor: 'text-orange-600 dark:text-orange-400',
     en: {
       title: 'Welcome, Website Configurator!',
-      subtitle: 'View and manage the feedback items assigned to you.',
+      subtitle: 'Manage API integrations and feedback channels.',
       features: [
-        { bold: 'My Feedback', text: 'See only the feedback items assigned specifically to you' },
-        { bold: 'Update Status', text: 'Change status to track your progress on each item' },
-        { bold: 'Add Notes', text: 'Leave internal notes and comments on feedback for context' },
-        { bold: 'Expandable Cards', text: 'Click any feedback card to expand it and take action inline' },
+        { bold: 'API Configuration', text: 'Connect and configure your feedback collection channels' },
+        { bold: 'Integration Management', text: 'Set up Email, Web Forms, and other integration types' },
+        { bold: 'Channel Settings', text: 'Configure how feedback flows from different sources' },
+        { bold: 'Status Monitoring', text: 'Monitor the status and health of all integrations' },
       ],
     },
     ar: {
-      title: 'مرحباً، الموظف!',
-      subtitle: 'عرض وإدارة التعليقات المُسندة إليك.',
+      title: 'مرحباً، محقق المتطلبات!',
+      subtitle: 'إدارة تكاملات API وقنوات التعليقات.',
       features: [
-        { bold: 'تعليقاتي', text: 'عرض التعليقات المُسندة إليك فقط' },
-        { bold: 'تحديث الحالة', text: 'تغيير الحالة لتتبع تقدمك في كل تعليق' },
-        { bold: 'إضافة ملاحظات', text: 'ترك ملاحظات داخلية وتعليقات على التعليقات للسياق' },
-        { bold: 'بطاقات قابلة للتوسيع', text: 'انقر على أي بطاقة لتوسيعها واتخاذ الإجراء مباشرةً' },
+        { bold: 'تكوين API', text: 'الاتصال وتكوين قنوات جمع التعليقات' },
+        { bold: 'إدارة التكاملات', text: 'إعداد البريد والنماذج والقنوات الأخرى' },
+        { bold: 'إعدادات القنوات', text: 'تكوين كيفية تدفق التعليقات من مصادر مختلفة' },
+        { bold: 'مراقبة الحالة', text: 'مراقبة حالة وصحة جميع التكاملات' },
       ],
     },
   },

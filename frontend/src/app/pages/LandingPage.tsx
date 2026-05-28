@@ -171,21 +171,6 @@ export function LandingPage() {
       { step: '03', title: 'Insights & Reports', desc: 'Get comprehensive analytics and reports to make data-driven decisions.' }
     ];
 
-  // const stats = isAr
-  //   ? [
-  //     { value: '98%', label: 'دقة تحليل المشاعر' },
-  //     { value: '3x', label: 'أسرع في حل الآراء' },
-  //     { value: '500+', label: 'شركة تثق بنا' },
-  //     { value: '24/7', label: 'دعم متواصل' },
-  //   ]
-  //   : [
-  //     { value: '98%', label: 'Sentiment Accuracy' },
-  //     { value: '3x', label: 'Faster Resolution' },
-  //     { value: '500+', label: 'Companies Trust Us' },
-  //     { value: '24/7', label: 'Always Available' },
-  //   ];
-
- 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950 transition-colors duration-300" dir={isAr ? 'rtl' : 'ltr'}>
       {/* ── NAVBAR ── */}
@@ -237,10 +222,10 @@ export function LandingPage() {
                 {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
               </button>
               <Link
-                to="/login"
+                to="/sign-in"
                 className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
               >
-                {isAr ? 'تسجيل الدخول' : 'Log In'}
+                {isAr ? 'تسجيل الدخول' : 'Sign In'}
               </Link>
               <Link
                 to="/signup"
@@ -283,11 +268,11 @@ export function LandingPage() {
             ))}
             <div className="pt-2 border-t border-gray-100 dark:border-gray-800 flex flex-col gap-2">
               <Link
-                to="/login"
+                to="/sign-in"
                 onClick={() => setMobileMenuOpen(false)}
                 className="block text-center px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
               >
-                {isAr ? 'تسجيل الدخول' : 'Log In'}
+                {isAr ? 'تسجيل الدخول' : 'Sign In'}
               </Link>
               <Link
                 to="/signup"
@@ -353,10 +338,10 @@ export function LandingPage() {
                   <ArrowRight className={`w-5 h-5 ${isAr ? 'rotate-180' : ''}`} />
                 </Link>
                 <Link
-                  to="/login"
+                  to="/sign-in"
                   className="inline-flex items-center justify-center gap-2 px-8 py-4 border-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 font-semibold rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
                 >
-                  <span>{isAr ? 'تسجيل الدخول' : 'Login'}</span>
+                  <span>{isAr ? 'تسجيل الدخول' : 'Sign In'}</span>
                 </Link>
               </div>
 
@@ -696,11 +681,11 @@ export function LandingPage() {
               {isAr ? 'جميع الحقوق محفوظة.' : 'All rights reserved.'}
             </p>
             <div className="flex items-center gap-2">
-              <Link to="/login" className="text-sm hover:text-white transition-colors px-3 py-1 rounded-lg hover:bg-gray-800">
-                {isAr ? 'تسجيل الدخول' : 'Log In'}
+              <Link to="/sign-in" className="text-sm hover:text-white transition-colors px-3 py-1 rounded-lg hover:bg-gray-800">
+                {isAr ? 'تسجيل الدخول' : 'Sign In'}
               </Link>
               <Link to="/signup" className="text-sm bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-1.5 rounded-lg hover:opacity-90 transition-opacity">
-                {isAr ? 'ابدأ مجاناً' : 'Get Started'}
+                {isAr ? 'ابدأ تجربتك' : 'Get Started'}
               </Link>
             </div>
           </div>

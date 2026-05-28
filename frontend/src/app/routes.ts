@@ -1,7 +1,7 @@
 import { createBrowserRouter, RouteObject } from 'react-router';
 import { Layout } from './components/Layout';
 import { LandingPage } from './pages/LandingPage';
-import { LoginPage } from './pages/LoginPage';
+import { SignInPage } from './pages/SignInPage';
 import { SignupPage } from './pages/SignupPage';
 import { VerifyEmailSent } from './pages/VerifyEmailSent';
 import { VerifyEmail } from './pages/VerifyEmail';
@@ -18,9 +18,9 @@ import { CategoryManagement } from './pages/CategoryManagement';
 import { Settings } from './pages/Settings';
 import { Reports } from './pages/Reports';
 import { MyFeedback } from './pages/MyFeedback';
-import { SystemLogs } from './pages/SystemLogs';
-import { SystemAnalytics } from './pages/SystemAnalytics';
-import { TeamPerformance } from './pages/TeamPerformance';
+// import { SystemLogs } from './pages/SystemLogs';
+// import { SystemAnalytics } from './pages/SystemAnalytics';
+// import { TeamPerformance } from './pages/TeamPerformance';
 import { AgentProfile } from './pages/AgentProfile';
 import { NotFound } from './pages/NotFound';
 import { UserRole } from './contexts/AuthContext';
@@ -53,20 +53,13 @@ type RouteWithMeta = RouteObject & {
 const routes = [
   // Public routes (no auth required)
   { path: '/', name: 'Landing', Component: LandingPage },
-  { path: '/login', name: 'Login', Component: LoginPage },
+  { path: '/sign-in', name: 'Sign In', Component: SignInPage },
   { path: '/signup', name: 'Signup', Component: SignupPage },
   { path: '/forgot-password', name: 'نسيت كلمة المرور', Component: ForgotPasswordPage },
   { path: '/reset-password', name: 'إعادة تعيين كلمة المرور', Component: ResetPasswordPage },
   { path: '/verify-email/sent', name: 'تم إرسال التحقق من البريد الإلكتروني', Component: VerifyEmailSent },
   { path: '/verify-email', name: 'التحقق من البريد الإلكتروني', Component: VerifyEmail },
 
-  // Protected app routes
-  // TODO (Backend - FastAPI):
-  // - All routes under /app require valid access_token in Authorization header
-  // - Backend should validate token signature and expiry
-  // - Decode role from JWT; enforce against allowedRoles
-  // - Return 401 if token invalid/expired
-  // - Return 403 if role not in allowedRoles
   {
     path: '/app',
     name: 'تخطيط التطبيق',
@@ -76,125 +69,68 @@ const routes = [
         index: true,
         name: 'Dashboard',
         Component: Dashboard,
-        /**
-         * Dashboard accessible by all authenticated roles
-         * Each role sees different dashboard variant (handled by page component)
-         */
-        allowedRoles: ['superAdmin', 'companyAdmin', 'manager', 'websiteConfigurator'],
+        allowedRoles: ['manager', 'customerServiceSupervisor'],
       },
 
       /**
-       * ========== FEEDBACK / COMPLAINTS ==========
-       * Accessible by: superAdmin, companyAdmin, manager
-       * agent: only sees assigned feedback via /my-feedback
+       * ========== MANAGER & SUPERVISOR ROUTES ==========
+       * Feedback and reports accessible to both
        */
       {
         path: 'feedback',
         name: 'قائمة التعليقات',
         Component: FeedbackList,
-        allowedRoles: ['superAdmin', 'companyAdmin', 'manager'],
+        allowedRoles: ['manager', 'customerServiceSupervisor'],
       },
       {
         path: 'feedback/:id',
         name: 'تفاصيل التعليقات',
         Component: FeedbackDetails,
-        allowedRoles: ['superAdmin', 'companyAdmin', 'manager'],
-      },
-
-      /**
-       * ========== AGENT-SPECIFIC ROUTES ==========
-       */
-      {
-        path: 'my-feedback',
-        name: 'تعليقاتي',
-        Component: MyFeedback,
-        allowedRoles: ['websiteConfigurator'],
-      },
-      {
-        path: 'profile',
-        name: 'الملف الشخصي للموظف',
-        Component: AgentProfile,
-        allowedRoles: ['websiteConfigurator'],
+        allowedRoles: ['manager', 'customerServiceSupervisor'],
       },
 
       /**
        * ========== REPORTS & ANALYTICS ==========
-       * Dashboard & reports: manager, companyAdmin, superAdmin
+       * Accessible by manager and supervisor
        */
       {
         path: 'reports',
         name: 'Reports',
         Component: Reports,
-        allowedRoles: ['superAdmin', 'companyAdmin', 'manager'],
+        allowedRoles: ['manager', 'customerServiceSupervisor'],
       },
-      {
-        path: 'team-performance',
-        name: 'أداء الفريق',
-        Component: TeamPerformance,
-        allowedRoles: ['superAdmin', 'companyAdmin', 'manager'],
-      },
-
       /**
-       * ========== SUPER ADMIN ONLY ==========
-       * System-wide management: domains, companies, system analytics, logs
+       * ========== MANAGER ONLY ==========
+       * Full company management: users, categories, settings
        */
       {
-        path: 'domains',
-        name: 'إدارة المجالات',
-        Component: DomainManagement,
-        allowedRoles: ['superAdmin'],
-      },
-      {
-        path: 'companies',
-        name: 'إدارة الشركات',
-        Component: CompanyManagement,
-        allowedRoles: ['superAdmin'],
-      },
-      {
-        path: 'system-analytics',
-        name: 'تحليلات النظام',
-        Component: SystemAnalytics,
-        allowedRoles: ['superAdmin'],
-      },
-      {
-        path: 'logs',
-        name: 'سجلات النظام',
-        Component: SystemLogs,
-        allowedRoles: ['superAdmin'],
-      },
-
-      /**
-       * ========== COMPANY ADMIN ONLY ==========
-       * Company-specific settings: integrations, categories, user management
-       */
-      {
-        path: 'integrations',
-        name: 'إعدادات التكامل',
-        Component: IntegrationSettings,
-        allowedRoles: ['companyAdmin','websiteConfigurator' /* TODO: Remove agent access to integrations after testing */],
+        path: 'users',
+        name: 'إدارة المستخدمين',
+        Component: UserManagement,
+        allowedRoles: ['manager'],
       },
       {
         path: 'categories',
         name: 'إدارة التصنيفات',
         Component: CategoryManagement,
-        allowedRoles: ['companyAdmin'],
+        allowedRoles: ['manager'],
       },
-      {
-        path: 'users',
-        name: 'إدارة المستخدمين',
-        Component: UserManagement,
-        allowedRoles: ['superAdmin', 'companyAdmin'],
-      },
-
-      /**
-       * ========== SHARED ROUTES ==========
-       * Settings accessible by all roles
-       */
       {
         path: 'settings',
         name: 'Settings',
         Component: Settings,
-        allowedRoles: ['superAdmin', 'companyAdmin', 'manager', 'websiteConfigurator'],
+        allowedRoles: ['manager', 'customerServiceSupervisor', 'websiteConfigurator'],
+      },
+
+      /**
+       * ========== WEBSITE CONFIGURATOR ONLY ==========
+       * Integration and API configuration
+       */
+      {
+        path: 'integrations',
+        name: 'إعدادات التكامل',
+        Component: IntegrationSettings,
+        allowedRoles: ['websiteConfigurator'],
       },
     ],
   },

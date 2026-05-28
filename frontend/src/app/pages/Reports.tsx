@@ -71,20 +71,20 @@ const getChannelColor = (name: string, index: number) => {
     'HubSpot': '#ff7a59',       // Orange
     'Helpdesk': '#ff6c37',      // Orange
   };
-  
+
   // If channel has a predefined color, use it
   if (colorMap[name]) {
     return colorMap[name];
   }
-  
+
   // For new channels, generate a unique color based on the name
   const uniqueColors = [
-    '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', 
+    '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6',
     '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#14b8a6',
     '#6366f1', '#d946ef', '#f43f5e', '#0ea5e9', '#eab308',
     '#a855f7', '#22c55e', '#fb923c', '#2dd4bf', '#c084fc'
   ];
-  
+
   // Use a hash of the name to pick a consistent color
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
@@ -137,28 +137,28 @@ export function Reports() {
 
   const [data, setData] = useState<ReportsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   useEffect(() => {
-  const fetch = async () => {
-    setIsLoading(true);
-    try {
-      const result = await request<ReportsData>(`/dashboard/reports?date_range=${dateRange}`);
-      // Ensure channel data has unique colors
-      if (result && result.channel_data) {
-        result.channel_data = result.channel_data.map((channel, index) => ({
-          ...channel,
-          color:  getChannelColor(channel.name, index)
-        }));
+    const fetch = async () => {
+      setIsLoading(true);
+      try {
+        const result = await request<ReportsData>(`/dashboard/reports?date_range=${dateRange}`);
+        // Ensure channel data has unique colors
+        if (result && result.channel_data) {
+          result.channel_data = result.channel_data.map((channel, index) => ({
+            ...channel,
+            color: getChannelColor(channel.name, index)
+          }));
+        }
+        setData(result);
+      } catch (err) {
+        console.error('Failed to fetch reports', err);
+      } finally {
+        setIsLoading(false);
       }
-      setData(result);
-    } catch (err) {
-      console.error('Failed to fetch reports', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  fetch();
-}, [dateRange]);
+    };
+    fetch();
+  }, [dateRange]);
 
   const exportCSV = () => {
     if (!data) return;
@@ -177,10 +177,10 @@ export function Reports() {
 
   const tabs = [
     { id: 'sentiment', label: isAr ? 'تحليل المشاعر' : 'Sentiment Analysis' },
-    { id: 'category',  label: isAr ? 'التصنيفات' : 'Categories' },
-    { id: 'channel',   label: isAr ? 'القنوات' : 'Channels' },
-    { id: 'emotion',   label: t('reports.emotionTab') },
-    { id: 'priority',  label: t('reports.priorityTab') },
+    { id: 'category', label: isAr ? 'التصنيفات' : 'Categories' },
+    { id: 'channel', label: isAr ? 'القنوات' : 'Channels' },
+    { id: 'emotion', label: t('reports.emotionTab') },
+    { id: 'priority', label: t('reports.priorityTab') },
   ];
 
   if (isLoading) return (
@@ -208,8 +208,37 @@ export function Reports() {
   }));
   const priorityData = data.priority_data.map(item => ({
     ...item,
-    name: t(`priority.${item.name}`),
+    name: t(`priority.${item.name.toLowerCase()}`),
     key: item.name,
+  }));
+
+  // Helper function to translate month abbreviations
+  const translateMonth = (monthAbbr: string) => {
+    const monthMap: { [key: string]: string } = {
+      'Jan': 'month.jan',
+      'Feb': 'month.feb',
+      'Mar': 'month.mar',
+      'Apr': 'month.apr',
+      'May': 'month.may',
+      'Jun': 'month.jun',
+      'Jul': 'month.jul',
+      'Aug': 'month.aug',
+      'Sep': 'month.sep',
+      'Oct': 'month.oct',
+      'Nov': 'month.nov',
+      'Dec': 'month.dec',
+    };
+    return t(monthMap[monthAbbr] || monthAbbr);
+  };
+
+  const sentimentTrendData = data.sentiment_trend.map(item => ({
+    ...item,
+    month: translateMonth(item.month),
+  }));
+
+  const priorityTrendData = data.priority_trend.map(item => ({
+    ...item,
+    month: translateMonth(item.month),
   }));
   const priorityByCategory = data.priority_by_category.map(item => ({
     ...item,
@@ -291,7 +320,7 @@ export function Reports() {
       </div>
 
       {/* Summary KPIs */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-4 w-full">
         {summaryKpis.map((kpi, i) => (
           <Card key={i}>
             <CardContent className="p-5">
@@ -350,7 +379,7 @@ export function Reports() {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <AreaChart data={data.sentiment_trend}>
+                <AreaChart data={sentimentTrendData}>
                   <defs>
                     <linearGradient id="posGrad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
@@ -363,7 +392,11 @@ export function Reports() {
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
                   <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} />
+                  <YAxis
+                    width={50}
+                    tickMargin={10}
+                    tick={{ fontSize: 11 }}
+                  />
                   <Tooltip />
                   <Legend wrapperStyle={{ fontSize: '12px' }} />
                   <Area type="monotone" dataKey="positive" stroke="#10b981" fill="url(#posGrad)" strokeWidth={2} name={t('sentiment.positive')} />
@@ -373,41 +406,100 @@ export function Reports() {
               </ResponsiveContainer>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="border border-border/50 bg-card/50 backdrop-blur-sm">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">{isAr ? 'توزيع المشاعر' : 'Sentiment Breakdown'}</CardTitle>
+              <CardTitle className="text-base font-semibold">
+                {isAr ? 'توزيع المشاعر' : 'Sentiment Breakdown'}
+              </CardTitle>
             </CardHeader>
+
             <CardContent>
-              <ResponsiveContainer width="100%" height={200}>
+              <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
                   <Pie
                     data={[
-                      { name: t('sentiment.positive'), value: summary.positive_count, color: '#10b981' },
-                      { name: t('sentiment.negative'), value: summary.negative_count, color: '#ef4444' },
-                      { name: t('sentiment.neutral'),  value: summary.neutral_count,  color: '#6b7280' },
+                      {
+                        name: t('sentiment.positive'),
+                        value: summary.positive_count,
+                        color: '#10b981',
+                      },
+                      {
+                        name: t('sentiment.negative'),
+                        value: summary.negative_count,
+                        color: '#ef4444',
+                      },
+                      {
+                        name: t('sentiment.neutral'),
+                        value: summary.neutral_count,
+                        color: '#6b7280',
+                      },
                     ]}
-                    cx="50%" cy="50%" innerRadius={55} outerRadius={80} dataKey="value" paddingAngle={3}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={55}
+                    outerRadius={80}
+                    dataKey="value"
+                    paddingAngle={3}
                   >
-                    {['#10b981','#ef4444','#6b7280'].map((color, i) => <Cell key={i} fill={color} />)}
+                    {['#10b981', '#ef4444', '#6b7280'].map((color, i) => (
+                      <Cell key={i} fill={color} />
+                    ))}
                   </Pie>
-                  <Tooltip />
+
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#99a8c7',
+                      border: '1px solid #374151',
+                      borderRadius: '12px',
+                      color: '#fff',
+                    }}
+                  />
                 </PieChart>
               </ResponsiveContainer>
-              <div className="space-y-2 mt-2">
+
+              <div className="space-y-2 mt-4">
                 {[
-                  { label: t('sentiment.positive'), value: summary.positive_count, color: '#10b981' },
-                  { label: t('sentiment.neutral'),  value: summary.neutral_count,  color: '#6b7280' },
-                  { label: t('sentiment.negative'), value: summary.negative_count, color: '#ef4444' },
-                ].map(item => (
-                  <div key={item.label} className="flex items-center justify-between">
+                  {
+                    label: t('sentiment.positive'),
+                    value: summary.positive_count,
+                    color: '#10b981',
+                  },
+                  {
+                    label: t('sentiment.neutral'),
+                    value: summary.neutral_count,
+                    color: '#6b7280',
+                  },
+                  {
+                    label: t('sentiment.negative'),
+                    value: summary.negative_count,
+                    color: '#ef4444',
+                  },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    className="flex items-center justify-between"
+                  >
                     <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
-                      <span className="text-xs text-gray-600 dark:text-gray-400">{item.label}</span>
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: item.color }}
+                      />
+
+                      <span className="text-xs text-muted-foreground">
+                        {item.label}
+                      </span>
                     </div>
-                    <div className="flex gap-2">
-                      <span className="text-xs text-gray-400">{item.value}</span>
-                      <span className="text-xs font-semibold text-gray-900 dark:text-white">
-                        {Math.round(item.value / totalSentiment * 100)}%
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">
+                        {item.value}
+                      </span>
+
+                      <span className="text-xs font-semibold text-foreground">
+                        {totalSentiment
+                          ? Math.round((item.value / totalSentiment) * 100)
+                          : 0}
+                        %
                       </span>
                     </div>
                   </div>
@@ -427,18 +519,18 @@ export function Reports() {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart 
-                  data={categoryData} 
-                  layout="vertical" 
+                <BarChart
+                  data={categoryData}
+                  layout="vertical"
                   margin={{ left: isAr ? 50 : 10, right: 20, top: 10, bottom: 10 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
                   <XAxis type="number" tick={{ fontSize: 11 }} />
-                  <YAxis 
-                    type="category" 
-                    dataKey="name" 
+                  <YAxis
+                    type="category"
+                    dataKey="name"
                     width={isAr ? 50 : 130}
-                    tick={{ 
+                    tick={{
                       fontSize: 10,
                       dx: isAr ? -20 : 0,
                       textAnchor: isAr ? 'start' : 'end'
@@ -452,7 +544,7 @@ export function Reports() {
                   <Legend wrapperStyle={{ fontSize: '12px' }} />
                   <Bar dataKey="positive" fill="#10b981" name={t('sentiment.positive')} stackId="a" />
                   <Bar dataKey="negative" fill="#ef4444" name={t('sentiment.negative')} stackId="a" />
-                  <Bar dataKey="neutral"  fill="#6b7280" name={t('sentiment.neutral')}  stackId="a" radius={[0,4,4,0]} />
+                  <Bar dataKey="neutral" fill="#6b7280" name={t('sentiment.neutral')} stackId="a" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -471,8 +563,8 @@ export function Reports() {
                     </div>
                     <div className="flex gap-1 h-2 rounded-full overflow-hidden">
                       <div className="bg-green-500" style={{ width: `${cat.total ? (cat.positive / cat.total) * 100 : 0}%` }} />
-                      <div className="bg-red-500"   style={{ width: `${cat.total ? (cat.negative / cat.total) * 100 : 0}%` }} />
-                      <div className="bg-gray-400"  style={{ width: `${cat.total ? (cat.neutral  / cat.total) * 100 : 0}%` }} />
+                      <div className="bg-red-500" style={{ width: `${cat.total ? (cat.negative / cat.total) * 100 : 0}%` }} />
+                      <div className="bg-gray-400" style={{ width: `${cat.total ? (cat.neutral / cat.total) * 100 : 0}%` }} />
                     </div>
                     <div className="flex justify-between mt-1 text-xs" dir={isAr ? 'rtl' : 'ltr'}>
                       <span className="text-green-600">{cat.total ? Math.round((cat.positive / cat.total) * 100) : 0}% +</span>
@@ -490,86 +582,148 @@ export function Reports() {
       )}
 
       {/* Channel Tab */}
-{activeTab === 'channel' && (
-  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">{isAr ? 'توزيع قنوات التلقي' : 'Feedback Channels Distribution'}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="110%" height={330}>
-          <PieChart>
-            <Pie
-              data={channelDataWithColors}
-              cx="50%" cy="50%" 
-              outerRadius={isAr ? 110 : 120}   // ← smaller pie in Arabic
-              dataKey="value"
-              labelLine={false}
-              label={(props) => renderCustomLabel({ ...props, isAr })}  // ← USE IT HERE
-            >
-              {channelDataWithColors.map((entry, i) => (
-                <Cell key={i} fill={entry.color} stroke="#fff" strokeWidth={2} />
-              ))}
-            </Pie>
-            <Tooltip />
-          </PieChart>
-        </ResponsiveContainer>
-      </CardContent>
-    </Card>
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">{isAr ? 'تفاصيل القنوات' : 'Channel Details'}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {channelDataWithColors.length === 0
-          ? <p className="text-center text-gray-400 text-sm py-8">No channel data available</p>
-          : (() => {
-              const total = channelDataWithColors.reduce((s, c) => s + c.value, 0) || 1;
-              return channelDataWithColors.map(channel => (
-                <div key={channel.name}>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: channel.color }} />
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">{channel.name}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-500">{channel.value}</span>
-                      <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                        {Math.round((channel.value / total) * 100)}%
-                      </span>
-                    </div>
-                  </div>
-                  <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                    <div className="h-full rounded-full" style={{ width: `${(channel.value / total) * 100}%`, backgroundColor: channel.color }} />
-                  </div>
+      {activeTab === 'channel' && (
+        <div className="w-full">
+          <Card className="border border-border/50 bg-card/50 backdrop-blur-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-semibold">{isAr ? 'توزيع قنوات التلقي' : 'Feedback Channels Distribution'}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col lg:flex-row items-center gap-8">
+
+                {/* Chart */}
+                <div className="w-full lg:w-[45%] h-[260px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={channelDataWithColors}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={85}
+                        dataKey="value"
+                        paddingAngle={2}
+                        labelLine={false}
+                      >
+                        {channelDataWithColors.map((entry, i) => (
+                          <Cell key={i} fill={entry.color} />
+                        ))}
+                      </Pie>
+
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: '#507ddf',
+                          border: '1px solid #374151',
+                          borderRadius: '12px',
+                          color: '#fff',
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
                 </div>
-              ));
-            })()
-        }
-      </CardContent>
-    </Card>
-  </div>
-)}
+
+                {/* Legend */}
+                <div className="flex-1 w-full space-y-4">
+                  {(() => {
+                    const total =
+                      channelDataWithColors.reduce((s, c) => s + c.value, 0) || 1;
+
+                    return channelDataWithColors.map((channel) => (
+                      <div
+                        key={channel.name}
+                        className="flex items-center justify-between border-b border-border/30 pb-2"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: channel.color }}
+                          />
+
+                          <span className="text-sm text-muted-foreground">
+                            {channel.name}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm text-muted-foreground">
+                            {channel.value}
+                          </span>
+
+                          <span className="text-sm font-semibold text-foreground min-w-[40px] text-right">
+                            {Math.round((channel.value / total) * 100)}%
+                          </span>
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Emotion Tab */}
       {activeTab === 'emotion' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
+          <Card className="border border-border/50 bg-card/50 backdrop-blur-sm">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">{t('reports.emotionDistribution')}</CardTitle>
+              <CardTitle className="text-base font-semibold">{t('reports.emotionDistribution')}</CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={280}>
+              <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
                   <Pie
                     data={emotionData.map(item => ({ name: item.name, value: item.total }))}
-                    cx="50%" cy="50%" innerRadius={55} outerRadius={90} dataKey="value" paddingAngle={3}
+                    cx="50%" cy="50%"
+                    innerRadius={55}
+                    outerRadius={80}
+                    dataKey="value"
+                    // label={(props) => renderCustomLabel({ ...props, isAr })}
+                    labelLine={false}
                   >
                     {['#f59e0b', '#ef4444', '#6b7280', '#10b981'].map((color, i) => <Cell key={i} fill={color} />)}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#507ddf',
+                      border: '1px solid #374151',
+                      borderRadius: '12px',
+                      color: '#fff',
+                    }}
+                  />
                 </PieChart>
               </ResponsiveContainer>
+              <div className="space-y-2 mt-4">
+                {(() => {
+                  const total = emotionData.reduce((s, item) => s + item.total, 0) || 1;
+                  return emotionData.map((item, idx) => (
+                    <div
+                      key={item.name}
+                      className="flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: ['#f59e0b', '#ef4444', '#6b7280', '#10b981'][idx] }}
+                        />
+                        <span className="text-xs text-muted-foreground">
+                          {item.name}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">
+                          {item.total}
+                        </span>
+                        <span className="text-xs font-semibold text-foreground">
+                          {Math.round((item.total / total) * 100)}%
+                        </span>
+                      </div>
+                    </div>
+                  ));
+                })()}
+              </div>
             </CardContent>
           </Card>
           <Card>
@@ -578,18 +732,18 @@ export function Reports() {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart 
-                  data={emotionData} 
-                  layout="vertical" 
+                <BarChart
+                  data={emotionData}
+                  layout="vertical"
                   margin={{ left: isAr ? 50 : 10, right: 20, top: 10, bottom: 10 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
                   <XAxis type="number" tick={{ fontSize: 11 }} />
-                  <YAxis 
-                    type="category" 
-                    dataKey="name" 
+                  <YAxis
+                    type="category"
+                    dataKey="name"
                     width={isAr ? 50 : 130}
-                    tick={{ 
+                    tick={{
                       fontSize: 10,
                       dx: isAr ? -20 : 0,
                       textAnchor: isAr ? 'start' : 'end'
@@ -603,7 +757,7 @@ export function Reports() {
                   <Legend wrapperStyle={{ fontSize: '12px' }} />
                   <Bar dataKey="positive" fill="#10b981" name={t('sentiment.positive')} stackId="a" />
                   <Bar dataKey="negative" fill="#ef4444" name={t('sentiment.negative')} stackId="a" />
-                  <Bar dataKey="neutral"  fill="#6b7280" name={t('sentiment.neutral')}  stackId="a" radius={[0,4,4,0]} />
+                  <Bar dataKey="neutral" fill="#6b7280" name={t('sentiment.neutral')} stackId="a" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -614,22 +768,64 @@ export function Reports() {
       {/* Priority Tab */}
       {activeTab === 'priority' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
+          <Card className="border border-border/50 bg-card/50 backdrop-blur-sm">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">{t('reports.priorityDistribution')}</CardTitle>
+              <CardTitle className="text-base font-semibold">{t('reports.priorityDistribution')}</CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={280}>
+              <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
                   <Pie
                     data={priorityData}
-                    cx="50%" cy="50%" innerRadius={55} outerRadius={90} dataKey="value" paddingAngle={3}
+                    cx="50%" cy="50%"
+                    innerRadius={55}
+                    outerRadius={80}
+                    dataKey="value"
+                    // label={(props) => renderCustomLabel({ ...props, isAr })}
+                    labelLine={false}
                   >
                     {['#6b7280', '#f59e0b', '#ef4444', '#dc2626'].map((color, i) => <Cell key={i} fill={color} />)}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#99a8c7',
+                      border: '1px solid #374151',
+                      borderRadius: '12px',
+                      color: '#fff',
+                    }}
+                  />
                 </PieChart>
               </ResponsiveContainer>
+              <div className="space-y-2 mt-4">
+                {(() => {
+                  const total = priorityData.reduce((s, item) => s + item.value, 0) || 1;
+                  const priorityColors = ['#6b7280', '#f59e0b', '#ef4444', '#dc2626'];
+                  return priorityData.map((item, idx) => (
+                    <div
+                      key={item.name}
+                      className="flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: priorityColors[idx] }}
+                        />
+                        <span className="text-xs text-muted-foreground">
+                          {item.name}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">
+                          {item.value}
+                        </span>
+                        <span className="text-xs font-semibold text-foreground">
+                          {Math.round((item.value / total) * 100)}%
+                        </span>
+                      </div>
+                    </div>
+                  ));
+                })()}
+              </div>
             </CardContent>
           </Card>
           <Card>
@@ -638,18 +834,18 @@ export function Reports() {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart 
-                  data={priorityByCategory} 
-                  layout="vertical" 
+                <BarChart
+                  data={priorityByCategory}
+                  layout="vertical"
                   margin={{ left: isAr ? 50 : 10, right: 20, top: 10, bottom: 10 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
                   <XAxis type="number" tick={{ fontSize: 11 }} />
-                  <YAxis 
-                    type="category" 
-                    dataKey="name" 
+                  <YAxis
+                    type="category"
+                    dataKey="name"
                     width={isAr ? 50 : 130}
-                    tick={{ 
+                    tick={{
                       fontSize: 10,
                       dx: isAr ? -20 : 0,
                       textAnchor: isAr ? 'start' : 'end'
@@ -664,7 +860,7 @@ export function Reports() {
                   <Bar dataKey="low" fill="#6b7280" name={t('priority.low')} stackId="a" />
                   <Bar dataKey="medium" fill="#f59e0b" name={t('priority.medium')} stackId="a" />
                   <Bar dataKey="high" fill="#ef4444" name={t('priority.high')} stackId="a" />
-                  <Bar dataKey="critical" fill="#dc2626" name={t('priority.critical')} stackId="a" radius={[0,4,4,0]} />
+                  <Bar dataKey="critical" fill="#dc2626" name={t('priority.critical')} stackId="a" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -675,10 +871,14 @@ export function Reports() {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={data.priority_trend}>
+                <LineChart data={priorityTrendData}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
                   <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} />
+                  <YAxis
+                    width={50}
+                    tickMargin={15}
+                    tick={{ fontSize: 11 }}
+                  />
                   <Tooltip />
                   <Legend wrapperStyle={{ fontSize: '12px' }} />
                   <Line type="monotone" dataKey="low" stroke="#6b7280" strokeWidth={2} name={t('priority.low')} />

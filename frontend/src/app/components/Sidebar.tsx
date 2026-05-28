@@ -50,82 +50,73 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
   const isAr = language === 'ar';
 
   const roleColors: Record<string, string> = {
-    superAdmin: 'from-violet-600 to-purple-700',
-    companyAdmin: 'from-blue-600 to-indigo-700',
     manager: 'from-emerald-500 to-teal-600',
+    customerServiceSupervisor: 'from-blue-600 to-indigo-700',
     websiteConfigurator: 'from-orange-500 to-amber-600',
   };
 
   const roleBadgeColors: Record<string, string> = {
-    superAdmin: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300',
-    companyAdmin: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
     manager: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+    customerServiceSupervisor: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
     websiteConfigurator: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
   };
 
   const navigationByRole: Record<string, NavSection[]> = {
-    superAdmin: [
+    manager: [
       {
         title: language === 'ar' ? 'عام' : 'General',
         items: [
-          { name: t('nav.systemOverview'), href: '/app', icon: LayoutDashboard },
+          { name: t('nav.dashboard'), href: '/app', icon: LayoutDashboard },
         ],
       },
       {
-        title: language === 'ar' ? 'إدارة النظام' : 'Management',
+        title: language === 'ar' ? 'إدارة' : 'Management',
         items: [
-          { name: t('nav.companies'), href: '/app/companies', icon: Building2 },
-          { name: t('nav.domains'), href: '/app/domains', icon: Globe2 },
-          { name: t('nav.users'), href: '/app/users', icon: UsersRound },
+          { name: t('nav.allComplaints'), href: '/app/feedback', icon: MessageSquare },
+          { name: t('nav.users'), href: '/app/users', icon: Users },
+          // { name: t('nav.categories'), href: '/app/categories', icon: Tag },
         ],
       },
       {
         title: language === 'ar' ? 'التحليلات' : 'Analytics',
         items: [
-          { name: t('nav.systemAnalytics'), href: '/app/system-analytics', icon: Activity },
-          // { name: t('nav.logs'), href: '/app/logs', icon: ScrollText },
+          { name: t('nav.reports'), href: '/app/reports', icon: Activity },
         ],
       },
       {
         title: language === 'ar' ? 'الإعدادات' : 'Config',
         items: [
-          { name: t('nav.systemSettings'), href: '/app/settings', icon: Settings },
-        ],
-      },
-    ],
-    companyAdmin: [
-      {
-        items: [
-          { name: t('nav.dashboard'), href: '/app', icon: LayoutDashboard },
-          { name: t('nav.allComplaints'), href: '/app/feedback', icon: MessageSquare },
-          // { name: t('nav.categories'), href: '/app/categories', icon: Tag },
-          // { name: t('nav.apis'), href: '/app/integrations', icon: Plug },
-          { name: t('nav.users'), href: '/app/users', icon: Users },
-          { name: t('nav.reports'), href: '/app/reports', icon: BarChart3 },
           { name: t('nav.settings'), href: '/app/settings', icon: Settings },
         ],
       },
     ],
-    manager: [
+    customerServiceSupervisor: [
       {
+        title: language === 'ar' ? 'عام' : 'General',
         items: [
           { name: t('nav.dashboard'), href: '/app', icon: LayoutDashboard },
           { name: t('nav.allComplaints'), href: '/app/feedback', icon: MessageSquare },
-          // { name: t('nav.teamPerformance'), href: '/app/team-performance', icon: BarChart3 },
+        ],
+      },
+      {
+        title: language === 'ar' ? 'التحليلات' : 'Analytics',
+        items: [
           { name: t('nav.reports'), href: '/app/reports', icon: Activity },
+        ],
+      },
+      {
+        title: language === 'ar' ? 'الإعدادات' : 'Config',
+        items: [
           { name: t('nav.settings'), href: '/app/settings', icon: Settings },
-
         ],
       },
     ],
     websiteConfigurator: [
       {
+        title: language === 'ar' ? 'التكوين' : 'Configuration',
         items: [
-          // { name: t('nav.myFeedback'), href: '/app/my-feedback', icon: Inbox },
-                    { name: t('nav.profile'), href: '/app/profile', icon: UserCircle },
-                { name: t('nav.integrations'), href: '/app/integrations', icon: Plug },
-          // { name: t('nav.settings'), href: '/app/settings', icon: Settings },
-
+          { name: t('nav.integrations'), href: '/app/integrations', icon: Plug },
+          { name: t('nav.settings'), href: '/app/settings', icon: Settings },
         ],
       },
     ],
@@ -144,13 +135,12 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
   const badgeClass = user?.role ? roleBadgeColors[user.role] : '';
 
   const roleIcon: Record<string, React.ComponentType<{ className?: string }>> = {
-    superAdmin: Shield,
-    companyAdmin: Building2,
     manager: UserCog,
-    websiteConfigurator: Users,
+    customerServiceSupervisor: Activity,
+    websiteConfigurator: Plug,
   };
 
-  const RoleIcon = user?.role ? (roleIcon[user.role] || Users) : Users;
+  const RoleIcon = user?.role ? (roleIcon[user.role] || Activity) : Activity;
 
   return (
     <aside
@@ -162,38 +152,45 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
         isAr ? 'right-0' : 'left-0'
       )}
     >
-      {/* Logo Header */}
-      <div className="flex h-16 items-center justify-between px-4 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
-        {!isCollapsed ? (
-          <Link to="/app" className="flex items-center gap-2.5 min-w-0">
-            <div className={cn('w-8 h-8 bg-gradient-to-br rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm', gradientClass)}>
-              <span className="text-white font-black text-xs">A2</span>
-            </div>
-            <div className="min-w-0">
-              <span className="font-black text-base text-gray-900 dark:text-white block leading-tight">Ara2kom AI</span>
-              <span className={cn('text-[10px] px-1.5 py-0.5 rounded-full font-semibold', badgeClass)}>
-                {t(`role.${user?.role}`)}
-              </span>
-            </div>
-          </Link>
-        ) : (
-          <Link to="/app" className={cn('w-8 h-8 bg-gradient-to-br rounded-lg flex items-center justify-center mx-auto shadow-sm', gradientClass)}>
-            <span className="text-white font-black text-xs">A2</span>
-          </Link>
+      {/* Header */}
+      <div
+        className={cn(
+          'flex border-b border-gray-200 dark:border-gray-800 p-4',
+          isCollapsed
+            ? 'flex-col items-center gap-4'
+            : 'items-center justify-between'
         )}
+      >
 
-        {/* Desktop Toggle */}
-        {!isCollapsed && (
-          <button
-            onClick={onToggle}
-            className="hidden lg:flex w-6 h-6 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex-shrink-0"
-          >
-            {isAr
-              ? (isCollapsed ? <ChevronLeft className="w-3 h-3 text-gray-500 dark:text-gray-400" /> : <ChevronRight className="w-3 h-3 text-gray-500 dark:text-gray-400" />)
-              : (isCollapsed ? <ChevronRight className="w-3 h-3 text-gray-500 dark:text-gray-400" /> : <ChevronLeft className="w-3 h-3 text-gray-500 dark:text-gray-400" />)
-            }
-          </button>
-        )}
+        {/* Logo */}
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center text-white font-bold">
+            A2
+          </div>
+
+          {!isCollapsed && (
+            <span className="font-bold text-white">
+              Ara2kom AI
+            </span>
+          )}
+        </div>
+
+        {/* Toggle */}
+        <button
+          onClick={onToggle}
+          className="hidden lg:flex w-7 h-7 rounded-full border border-gray-700 bg-gray-800 items-center justify-center hover:bg-gray-700 transition-colors"
+        >
+          {isAr ? (
+            isCollapsed
+              ? <ChevronLeft className="w-4 h-4 text-gray-400" />
+              : <ChevronRight className="w-4 h-4 text-gray-400" />
+          ) : (
+            isCollapsed
+              ? <ChevronRight className="w-4 h-4 text-gray-400" />
+              : <ChevronLeft className="w-4 h-4 text-gray-400" />
+          )}
+        </button>
+
       </div>
 
       {/* Navigation */}
@@ -244,7 +241,7 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
       </nav>
 
       {/* Collapsed Toggle */}
-      {isCollapsed && (
+      {/* {isCollapsed && (
         <div className="px-2 pb-2">
           <button
             onClick={onToggle}
@@ -256,7 +253,7 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
             }
           </button>
         </div>
-      )}
+      )} */}
 
       {/* User Footer */}
       <div className="border-t border-gray-200 dark:border-gray-800 p-3 flex-shrink-0">

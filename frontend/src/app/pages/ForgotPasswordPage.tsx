@@ -57,7 +57,7 @@ export function ForgotPasswordPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col" dir={isAr ? 'rtl' : 'ltr'}>
       <div className="flex items-center justify-between px-6 py-4">
         <Link
-          to="/login"
+          to="/sign-in"
           className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
         >
           {isAr ? <ArrowRight className="w-4 h-4" /> : <ArrowLeft className="w-4 h-4" />}

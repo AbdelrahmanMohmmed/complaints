@@ -404,7 +404,7 @@ const handleNext = () => {
               {step === 2 && (
                 <div className={`space-y-4 ${isAr ? 'text-right' : ''}`}>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {isAr ? 'اختر مجالاً واحداً. يمكنك تعديل التسمية أو إزالتها لاستخدام الاسم الافتراضي.' : 'Select one domain. You can edit the label or remove it to use the default name.'}
+                    {isAr ? 'اختر مجالك .' : 'Select your domain'}
                   </p>
                   <div className="space-y-2">
                     {mockDomains.map((d) => (
@@ -533,8 +533,8 @@ const handleNext = () => {
 
               <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
                 {isAr ? 'لديك حساب بالفعل؟' : 'Already have an account?'}{' '}
-                <Link to="/login" className="text-blue-600 dark:text-blue-400 font-medium hover:underline">
-                  {isAr ? 'تسجيل الدخول' : 'Log in'}
+                <Link to="/sign-in" className="text-blue-600 dark:text-blue-400 font-medium hover:underline">
+                  {isAr ? 'تسجيل الدخول' : 'Sign In'}
                 </Link>
               </p>
             </div>

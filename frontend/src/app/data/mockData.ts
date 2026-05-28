@@ -43,7 +43,8 @@ export interface User {
   firstName: string;
   lastName: string;
   email: string;
-  role: 'superAdmin' | 'companyAdmin' | 'manager' | 'websiteConfigurator';
+  password?: string;  // Mock only - never store in real app
+  role: 'manager' | 'customerServiceSupervisor' | 'websiteConfigurator';
   companyId?: string;
   isActive: boolean;
   createdAt: string;
@@ -290,14 +291,37 @@ export const mockDomains: Domain[] = [
 
 export const mockUsers: User[] = [
   {
-    id: 'user-1',
-    firstName: 'Ahmed',
-    lastName: 'Al-Mansour',
-    email: 'ahmed@company.com',
-    role: 'companyAdmin',
+    id: '1',
+    firstName: 'Manager',
+    lastName: 'User',
+    email: 'manager@ara2kom.ai',
+    password: '123456',
+    role: 'manager',
     companyId: 'company-1',
     isActive: true,
     createdAt: '2025-06-20T00:00:00Z',
+  },
+  {
+    id: '2',
+    firstName: 'Supervisor',
+    lastName: 'User',
+    email: 'supervisor@ara2kom.ai',
+    password: '123456',
+    role: 'customerServiceSupervisor',
+    companyId: 'company-1',
+    isActive: true,
+    createdAt: '2025-07-10T00:00:00Z',
+  },
+  {
+    id: '3',
+    firstName: 'Configurator',
+    lastName: 'User',
+    email: 'configurator@ara2kom.ai',
+    password: '123456',
+    role: 'websiteConfigurator',
+    companyId: 'company-1',
+    isActive: true,
+    createdAt: '2025-07-15T00:00:00Z',
   },
   {
     id: 'user-2',
@@ -314,7 +338,7 @@ export const mockUsers: User[] = [
     firstName: 'Layla',
     lastName: 'Mansour',
     email: 'layla@company.com',
-    role: 'manager',
+    role: 'customerServiceSupervisor',
     companyId: 'company-1',
     isActive: true,
     createdAt: '2025-09-01T00:00:00Z',
@@ -334,7 +358,7 @@ export const mockUsers: User[] = [
     firstName: 'Fatima',
     lastName: 'Ahmed',
     email: 'fatima@company.com',
-    role: 'websiteConfigurator',
+    role: 'customerServiceSupervisor',
     companyId: 'company-1',
     isActive: true,
     createdAt: '2025-08-01T00:00:00Z',

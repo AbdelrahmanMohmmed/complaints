@@ -168,8 +168,8 @@ const [lName, setLName] = useState(user?.lastName || '');
         </CardContent>
       </Card>
 
-      {/* Integrations (CompanyAdmin only) */}
-      {user?.role === 'companyAdmin' && (
+      {/* Integrations (Manager only) */}
+      {user?.role === 'manager' && (
         <Card>
           <CardHeader>
             <CardTitle>{isAr ? 'التكاملات' : 'Integrations'}</CardTitle>

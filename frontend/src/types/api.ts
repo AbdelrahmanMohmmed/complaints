@@ -13,12 +13,66 @@
 /**
  * User Role Enum
  * 
+ * Roles:
+ * - manager: Full company management (highest level)
+ * - customerServiceSupervisor: Monitor & supervision only
+ * - websiteConfigurator: Technical integration/configuration only
+ * 
  * TODO (Backend - FastAPI):
  * - Strictly enforce role validation on server-side
  * - Do NOT trust role from client; decode from JWT token
  * - Implement role-to-permissions mapping server-side
  */
-export type UserRole = 'superAdmin' | 'companyAdmin' | 'manager' | 'websiteConfigurator';
+export type UserRole = 'manager' | 'customerServiceSupervisor' | 'websiteConfigurator';
+
+/**
+ * Role Permissions Matrix
+ * 
+ * Defines which permissions each role has.
+ * Used for frontend UI display logic only.
+ * Backend MUST independently validate permissions on all endpoints.
+ */
+export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
+  manager: [
+    'manage_users',
+    'manage_integrations',
+    'manage_settings',
+    'view_dashboard',
+    'view_reports',
+    'view_feedback',
+  ],
+  customerServiceSupervisor: [
+    'view_dashboard',
+    'view_reports',
+    'view_feedback',
+  ],
+  websiteConfigurator: [
+    'manage_integrations',
+  ],
+};
+
+/**
+ * Role Display Information
+ * 
+ * Color schemes and labels for UI display
+ */
+export const ROLE_DISPLAY = {
+  manager: {
+    label: 'Manager',
+    color: 'from-emerald-500 to-teal-600',
+    badgeColor: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+  },
+  customerServiceSupervisor: {
+    label: 'Customer Service Supervisor',
+    color: 'from-blue-600 to-indigo-700',
+    badgeColor: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  },
+  websiteConfigurator: {
+    label: 'Website Configurator',
+    color: 'from-orange-500 to-amber-600',
+    badgeColor: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
+  },
+};
 
 /**
  * User Interface
@@ -90,7 +144,7 @@ export interface SignupRequest {
   domainId: number;
   domainLabel?: string;
   apis: { facebook: boolean; x: boolean; email: boolean };
-  extraUser?: { name: string; email: string; role: 'manager' | 'websiteConfigurator' };
+  extraUser?: { name: string; email: string; role: UserRole };
 }
 
 /**

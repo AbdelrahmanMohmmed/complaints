@@ -75,7 +75,7 @@ useEffect(() => {
                 {isAr ? 'يمكنك الآن تسجيل الدخول إلى حسابك.' : 'You can now sign in to your account.'}
               </p>
               <Link
-                to="/login"
+                to="/sign-in"
                 className="inline-flex items-center justify-center gap-2 w-full py-3.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-blue-500/25 transition-all"
               >
                 {isAr ? 'تسجيل الدخول' : 'Sign in'}
@@ -93,10 +93,10 @@ useEffect(() => {
               </h1>
               <p className="text-gray-600 dark:text-gray-400 mb-6">{errorMessage}</p>
               <Link
-                to="/login"
+                to="/sign-in"
                 className="inline-flex items-center justify-center gap-2 w-full py-3.5 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-semibold rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
               >
-                {isAr ? 'الذهاب لتسجيل الدخول' : 'Go to login'}
+                {isAr ? 'الذهاب لتسجيل الدخول' : 'Go to sign In'}
               </Link>
             </>
           )}

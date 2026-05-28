@@ -29,12 +29,12 @@ interface BackendUser {
   created_at: string;
 }
 
-const roleMap: Record<number, string> = { 1: 'companyAdmin', 2: 'manager', 3: 'websiteConfigurator' };
-const roleIdMap: Record<string, number> = { companyAdmin: 1, manager: 2, websiteConfigurator: 3 };
+const roleMap: Record<number, string> = { 1: 'manager', 2: 'customerServiceSupervisor', 3: 'websiteConfigurator' };
+const roleIdMap: Record<string, number> = { manager: 1, customerServiceSupervisor: 2, websiteConfigurator: 3 };
 const roleColors: Record<string, string> = {
-  companyAdmin: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-  manager: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-  websiteConfigurator: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400',
+  manager: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
+  customerServiceSupervisor: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+  websiteConfigurator: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
 };
 
 export function UserManagement() {
@@ -239,7 +239,8 @@ const updateUser = async () => {
         <SelectValue placeholder={isAr ? 'اختر الدور...' : 'Select role...'} />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="2">{t('role.manager')}</SelectItem>
+        {/* <SelectItem value="2">{t('role.manager')}</SelectItem> */}
+        <SelectItem value="2">{t('role.customerServiceSupervisor')}</SelectItem>
         <SelectItem value="3">{t('role.websiteConfigurator')}</SelectItem>
       </SelectContent>
     </Select>

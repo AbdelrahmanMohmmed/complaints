@@ -2,21 +2,23 @@ import React from 'react';
 import { Navigate } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
 import { WelcomeBanner } from '../components/WelcomeBanner';
-import { CompanyAdminDashboard } from './dashboards/CompanyAdminDashboard';
+import { CompanyAdminDashboard } from './dashboards/CompanyManagerDashboard';
 
 export function Dashboard() {
   const { user } = useAuth();
 
-  // Agents have no dashboard — redirect to their personal feedback
+  // Website Configurators have no dashboard — redirect to integrations
   if (user?.role === 'websiteConfigurator') {
-    return <Navigate to="/app/my-feedback" replace />;
+    return <Navigate to="/app/integrations" replace />;
   }
 
   return (
     <div className="space-y-6">
       <WelcomeBanner />
-      {user?.role === 'companyAdmin' && <CompanyAdminDashboard />}
-      {user?.role === 'manager' && <CompanyAdminDashboard />}
+      {/* Manager and Supervisor both see the dashboard */}
+      {(user?.role === 'manager' || user?.role === 'customerServiceSupervisor') && (
+        <CompanyAdminDashboard />
+      )}
     </div>
   );
 }

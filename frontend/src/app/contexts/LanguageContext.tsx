@@ -135,6 +135,20 @@ const translations = {
     'priority.high': 'High',
     'priority.critical': 'Critical',
 
+    // Months
+    'month.jan': 'January',
+    'month.feb': 'February',
+    'month.mar': 'March',
+    'month.apr': 'April',
+    'month.may': 'May',
+    'month.jun': 'June',
+    'month.jul': 'July',
+    'month.aug': 'August',
+    'month.sep': 'September',
+    'month.oct': 'October',
+    'month.nov': 'November',
+    'month.dec': 'December',
+
     // Problem Type
     'problemType.0': 'Delivery Issue',
     'problemType.1': 'Food Quality',
@@ -151,9 +165,8 @@ const translations = {
     'users.editUser': 'Edit User',
     
     // Roles
-    'role.superAdmin': 'Super Admin',
-    'role.companyAdmin': 'Company Admin',
-    'role.manager': 'Customer Service Supervisor (CSS)',
+    'role.manager': 'Manager',
+    'role.customerServiceSupervisor': 'Customer Service Supervisor',
     'role.websiteConfigurator': 'Website Configurator',
     
     // Integrations / APIs
@@ -167,30 +180,10 @@ const translations = {
     'categories.title': 'Category Management',
     'categories.addCategory': 'Add Category',
     
-    // Super Admin
-    'superadmin.domains': 'Domain Management',
-    'superadmin.companies': 'Company Management',
-    'superadmin.systemStats': 'System Statistics',
-    'superadmin.totalCompanies': 'Total Companies',
-    'superadmin.totalDomains': 'Total Domains',
-    'superadmin.feedbackPerDomain': 'Feedback per Domain',
-    'superadmin.activateCompany': 'Activate',
-    'superadmin.suspendCompany': 'Suspend',
-    'superadmin.addDomain': 'Add Domain',
-    'superadmin.addCompany': 'Add Company',
-    
     // Manager
-    'manager.assignFeedback': 'Assign Feedback',
     'manager.teamPerformance': 'Team Performance',
     'manager.pendingAssignment': 'Pending Assignment',
     'manager.agentWorkload': 'Agent Workload',
-    
-    // Agent
-    'agent.myFeedback': 'My Feedback',
-    'agent.assignedToMe': 'Assigned to Me',
-    'agent.updateStatus': 'Update Status',
-    'agent.addNote': 'Add Note',
-    'agent.resolvedToday': 'Resolved Today',
     
     // Reports
     'reports.title': 'Reports & Analytics',
@@ -347,6 +340,20 @@ const translations = {
     'priority.high': 'عالي',
     'priority.critical': 'حرج',
 
+    // Months
+    'month.jan': 'يناير',
+    'month.feb': 'فبراير',
+    'month.mar': 'مارس',
+    'month.apr': 'أبريل',
+    'month.may': 'مايو',
+    'month.jun': 'يونيو',
+    'month.jul': 'يوليو',
+    'month.aug': 'أغسطس',
+    'month.sep': 'سبتمبر',
+    'month.oct': 'أكتوبر',
+    'month.nov': 'نوفمبر',
+    'month.dec': 'ديسمبر',
+
     // Problem Type
     'problemType.0': 'مشكله توصيل',
     'problemType.1': 'جودة الطعام',
@@ -363,9 +370,8 @@ const translations = {
     'users.editUser': 'تعديل مستخدم',
     
     // Roles
-    'role.superAdmin': 'مدير النظام',
-    'role.companyAdmin': 'مدير الشركة',
-    'role.manager': 'مشرف خدمة العملاء (CSS)',
+    'role.manager': 'المدير',
+    'role.customerServiceSupervisor': 'مشرف خدمة العملاء',
     'role.websiteConfigurator': 'مهيئ الموقع',
     
     // Integrations / APIs

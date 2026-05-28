@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import * as authService from '../../services/authService';
+import { UserRole } from '../../types/api';
 
-export type UserRole = 'superAdmin' | 'companyAdmin' | 'manager' | 'websiteConfigurator';
+export type { UserRole };
 
 /**
  * User Interface

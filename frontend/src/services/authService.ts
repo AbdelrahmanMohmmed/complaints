@@ -231,8 +231,8 @@ export async function login(email: string, password: string): Promise<LoginRespo
 // ← ADD THIS helper
 function mapRoleIdToRole(role_id: number): UserRole {
   switch (role_id) {
-    case 1: return 'companyAdmin';
-    case 2: return 'manager';
+    case 1: return 'manager';
+    case 2: return 'customerServiceSupervisor';
     case 3: return 'websiteConfigurator';
     default: return 'websiteConfigurator';
   }

@@ -5,7 +5,7 @@ import React, { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
-import { useEffect, useState as _ } from 'react';
+import { useEffect } from 'react';
 import { request } from '../../services/api';
 import { Card, CardContent } from '../components/ui/card';
 import { Input } from '../components/ui/input';
@@ -25,7 +25,7 @@ import { cn } from '../components/ui/utils';
 interface BackendFeedback {
   feedback_id: number;
   company_id: number;
-  api_id: number | null; 
+  api_id: number | null;
   channel_name?: string | null;
   category_name?: string | null;
   customer_name: string | null;
@@ -142,14 +142,14 @@ export function FeedbackList() {
   const [channelFilter, setChannelFilter] = useState('all');
   const [emotionFilter, setEmotionFilter] = useState('all');
   const [companyFilter, setCompanyFilter] = useState('all');
-const [feedbackList, setFeedbackList] = useState<BackendFeedback[]>([]);
-const [isLoading, setIsLoading] = useState(true);
-const [feedbackStatuses, setFeedbackStatuses] = useState<Record<number, string>>({});
-const [feedbackPriorities, setFeedbackPriorities] = useState<Record<number, string>>({});
-const [assignDialogOpen, setAssignDialogOpen] = useState(false);
-const [selectedFeedback, setSelectedFeedback] = useState<BackendFeedback | null>(null);
-const [currentPage, setCurrentPage] = useState(1);
-const [pageSize, setPageSize] = useState(20);
+  const [feedbackList, setFeedbackList] = useState<BackendFeedback[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [feedbackStatuses, setFeedbackStatuses] = useState<Record<number, string>>({});
+  const [feedbackPriorities, setFeedbackPriorities] = useState<Record<number, string>>({});
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [selectedFeedback, setSelectedFeedback] = useState<BackendFeedback | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
 
   const [selectedAgentId, setSelectedAgentId] = useState('');
 
@@ -158,46 +158,45 @@ const [pageSize, setPageSize] = useState(20);
     return <Navigate to="/app/my-feedback" replace />;
   }
 
-const agents: any[] = []; // TODO: fetch from /users/ when needed
+  const agents: any[] = []; // TODO: fetch from /users/ when needed
   const isManager = user?.role === 'manager';
-  const isSuperAdmin = user?.role === 'superAdmin';
-  const isCompanyAdmin = user?.role === 'companyAdmin';
-const [fetchError, setFetchError] = useState('');
+  const isSupervisor = user?.role === 'customerServiceSupervisor';
+  const [fetchError, setFetchError] = useState('');
 
-useEffect(() => {
-  const fetchFeedback = async () => {
-    try {
-      const data = await request<BackendFeedback[]>('/feedback/');
-      console.log('Fetched feedback:', data); // ← add this temporarily
-      setFeedbackList(data);
-      setFeedbackStatuses(Object.fromEntries(data.map(fb => [fb.feedback_id, fb.status || 'open'])));
-      setFeedbackPriorities(Object.fromEntries(data.map(fb => [fb.feedback_id, fb.priority || 'low'])));
-    } catch (err: any) {
-      console.error('Failed to fetch feedback', err);
-      setFetchError(err?.message || 'Failed to load feedback');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  fetchFeedback();
-}, []);
-const filteredFeedback = feedbackList.filter((fb) => {
-  const matchesSearch =
-    (fb.customer_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (fb.feedback_context || '').toLowerCase().includes(searchQuery.toLowerCase());
-  const currentStatus = normalizeStatus(feedbackStatuses[fb.feedback_id] || fb.status);
-  const currentPriority = normalizePriority(
-    feedbackPriorities[fb.feedback_id] || fb.priority || 'low'
-  );
-  const matchesStatus = statusFilter === 'all' || currentStatus === statusFilter;
-  const sentimentKey = getSentimentKey(fb.sentiment_id, fb.sentiment);
-  const matchesSentiment = sentimentFilter === 'all' || sentimentKey === sentimentFilter;
-  const matchesPriority = priorityFilter === 'all' || currentPriority === priorityFilter;
-  const matchesCategory = categoryFilter === 'all' || (fb.category_name || '—') === categoryFilter;
-  const matchesChannel = channelFilter === 'all' || (fb.channel_name || '—') === channelFilter;
-  const matchesEmotion = emotionFilter === 'all' || String(fb.emotion_id ?? 'none') === emotionFilter;
-  return matchesSearch && matchesStatus && matchesSentiment && matchesPriority && matchesCategory && matchesChannel && matchesEmotion;
-});
+  useEffect(() => {
+    const fetchFeedback = async () => {
+      try {
+        const data = await request<BackendFeedback[]>('/feedback/');
+        console.log('Fetched feedback:', data); // ← add this temporarily
+        setFeedbackList(data);
+        setFeedbackStatuses(Object.fromEntries(data.map(fb => [fb.feedback_id, fb.status || 'open'])));
+        setFeedbackPriorities(Object.fromEntries(data.map(fb => [fb.feedback_id, fb.priority || 'low'])));
+      } catch (err: any) {
+        console.error('Failed to fetch feedback', err);
+        setFetchError(err?.message || 'Failed to load feedback');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchFeedback();
+  }, []);
+  const filteredFeedback = feedbackList.filter((fb) => {
+    const matchesSearch =
+      (fb.customer_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (fb.feedback_context || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const currentStatus = normalizeStatus(feedbackStatuses[fb.feedback_id] || fb.status);
+    const currentPriority = normalizePriority(
+      feedbackPriorities[fb.feedback_id] || fb.priority || 'low'
+    );
+    const matchesStatus = statusFilter === 'all' || currentStatus === statusFilter;
+    const sentimentKey = getSentimentKey(fb.sentiment_id, fb.sentiment);
+    const matchesSentiment = sentimentFilter === 'all' || sentimentKey === sentimentFilter;
+    const matchesPriority = priorityFilter === 'all' || currentPriority === priorityFilter;
+    const matchesCategory = categoryFilter === 'all' || (fb.category_name || '—') === categoryFilter;
+    const matchesChannel = channelFilter === 'all' || (fb.channel_name || '—') === channelFilter;
+    const matchesEmotion = emotionFilter === 'all' || String(fb.emotion_id ?? 'none') === emotionFilter;
+    return matchesSearch && matchesStatus && matchesSentiment && matchesPriority && matchesCategory && matchesChannel && matchesEmotion;
+  });
 
   const totalPages = Math.max(1, Math.ceil(filteredFeedback.length / pageSize));
   const paginatedFeedback = filteredFeedback.slice(
@@ -228,64 +227,60 @@ const filteredFeedback = feedbackList.filter((fb) => {
     });
   };
 
-const exportToCSV = () => {
-  const headers = ['ID', 'Customer', 'Feedback', 'Problem Type', 'Sentiment', 'Emotion', 'Priority', 'Status', 'Date'];
-  const rows = filteredFeedback.map(fb => [
-    fb.feedback_id,
-    fb.customer_name || 'Unknown',
-    `"${(fb.feedback_context || '').replace(/"/g, '""')}"`,
-    getProblemTypeLabel(t, fb.problem_type_id, fb.problem_type),
-    t(`sentiment.${getSentimentKey(fb.sentiment_id, fb.sentiment)}`),
-    getEmotionLabel(t, fb.emotion_id, fb.emotion),
-    fb.priority || '—',
-    feedbackStatuses[fb.feedback_id] || fb.status,
-    new Date(fb.created_at).toLocaleDateString('en-US'),
-  ]);
+  const exportToCSV = () => {
+    const headers = ['ID', 'Customer', 'Feedback', 'Problem Type', 'Sentiment', 'Emotion', 'Priority', 'Status', 'Date'];
+    const rows = filteredFeedback.map(fb => [
+      fb.feedback_id,
+      fb.customer_name || 'Unknown',
+      `"${(fb.feedback_context || '').replace(/"/g, '""')}"`,
+      getProblemTypeLabel(t, fb.problem_type_id, fb.problem_type),
+      t(`sentiment.${getSentimentKey(fb.sentiment_id, fb.sentiment)}`),
+      getEmotionLabel(t, fb.emotion_id, fb.emotion),
+      fb.priority || '—',
+      feedbackStatuses[fb.feedback_id] || fb.status,
+      new Date(fb.created_at).toLocaleDateString('en-US'),
+    ]);
 
-  const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `feedback_export_${new Date().toISOString().split('T')[0]}.csv`;
-  link.click();
-  URL.revokeObjectURL(url);
-};
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `feedback_export_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
-const handleAssignConfirm = () => {
-  if (selectedFeedback && selectedAgentId) {
-    setFeedbackStatuses(prev => ({ ...prev, [selectedFeedback.feedback_id]: 'inProgress' }));
-  }
-  setAssignDialogOpen(false);
-  setSelectedFeedback(null);
-  setSelectedAgentId('');
-};
+  const handleAssignConfirm = () => {
+    if (selectedFeedback && selectedAgentId) {
+      setFeedbackStatuses(prev => ({ ...prev, [selectedFeedback.feedback_id]: 'inProgress' }));
+    }
+    setAssignDialogOpen(false);
+    setSelectedFeedback(null);
+    setSelectedAgentId('');
+  };
 
-const handleStatusChange = async (feedbackId: number, newStatus: string) => {
-  setFeedbackStatuses(prev => ({ ...prev, [feedbackId]: newStatus }));
-  try {
-    await request(`/feedback/${feedbackId}/status`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status: newStatus }),
-    });
-  } catch (err) {
-    console.error('Failed to update status', err);
-  }
-};
+  const handleStatusChange = async (feedbackId: number, newStatus: string) => {
+    setFeedbackStatuses(prev => ({ ...prev, [feedbackId]: newStatus }));
+    try {
+      await request(`/feedback/${feedbackId}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: newStatus }),
+      });
+    } catch (err) {
+      console.error('Failed to update status', err);
+    }
+  };
 
   const handlePriorityChange = async (feedbackId: number, newPriority: string) => {
-  setFeedbackPriorities(prev => ({ ...prev, [feedbackId]: newPriority }));
-};
+    setFeedbackPriorities(prev => ({ ...prev, [feedbackId]: newPriority }));
+  };
 
-  const pageTitle = isSuperAdmin
-    ? t('nav.allFeedback')
-    : t('feedback.title');
+  const pageTitle = t('feedback.title');
 
-  const pageSubtitle = isSuperAdmin
-    ? (isAr ? 'عرض جميع التعليقات عبر النظام' : 'System-wide feedback from all companies')
-    : isManager
-      ? (isAr ? 'إدارة تعليقات فريقك وتوزيعها' : 'Manage and assign your team\'s feedback')
-      : (isAr ? 'عرض وإدارة تعليقات شركتك' : 'View and manage your company\'s feedback');
+  const pageSubtitle = isManager
+    ? (isAr ? 'إدارة تعليقات فريقك وتوزيعها' : 'Manage your  feedback')
+    : (isAr ? 'عرض وإدارة التعليقات' : 'View and manage feedback');
 
   return (
     <div className="space-y-6">
@@ -298,17 +293,17 @@ const handleStatusChange = async (feedbackId: number, newStatus: string) => {
           <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">{pageSubtitle}</p>
         </div>
         <div className="flex gap-2">
-          {(isSuperAdmin || isCompanyAdmin) && (
+          {(isManager) && (
             <Button variant="outline" size="sm" className="gap-2" onClick={exportToCSV}>
-  <Download className="w-4 h-4" />
-  {t('common.export')}
-</Button>
+              <Download className="w-4 h-4" />
+              {t('common.export')}
+            </Button>
           )}
         </div>
       </div>
 
       {/* Role-specific Info Banners */}
-      {isManager && (
+      {/* {isManager && (
         <div className="flex items-start gap-3 p-4 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800 rounded-xl text-sm text-emerald-800 dark:text-emerald-300">
           <UserCheck className="w-4 h-4 flex-shrink-0 mt-0.5" />
           <span>
@@ -317,139 +312,101 @@ const handleStatusChange = async (feedbackId: number, newStatus: string) => {
               : 'As Customer Service Supervisor (CSS), you can assign feedback to agents, set priorities, and change statuses. Click a row to view details.'}
           </span>
         </div>
-      )}
-      {isSuperAdmin && (
-        <div className="flex items-start gap-3 p-4 bg-violet-50 dark:bg-violet-900/10 border border-violet-200 dark:border-violet-800 rounded-xl text-sm text-violet-800 dark:text-violet-300">
-          <Building2 className="w-4 h-4 flex-shrink-0 mt-0.5" />
-          <span>
-            {isAr ? 'عرض جميع التعليقات من جميع الشركات والمجالات.' : 'Viewing all feedback across all companies and domains in the system.'}
-          </span>
-        </div>
-      )}
+      )} */}
 
       {/* Filters */}
-      <Card className="p-4">
-        <div className="flex flex-col gap-0">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-2 -translate-y-0 w-4 h-4 text-gray-400" />
-              <Input
-                type="search"
-                placeholder={t('common.search')}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400">{t('filter.status')}</label>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-[160px]">
-                  <SelectValue placeholder={t('filter.status')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t('common.all')}</SelectItem>
-                  <SelectItem value="open">{t('status.open')}</SelectItem>
-                  <SelectItem value="inProgress">{t('status.inProgress')}</SelectItem>
-                  <SelectItem value="resolved">{t('status.resolved')}</SelectItem>
-                  <SelectItem value="closed">{t('status.closed')}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400">{t('filter.sentiment')}</label>
-              <Select value={sentimentFilter} onValueChange={setSentimentFilter}>
-                <SelectTrigger className="w-full sm:w-[160px]">
-                  <SelectValue placeholder={t('filter.sentiment')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t('common.all')}</SelectItem>
-                  <SelectItem value="positive">{t('sentiment.positive')}</SelectItem>
-                  <SelectItem value="negative">{t('sentiment.negative')}</SelectItem>
-                  <SelectItem value="neutral">{t('sentiment.neutral')}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400">{t('filter.priority')}</label>
-              <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                <SelectTrigger className="w-full sm:w-[150px]">
-                  <SelectValue placeholder={t('filter.priority')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t('common.all')}</SelectItem>
-                  <SelectItem value="critical">{t('priority.critical')}</SelectItem>
-                  <SelectItem value="high">{t('priority.high')}</SelectItem>
-                  <SelectItem value="medium">{t('priority.medium')}</SelectItem>
-                  <SelectItem value="low">{t('priority.low')}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400">{t('filter.category')}</label>
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="w-full sm:w-[170px]">
-                  <SelectValue placeholder={t('filter.category')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t('common.all')}</SelectItem>
-                  {categoryOptions.map(name => (
-                    <SelectItem key={name} value={name}>{name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400">{t('filter.channel')}</label>
-              <Select value={channelFilter} onValueChange={setChannelFilter}>
-                <SelectTrigger className="w-full sm:w-[170px]">
-                  <SelectValue placeholder={t('filter.channel')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t('common.all')}</SelectItem>
-                  {channelOptions.map(name => (
-                    <SelectItem key={name} value={name}>{name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400">{t('feedback.emotion')}</label>
-              <Select value={emotionFilter} onValueChange={setEmotionFilter}>
-                <SelectTrigger className="w-full sm:w-[190px]">
-                  <SelectValue placeholder={t('feedback.emotion')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t('common.all')}</SelectItem>
-                  <SelectItem value="0">{t('emotion.0')}</SelectItem>
-                  <SelectItem value="1">{t('emotion.1')}</SelectItem>
-                  <SelectItem value="2">{t('emotion.2')}</SelectItem>
-                  <SelectItem value="3">{t('emotion.3')}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {isSuperAdmin && (
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400">{t('filter.company')}</label>
-                <Select value={companyFilter} onValueChange={setCompanyFilter}>
-                  <SelectTrigger className="w-full sm:w-[180px]">
-                    <SelectValue placeholder={t('filter.company')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{isAr ? 'جميع الشركات' : 'All Companies'}</SelectItem>
-                    <SelectItem value="company-1">TechCorp Solutions</SelectItem>
-                    <SelectItem value="company-2">Healthcare Plus</SelectItem>
-                    <SelectItem value="company-3">Retail World</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          </div>
-        </div>
-      </Card>
+      <div className="flex flex-wrap items-center gap-3">
 
+        {/* Search */}
+        <div className="relative flex-1 max-w-[420px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+
+          <Input
+            type="search"
+            placeholder="Search feedback..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 h-11"
+          />
+        </div>
+
+        {/* Filters */}
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[150px] h-11">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{isAr ? 'جميع الحالات' : 'All Status'}</SelectItem>
+            <SelectItem value="open">{isAr ? 'مفتوح' : 'Open'}</SelectItem>
+            <SelectItem value="inprogress">{isAr ? 'قيد المعالجة' : 'In Progress'}</SelectItem>
+            <SelectItem value="resolved">{isAr ? 'تم الحل' : 'Resolved'}</SelectItem>
+            <SelectItem value="closed">{isAr ? 'مغلق' : 'Closed'}</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={sentimentFilter} onValueChange={setSentimentFilter}>
+          <SelectTrigger className="w-[150px] h-11">
+            <SelectValue placeholder="Sentiment" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{isAr ? 'جميع المشاعر' : 'All Sentiment'}</SelectItem>
+            <SelectItem value="positive">{isAr ? 'إيجابي' : 'Positive'}</SelectItem>
+            <SelectItem value="negative">{isAr ? 'سلبي' : 'Negative'}</SelectItem>
+            <SelectItem value="neutral">{isAr ? 'محايد' : 'Neutral'}</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+          <SelectTrigger className="w-[150px] h-11">
+            <SelectValue placeholder="Priority" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{isAr ? 'جميع الأولويات' : 'All Priorities'}</SelectItem>
+            <SelectItem value="low">{isAr ? 'منخفضة' : 'Low'}</SelectItem>
+            <SelectItem value="medium">{isAr ? 'متوسطة' : 'Medium'}</SelectItem>
+            <SelectItem value="high">{isAr ? 'عالية' : 'High'}</SelectItem>
+            <SelectItem value="critical">{isAr ? 'حرجة' : 'Critical'}</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+          <SelectTrigger className="w-[150px] h-11">
+            <SelectValue placeholder="Category" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{isAr ? 'جميع التصنيفات' : 'All Categories'}</SelectItem>
+            {categoryOptions.map(category => (
+              <SelectItem key={category} value={category}>{category}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={channelFilter} onValueChange={setChannelFilter}>
+          <SelectTrigger className="w-[150px] h-11">
+            <SelectValue placeholder="Channel" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{isAr ? 'جميع القنوات' : 'All Channels'}</SelectItem>
+            {channelOptions.map(channel => (
+              <SelectItem key={channel} value={channel}>{channel}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={emotionFilter} onValueChange={setEmotionFilter}>
+          <SelectTrigger className="w-[150px] h-11">
+            <SelectValue placeholder="Emotion" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{isAr ? 'جميع المشاعر' : 'All Emotions'}</SelectItem>
+            <SelectItem value="satisfied">{isAr ? 'راضي' : 'Satisfied'}</SelectItem>
+            <SelectItem value="frustrated">{isAr ? 'محبط' : 'Frustrated'}</SelectItem>
+            <SelectItem value="neutral">{isAr ? 'محايد' : 'Neutral'}</SelectItem>
+            <SelectItem value="disgusted">{isAr ? 'مشمئز' : 'Disgusted'}</SelectItem>
+          </SelectContent>
+        </Select>
+
+      </div>
       {/* Feedback Table */}
       <Card>
         <div className="overflow-x-auto">
@@ -465,102 +422,98 @@ const handleStatusChange = async (feedbackId: number, newStatus: string) => {
                 <TableHead className="hidden xl:table-cell font-semibold">{t('feedback.emotion')}</TableHead>
                 <TableHead className="hidden lg:table-cell font-semibold">{t('feedback.priority')}</TableHead>
                 <TableHead className="font-semibold">{t('common.status')}</TableHead>
-                
-                {isSuperAdmin && (
-                  <TableHead className="hidden xl:table-cell font-semibold">{isAr ? 'الشركة' : 'Company'}</TableHead>
-                )}
                 <TableHead className="hidden sm:table-cell font-semibold">{t('common.date')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {paginatedFeedback.map((fb) => {
-  const currentStatus = normalizeStatus(feedbackStatuses[fb.feedback_id] || fb.status);
-  const currentPriority = normalizePriority(
-    feedbackPriorities[fb.feedback_id] || fb.priority || 'low'
-  );
-  const sentimentKey = getSentimentKey(fb.sentiment_id, fb.sentiment);
-  return (
-    <TableRow
-      key={fb.feedback_id}
-      className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors"
-      onClick={() => navigate(`/app/feedback/${fb.feedback_id}`)}
-    >
-      <TableCell className="hidden sm:table-cell">
-        <span className="text-xs font-mono text-gray-400">{fb.feedback_id}</span>
-      </TableCell>
-      <TableCell>
-        <div className="font-semibold text-gray-900 dark:text-white text-sm">{fb.customer_name || 'Unknown'}</div>
-      </TableCell>
-      <TableCell className="hidden md:table-cell max-w-xs">
-        <div className="truncate text-sm text-gray-600 dark:text-gray-400">{fb.feedback_context || '—'}</div>
-      </TableCell>
-      <TableCell className="hidden xl:table-cell">
-        <span className="text-sm text-gray-600 dark:text-gray-400">
-          {getProblemTypeLabel(t, fb.problem_type_id, fb.problem_type)}
-        </span>
-      </TableCell>
-      <TableCell className="hidden xl:table-cell">
-        <span className="text-sm text-gray-600 dark:text-gray-400">{fb.channel_name || '—'}</span>
-      </TableCell>
-      <TableCell>
-        <Badge className={cn('capitalize text-xs', sentimentColors[sentimentKey])}>
-          {t(`sentiment.${sentimentKey}`)}
-        </Badge>
-      </TableCell>
-      <TableCell className="hidden xl:table-cell">
-        <span className="text-xs capitalize text-gray-600 dark:text-gray-400">
-          {getEmotionLabel(t, fb.emotion_id, fb.emotion)}
-        </span>
-      </TableCell>
-      <TableCell className="hidden lg:table-cell">
-        {isManager ? (
-          <div onClick={(e) => e.stopPropagation()}>
-            <Select
-              value={currentPriority}
-              onValueChange={(val) => handlePriorityChange(fb.feedback_id, val)}
-            >
-              <SelectTrigger className="h-7 w-[100px] text-xs"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="low" className="text-xs">{t('priority.low')}</SelectItem>
-                <SelectItem value="medium" className="text-xs">{t('priority.medium')}</SelectItem>
-                <SelectItem value="high" className="text-xs">{t('priority.high')}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        ) : (
-          <Badge className={cn('capitalize text-xs', priorityColors[currentPriority])}>
-            {displayLabel(t(`priority.${currentPriority}`), currentPriority)}
-          </Badge>
-        )}
-      </TableCell>
-      <TableCell>
-        {isManager ? (
-          <div onClick={(e) => e.stopPropagation()}>
-            <Select
-              value={currentStatus}
-              onValueChange={(val) => handleStatusChange(fb.feedback_id, val)}
-            >
-              <SelectTrigger className="h-7 w-[120px] text-xs"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="open" className="text-xs">{t('status.open')}</SelectItem>
-                <SelectItem value="inProgress" className="text-xs">{t('status.inProgress')}</SelectItem>
-                <SelectItem value="resolved" className="text-xs">{t('status.resolved')}</SelectItem>
-                <SelectItem value="closed" className="text-xs">{t('status.closed')}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        ) : (
-          <Badge className={cn('capitalize text-xs', statusColors[currentStatus])}>
-            {displayLabel(t(`status.${currentStatus}`), currentStatus)}
-          </Badge>
-        )}
-      </TableCell>
-      <TableCell className="hidden sm:table-cell">
-        <span className="text-xs text-gray-500 dark:text-gray-400">{formatDate(fb.created_at)}</span>
-      </TableCell>
-    </TableRow>
-  );
-})}
+                const currentStatus = normalizeStatus(feedbackStatuses[fb.feedback_id] || fb.status);
+                const currentPriority = normalizePriority(
+                  feedbackPriorities[fb.feedback_id] || fb.priority || 'low'
+                );
+                const sentimentKey = getSentimentKey(fb.sentiment_id, fb.sentiment);
+                return (
+                  <TableRow
+                    key={fb.feedback_id}
+                    className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors"
+                    onClick={() => navigate(`/app/feedback/${fb.feedback_id}`)}
+                  >
+                    <TableCell className="hidden sm:table-cell">
+                      <span className="text-xs font-mono text-gray-400">{fb.feedback_id}</span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="font-semibold text-gray-900 dark:text-white text-sm">{fb.customer_name || 'Unknown'}</div>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell max-w-xs">
+                      <div className="truncate text-sm text-gray-600 dark:text-gray-400">{fb.feedback_context || '—'}</div>
+                    </TableCell>
+                    <TableCell className="hidden xl:table-cell">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        {getProblemTypeLabel(t, fb.problem_type_id, fb.problem_type)}
+                      </span>
+                    </TableCell>
+                    <TableCell className="hidden xl:table-cell">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">{fb.channel_name || '—'}</span>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={cn('capitalize text-xs', sentimentColors[sentimentKey])}>
+                        {t(`sentiment.${sentimentKey}`)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="hidden xl:table-cell">
+                      <span className="text-xs capitalize text-gray-600 dark:text-gray-400">
+                        {getEmotionLabel(t, fb.emotion_id, fb.emotion)}
+                      </span>
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell">
+                      {isManager ? (
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <Select
+                            value={currentPriority}
+                            onValueChange={(val) => handlePriorityChange(fb.feedback_id, val)}
+                          >
+                            <SelectTrigger className="h-7 w-[100px] text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="low" className="text-xs">{t('priority.low')}</SelectItem>
+                              <SelectItem value="medium" className="text-xs">{t('priority.medium')}</SelectItem>
+                              <SelectItem value="high" className="text-xs">{t('priority.high')}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      ) : (
+                        <Badge className={cn('capitalize text-xs', priorityColors[currentPriority])}>
+                          {displayLabel(t(`priority.${currentPriority}`), currentPriority)}
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {isManager ? (
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <Select
+                            value={currentStatus}
+                            onValueChange={(val) => handleStatusChange(fb.feedback_id, val)}
+                          >
+                            <SelectTrigger className="h-7 w-[120px] text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="open" className="text-xs">{t('status.open')}</SelectItem>
+                              <SelectItem value="inProgress" className="text-xs">{t('status.inProgress')}</SelectItem>
+                              <SelectItem value="resolved" className="text-xs">{t('status.resolved')}</SelectItem>
+                              <SelectItem value="closed" className="text-xs">{t('status.closed')}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      ) : (
+                        <Badge className={cn('capitalize text-xs', statusColors[currentStatus])}>
+                          {displayLabel(t(`status.${currentStatus}`), currentStatus)}
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">{formatDate(fb.created_at)}</span>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
               {paginatedFeedback.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={11} className="text-center py-12 text-gray-400">
@@ -577,9 +530,9 @@ const handleStatusChange = async (feedbackId: number, newStatus: string) => {
       {/* Results Count */}
       <div className="text-xs text-gray-500 dark:text-gray-400">
         {isAr
-  ? `عرض ${paginatedFeedback.length} من أصل ${filteredFeedback.length} تعليق (الكل: ${feedbackList.length})`
-  : `Showing ${paginatedFeedback.length} of ${filteredFeedback.length} filtered items (total: ${feedbackList.length})`
-}
+          ? `عرض ${paginatedFeedback.length} من أصل ${filteredFeedback.length} تعليق (الكل: ${feedbackList.length})`
+          : `Showing ${paginatedFeedback.length} of ${filteredFeedback.length} filtered items (total: ${feedbackList.length})`
+        }
       </div>
 
       {/* Pagination Controls */}
@@ -617,13 +570,13 @@ const handleStatusChange = async (feedbackId: number, newStatus: string) => {
           <DialogHeader>
             <DialogTitle>{isAr ? 'إسناد التعليق' : 'Assign Feedback'}</DialogTitle>
             <DialogDescription>
-{isAr ? `اختر موظفاً لإسناد تعليق ${selectedFeedback?.customer_name}` : `Select an agent to handle ${selectedFeedback?.customer_name}'s feedback`}            </DialogDescription>
+              {isAr ? `اختر موظفاً لإسناد تعليق ${selectedFeedback?.customer_name}` : `Select an agent to handle ${selectedFeedback?.customer_name}'s feedback`}            </DialogDescription>
           </DialogHeader>
           {selectedFeedback && (
             <div className="space-y-4 py-2">
               <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl text-sm">
-<p className="font-semibold text-gray-900 dark:text-white">{selectedFeedback.customer_name}</p>
-<p className="text-gray-500 dark:text-gray-400 text-xs mt-1 line-clamp-2">{selectedFeedback.feedback_context}</p>
+                <p className="font-semibold text-gray-900 dark:text-white">{selectedFeedback.customer_name}</p>
+                <p className="text-gray-500 dark:text-gray-400 text-xs mt-1 line-clamp-2">{selectedFeedback.feedback_context}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
@@ -642,9 +595,9 @@ const handleStatusChange = async (feedbackId: number, newStatus: string) => {
                       )}
                     >
                       <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0">
-<span className="text-white text-xs font-bold">
-  {agent.name.split(' ').map((n: string) => n[0]).join('')}
-</span>                      </div>
+                        <span className="text-white text-xs font-bold">
+                          {agent.name.split(' ').map((n: string) => n[0]).join('')}
+                        </span>                      </div>
                       <div>
                         <p className="text-sm font-medium">{agent.firstName} {agent.lastName}</p>
                         <p className="text-xs text-gray-400">{agent.email}</p>

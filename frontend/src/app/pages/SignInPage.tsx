@@ -5,7 +5,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Eye, EyeOff, Moon, Sun, Languages, AlertCircle, ArrowLeft, ArrowRight } from 'lucide-react';
 
-export function LoginPage() {
+export function SignInPage() {
   const { login } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { language, toggleLanguage } = useLanguage();
@@ -78,7 +78,7 @@ const handleSubmit = async (e: React.FormEvent) => {
               {isAr ? 'مرحباً بعودتك' : 'Welcome back'}
             </h1>
             <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">
-              {isAr ? 'سجّل دخولك للوصول إلى لوحة التحكم' : 'Login to access your dashboard'}
+              {isAr ? 'سجّل دخولك للوصول إلى لوحة التحكم' : 'Sign in to access your dashboard'}
             </p>
           </div>
 

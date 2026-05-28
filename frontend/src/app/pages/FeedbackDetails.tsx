@@ -153,7 +153,7 @@ export function FeedbackDetails() {
   const [newNote, setNewNote] = useState('');
   const [showNoteInput, setShowNoteInput] = useState(false);
 
-  const canEdit = user?.role === 'manager' || user?.role === 'companyAdmin' || user?.role === 'superAdmin';
+  const canEdit = user?.role === 'manager' || user?.role === 'customerServiceSupervisor';
   const isAgent = user?.role === 'websiteConfigurator';
 
   useEffect(() => {

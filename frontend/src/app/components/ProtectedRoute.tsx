@@ -51,7 +51,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   // Not authenticated: redirect to login
   if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to="/sign-in" state={{ from: location }} replace />;
   }
 
   // Check role-based access control
