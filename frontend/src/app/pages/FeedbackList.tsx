@@ -41,9 +41,9 @@ interface BackendFeedback {
   created_at: string;
 }
 const sentimentColors: Record<string, string> = {
-  positive: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-  negative: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-  neutral: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400',
+  positive: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border border-green-200 dark:border-green-800',
+  neutral: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700',
+  negative: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border border-red-200 dark:border-red-800',
 };
 
 const SENTIMENT_ID_TO_KEY: Record<number, 'negative' | 'neutral' | 'positive'> = {
@@ -52,20 +52,28 @@ const SENTIMENT_ID_TO_KEY: Record<number, 'negative' | 'neutral' | 'positive'> =
   2: 'positive',
 };
 
-const statusColors: Record<string, string> = {
-  open: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-  inProgress: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-  resolved: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-  closed: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400',
-  analyzed: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400',
+const EMOTION_ID_TO_KEY: Record<number, 'satisfied' | 'frustrated' | 'neutral' | 'disgusted'> = {
+  0: 'frustrated',
+  1: 'neutral',
+  2: 'disgusted',
+  3: 'satisfied',
 };
 
 const priorityColors: Record<string, string> = {
-  low: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400',
-  medium: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
-  high: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-  critical: 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-400',
+  low: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border border-green-200 dark:border-green-800',
+  medium: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-800',
+  high: 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300 border border-orange-200 dark:border-orange-800',
+  critical: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border border-red-200 dark:border-red-800',
 };
+
+const emotionColors: Record<string, string> = {
+  satisfied: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border border-green-200 dark:border-green-800',
+  neutral: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700',
+  frustrated: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800',
+  disgusted: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border border-red-200 dark:border-red-800',
+};
+
+const classificationBadgeClass = 'capitalize text-xs transition-colors duration-200';
 
 const normalizePriority = (value?: string | null) =>
   (value || 'low').toLowerCase();
@@ -126,6 +134,35 @@ const getSentimentKey = (
   return 'neutral';
 };
 
+const CATEGORY_AR_LABELS: Record<string, string> = {
+  servicequality: 'جودة الخدمة',
+  servicequalityissue: 'مشكلة جودة الخدمة',
+  productissues: 'مشاكل المنتج',
+  billing: 'الفواتير',
+  support: 'الدعم',
+  other: 'أخرى',
+  deliveryissue: 'مشكلة التوصيل',
+  deliveryissues: 'مشاكل التوصيل',
+  foodquality: 'جودة الطعام',
+  hygiene: 'النظافة',
+  pricing: 'التسعير',
+  orderaccuracy: 'دقة الطلب',
+  menu: 'القائمة',
+};
+
+const normalizeCategoryKey = (value: string) =>
+  value.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+const getCategoryDisplayLabel = (categoryName: string, isAr: boolean) => {
+  if (!isAr) return categoryName;
+
+  // Keep values already in Arabic as-is.
+  if (/[\u0600-\u06FF]/.test(categoryName)) return categoryName;
+
+  const normalizedKey = normalizeCategoryKey(categoryName);
+  return CATEGORY_AR_LABELS[normalizedKey] || categoryName;
+};
+
 const PAGE_SIZE_OPTIONS = [20, 30, 50];
 
 export function FeedbackList() {
@@ -139,11 +176,9 @@ export function FeedbackList() {
   const [sentimentFilter, setSentimentFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
-  const [channelFilter, setChannelFilter] = useState('all');
   const [emotionFilter, setEmotionFilter] = useState('all');
   // const [companFilter, setCompanyFilter] = useState('all');
   const [feedbackList, setFeedbackList] = useState<BackendFeedback[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [feedbackStatuses, setFeedbackStatuses] = useState<Record<number, string>>({});
   const [feedbackPriorities, setFeedbackPriorities] = useState<Record<number, string>>({});
   const [feedbackProblemTypes, setFeedbackProblemTypes] = useState<Record<number, number | null>>({});
@@ -162,9 +197,7 @@ export function FeedbackList() {
   }
 
   const agents: any[] = []; // TODO: fetch from /users/ when needed
-  const isManager = user?.role === 'manager';
   const isManagerOrSupervisor = user?.role === 'manager' || user?.role === 'customerServiceSupervisor';
-  const [fetchError, setFetchError] = useState('');
 
   useEffect(() => {
     const fetchFeedback = async () => {
@@ -179,9 +212,6 @@ export function FeedbackList() {
         setFeedbackEmotions(Object.fromEntries(data.map(fb => [fb.feedback_id, fb.emotion_id ?? null])));
       } catch (err: any) {
         console.error('Failed to fetch feedback', err);
-        setFetchError(err?.message || 'Failed to load feedback');
-      } finally {
-        setIsLoading(false);
       }
     };
     fetchFeedback();
@@ -199,9 +229,8 @@ export function FeedbackList() {
     const matchesSentiment = sentimentFilter === 'all' || sentimentKey === sentimentFilter;
     const matchesPriority = priorityFilter === 'all' || currentPriority === priorityFilter;
     const matchesCategory = categoryFilter === 'all' || (fb.category_name || '—') === categoryFilter;
-    const matchesChannel = channelFilter === 'all' || (fb.channel_name || '—') === channelFilter;
     const matchesEmotion = emotionFilter === 'all' || String(fb.emotion_id ?? 'none') === emotionFilter;
-    return matchesSearch && matchesStatus && matchesSentiment && matchesPriority && matchesCategory && matchesChannel && matchesEmotion;
+    return matchesSearch && matchesStatus && matchesSentiment && matchesPriority && matchesCategory && matchesEmotion;
   });
 
   const totalPages = Math.max(1, Math.ceil(filteredFeedback.length / pageSize));
@@ -212,7 +241,7 @@ export function FeedbackList() {
 
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, statusFilter, sentimentFilter, priorityFilter, categoryFilter, channelFilter, emotionFilter, pageSize]);
+  }, [searchQuery, statusFilter, sentimentFilter, priorityFilter, categoryFilter, emotionFilter, pageSize]);
 
   React.useEffect(() => {
     if (currentPage > totalPages) {
@@ -223,10 +252,6 @@ export function FeedbackList() {
   const categoryOptions = Array.from(
     new Set(feedbackList.map(fb => fb.category_name || '—'))
   ).filter(name => name && name !== '—');
-  const channelOptions = Array.from(
-    new Set(feedbackList.map(fb => fb.channel_name || '—'))
-  ).filter(name => name && name !== '—');
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString(isAr ? 'ar-SA' : 'en-US', {
       year: 'numeric', month: 'short', day: 'numeric',
@@ -355,27 +380,27 @@ export function FeedbackList() {
 
           <Input
             type="search"
-            placeholder="Search feedback..."
+            placeholder={t('feedback.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10 h-11"
           />
         </div>
 
-        {/* Filters */}
-        {/* <Select value={statusFilter} onValueChange={setStatusFilter}>
+        {/* Filters - Category */}
+        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
           <SelectTrigger className="w-[150px] h-11">
-            <SelectValue placeholder="Status" />
+            <SelectValue placeholder="Category" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">{isAr ? 'جميع الحالات' : 'All Status'}</SelectItem>
-            <SelectItem value="open">{isAr ? 'مفتوح' : 'Open'}</SelectItem>
-            <SelectItem value="inprogress">{isAr ? 'قيد المعالجة' : 'In Progress'}</SelectItem>
-            <SelectItem value="resolved">{isAr ? 'تم الحل' : 'Resolved'}</SelectItem>
-            <SelectItem value="closed">{isAr ? 'مغلق' : 'Closed'}</SelectItem>
+            <SelectItem value="all">{isAr ? 'جميع التصنيفات' : 'All Categories'}</SelectItem>
+            {categoryOptions.map(category => (
+              <SelectItem key={category} value={category}>{getCategoryDisplayLabel(category, isAr)}</SelectItem>
+            ))}
           </SelectContent>
-        </Select> */}
+        </Select>
 
+        {/* Filters - Sentiment */}
         <Select value={sentimentFilter} onValueChange={setSentimentFilter}>
           <SelectTrigger className="w-[150px] h-11">
             <SelectValue placeholder="Sentiment" />
@@ -388,6 +413,21 @@ export function FeedbackList() {
           </SelectContent>
         </Select>
 
+        {/* Filters - Emotion */}
+        <Select value={emotionFilter} onValueChange={setEmotionFilter}>
+          <SelectTrigger className="w-[150px] h-11">
+            <SelectValue placeholder="Emotion" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{isAr ? ' جميع الانفعالات' : 'All Emotions'}</SelectItem>
+            <SelectItem value="satisfied">{isAr ? 'راضي' : 'Satisfied'}</SelectItem>
+            <SelectItem value="frustrated">{isAr ? 'محبط' : 'Frustrated'}</SelectItem>
+            <SelectItem value="neutral">{isAr ? 'محايد' : 'Neutral'}</SelectItem>
+            <SelectItem value="disgusted">{isAr ? 'مشمئز' : 'Disgusted'}</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {/* Filters - Priority */}
         <Select value={priorityFilter} onValueChange={setPriorityFilter}>
           <SelectTrigger className="w-[150px] h-11">
             <SelectValue placeholder="Priority" />
@@ -401,40 +441,18 @@ export function FeedbackList() {
           </SelectContent>
         </Select>
 
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+        {/* Filters - Status */}
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[150px] h-11">
-            <SelectValue placeholder="Category" />
+            <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">{isAr ? 'جميع التصنيفات' : 'All Categories'}</SelectItem>
-            {categoryOptions.map(category => (
-              <SelectItem key={category} value={category}>{category}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select value={channelFilter} onValueChange={setChannelFilter}>
-          <SelectTrigger className="w-[150px] h-11">
-            <SelectValue placeholder="Channel" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{isAr ? 'جميع القنوات' : 'All Channels'}</SelectItem>
-            {channelOptions.map(channel => (
-              <SelectItem key={channel} value={channel}>{channel}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select value={emotionFilter} onValueChange={setEmotionFilter}>
-          <SelectTrigger className="w-[150px] h-11">
-            <SelectValue placeholder="Emotion" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{isAr ? 'جميع المشاعر' : 'All Emotions'}</SelectItem>
-            <SelectItem value="satisfied">{isAr ? 'راضي' : 'Satisfied'}</SelectItem>
-            <SelectItem value="frustrated">{isAr ? 'محبط' : 'Frustrated'}</SelectItem>
-            <SelectItem value="neutral">{isAr ? 'محايد' : 'Neutral'}</SelectItem>
-            <SelectItem value="disgusted">{isAr ? 'مشمئز' : 'Disgusted'}</SelectItem>
+            <SelectItem value="all">{isAr ? 'جميع الحالات' : 'All Status'}</SelectItem>
+            <SelectItem value="open">{isAr ? 'مفتوح' : 'Open'}</SelectItem>
+            <SelectItem value="inprogress">{isAr ? 'قيد المعالجة' : 'In Progress'}</SelectItem>
+            <SelectItem value="resolved">{isAr ? 'تم الحل' : 'Resolved'}</SelectItem>
+            <SelectItem value="closed">{isAr ? 'مغلق' : 'Closed'}</SelectItem>
+            <SelectItem value="analyzed">{isAr ? 'محلل' : 'Analyzed'}</SelectItem>
           </SelectContent>
         </Select>
 
@@ -449,10 +467,11 @@ export function FeedbackList() {
                 <TableHead className="font-semibold">{t('feedback.customer')}</TableHead>
                 <TableHead className="hidden md:table-cell font-semibold">{t('feedback.content')}</TableHead>
                 <TableHead className="hidden xl:table-cell font-semibold">{t('feedback.problemType')}</TableHead>
-                <TableHead className="hidden xl:table-cell font-semibold">{t('feedback.channel')}</TableHead>
                 <TableHead className="font-semibold">{t('feedback.sentiment')}</TableHead>
-                <TableHead className="hidden xl:table-cell font-semibold">{t('feedback.emotion')}</TableHead>
+                <TableHead className="hidden lg:table-cell font-semibold">{t('feedback.emotion')}</TableHead>
                 <TableHead className="hidden lg:table-cell font-semibold">{t('feedback.priority')}</TableHead>
+                <TableHead className="hidden lg:table-cell font-semibold">{isAr ? 'الحالة' : 'Status'}</TableHead>
+                <TableHead className="hidden xl:table-cell font-semibold">{t('feedback.channel')}</TableHead>
                 <TableHead className="hidden sm:table-cell font-semibold">{t('common.date')}</TableHead>
               </TableRow>
             </TableHeader>
@@ -462,22 +481,35 @@ export function FeedbackList() {
                 const currentPriority = normalizePriority(
                   feedbackPriorities[fb.feedback_id] || fb.priority || 'low'
                 );
-                const sentimentKey = getSentimentKey(fb.sentiment_id, fb.sentiment);
+                const currentSentimentKey = getSentimentKey(
+                  feedbackSentiments[fb.feedback_id] ?? fb.sentiment_id,
+                  fb.sentiment
+                );
+                const currentEmotionKey = EMOTION_ID_TO_KEY[
+                  (feedbackEmotions[fb.feedback_id] ?? fb.emotion_id ?? 2) as number
+                ] || 'neutral';
                 return (
                   <TableRow
                     key={fb.feedback_id}
                     className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors"
                     onClick={() => navigate(`/app/feedback/${fb.feedback_id}`)}
                   >
+                    {/* ID */}
                     <TableCell className="hidden sm:table-cell">
                       <span className="text-xs font-mono text-gray-400">{fb.feedback_id}</span>
                     </TableCell>
+                    
+                    {/* Customer */}
                     <TableCell>
                       <div className="font-semibold text-gray-900 dark:text-white text-sm">{fb.customer_name || 'Unknown'}</div>
                     </TableCell>
+                    
+                    {/* Content */}
                     <TableCell className="hidden md:table-cell max-w-xs">
                       <div className="truncate text-sm text-gray-600 dark:text-gray-400">{fb.feedback_context || '—'}</div>
                     </TableCell>
+                    
+                    {/* Problem Type */}
                     <TableCell className="hidden xl:table-cell">
                       {isManagerOrSupervisor ? (
                         <div onClick={(e) => e.stopPropagation()}>
@@ -504,9 +536,8 @@ export function FeedbackList() {
                         </span>
                       )}
                     </TableCell>
-                    <TableCell className="hidden xl:table-cell">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">{fb.channel_name || '—'}</span>
-                    </TableCell>
+                    
+                    {/* Sentiment */}
                     <TableCell>
                       {isManagerOrSupervisor ? (
                         <div onClick={(e) => e.stopPropagation()}>
@@ -514,7 +545,7 @@ export function FeedbackList() {
                             value={String(feedbackSentiments[fb.feedback_id] ?? -1)}
                             onValueChange={(val) => handleSentimentChange(fb.feedback_id, val === '-1' ? null : Number(val))}
                           >
-                            <SelectTrigger className="h-7 w-[100px] text-xs"><SelectValue /></SelectTrigger>
+                            <SelectTrigger className={cn('h-7 w-[100px] text-xs transition-colors duration-200', sentimentColors[currentSentimentKey])}><SelectValue /></SelectTrigger>
                             <SelectContent>
                               <SelectItem value="0" className="text-xs">{t('sentiment.negative')}</SelectItem>
                               <SelectItem value="1" className="text-xs">{t('sentiment.neutral')}</SelectItem>
@@ -523,19 +554,21 @@ export function FeedbackList() {
                           </Select>
                         </div>
                       ) : (
-                        <Badge className={cn('capitalize text-xs', sentimentColors[sentimentKey])}>
-                          {t(`sentiment.${sentimentKey}`)}
+                        <Badge className={cn(classificationBadgeClass, sentimentColors[currentSentimentKey])}>
+                          {t(`sentiment.${currentSentimentKey}`)}
                         </Badge>
                       )}
                     </TableCell>
-                    <TableCell className="hidden xl:table-cell">
+                    
+                    {/* Emotion */}
+                    <TableCell className="hidden lg:table-cell">
                       {isManagerOrSupervisor ? (
                         <div onClick={(e) => e.stopPropagation()}>
                           <Select
                             value={String(feedbackEmotions[fb.feedback_id] ?? -1)}
                             onValueChange={(val) => handleEmotionChange(fb.feedback_id, val === '-1' ? null : Number(val))}
                           >
-                            <SelectTrigger className="h-7 w-[110px] text-xs"><SelectValue /></SelectTrigger>
+                            <SelectTrigger className={cn('h-7 w-[110px] text-xs transition-colors duration-200', emotionColors[currentEmotionKey] || emotionColors.neutral)}><SelectValue /></SelectTrigger>
                             <SelectContent>
                               <SelectItem value="0" className="text-xs">{t('emotion.0')}</SelectItem>
                               <SelectItem value="1" className="text-xs">{t('emotion.1')}</SelectItem>
@@ -545,11 +578,13 @@ export function FeedbackList() {
                           </Select>
                         </div>
                       ) : (
-                        <span className="text-xs capitalize text-gray-600 dark:text-gray-400">
+                        <Badge className={cn(classificationBadgeClass, emotionColors[currentEmotionKey] || emotionColors.neutral)}>
                           {getEmotionLabel(t, feedbackEmotions[fb.feedback_id] ?? fb.emotion_id, fb.emotion)}
-                        </span>
+                        </Badge>
                       )}
                     </TableCell>
+                    
+                    {/* Priority */}
                     <TableCell className="hidden lg:table-cell">
                       {isManagerOrSupervisor ? (
                         <div onClick={(e) => e.stopPropagation()}>
@@ -557,20 +592,53 @@ export function FeedbackList() {
                             value={currentPriority}
                             onValueChange={(val) => handlePriorityChange(fb.feedback_id, val)}
                           >
-                            <SelectTrigger className="h-7 w-[100px] text-xs"><SelectValue /></SelectTrigger>
+                            <SelectTrigger className={cn('h-7 w-[100px] text-xs transition-colors duration-200', priorityColors[currentPriority])}><SelectValue /></SelectTrigger>
                             <SelectContent>
                               <SelectItem value="low" className="text-xs">{t('priority.low')}</SelectItem>
                               <SelectItem value="medium" className="text-xs">{t('priority.medium')}</SelectItem>
                               <SelectItem value="high" className="text-xs">{t('priority.high')}</SelectItem>
+                              <SelectItem value="critical" className="text-xs">{t('priority.critical')}</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
                       ) : (
-                        <Badge className={cn('capitalize text-xs', priorityColors[currentPriority])}>
+                        <Badge className={cn(classificationBadgeClass, priorityColors[currentPriority])}>
                           {displayLabel(t(`priority.${currentPriority}`), currentPriority)}
                         </Badge>
                       )}
                     </TableCell>
+                    
+                    {/* Status */}
+                    <TableCell className="hidden lg:table-cell">
+                      {isManagerOrSupervisor ? (
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <Select
+                            value={currentStatus}
+                            onValueChange={(val) => handleStatusChange(fb.feedback_id, val)}
+                          >
+                            <SelectTrigger className="h-7 w-[110px] text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="open" className="text-xs">{t('status.open')}</SelectItem>
+                              <SelectItem value="inProgress" className="text-xs">{t('status.inProgress')}</SelectItem>
+                              <SelectItem value="resolved" className="text-xs">{t('status.resolved')}</SelectItem>
+                              <SelectItem value="closed" className="text-xs">{t('status.closed')}</SelectItem>
+                              <SelectItem value="analyzed" className="text-xs">{t('status.analyzed')}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-gray-600 dark:text-gray-400 capitalize">
+                          {displayLabel(t(`status.${currentStatus}`), currentStatus)}
+                        </span>
+                      )}
+                    </TableCell>
+                    
+                    {/* Channel */}
+                    <TableCell className="hidden xl:table-cell">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">{fb.channel_name || '—'}</span>
+                    </TableCell>
+                    
+                    {/* Date */}
                     <TableCell className="hidden sm:table-cell">
                       <span className="text-xs text-gray-500 dark:text-gray-400">{formatDate(fb.created_at)}</span>
                     </TableCell>
@@ -579,7 +647,7 @@ export function FeedbackList() {
               })}
               {paginatedFeedback.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={11} className="text-center py-12 text-gray-400">
+                  <TableCell colSpan={9} className="text-center py-12 text-gray-400">
                     <AlertTriangle className="w-8 h-8 mx-auto mb-2 opacity-40" />
                     <p>{isAr ? 'لا توجد تعليقات مطابقة' : 'No feedback items match your filters'}</p>
                   </TableCell>

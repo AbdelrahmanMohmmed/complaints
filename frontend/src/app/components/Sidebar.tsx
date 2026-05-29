@@ -87,6 +87,7 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
         title: language === 'ar' ? 'الإعدادات' : 'Config',
         items: [
           { name: t('nav.settings'), href: '/app/settings', icon: Settings },
+          { name: t('nav.connectedChannels'), href: '/app/integrations', icon: Plug },
         ],
       },
     ],

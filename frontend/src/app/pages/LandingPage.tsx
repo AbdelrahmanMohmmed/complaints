@@ -166,7 +166,7 @@ export function LandingPage() {
       { step: '03', title: 'رؤى وتقارير', desc: 'تحليلات وتقارير شاملة تساعدك على اتخاذ قرارات أفضل.' },
     ]
     : [
-      { step: '01', title: 'Collect feedback', desc: 'The system ingests feedback from all channels — email, Twitter (X), Facebook, your website, and more.' },
+      { step: '01', title: 'Collect feedback', desc: 'The system ingests feedback from all channels — email, Twitter (X), Facebook and more.' },
       { step: '02', title: 'AI Analysis', desc: 'Our AI analyzes sentiment, detects emotions, and auto-categorizes each feedback instantly.' },
       { step: '03', title: 'Insights & Reports', desc: 'Get comprehensive analytics and reports to make data-driven decisions.' }
     ];
@@ -393,8 +393,8 @@ export function LandingPage() {
             </p>
             <ul className="space-y-3">
               {(isAr
-                ? ['تحليل مشاعر بدقة 80%', 'دعم ثنائي اللغة عربي / إنجليزي', 'تكامل سهل مع أنظمتك الحالية', 'لوحة تحكم شاملة لكل الأدوار']
-                : ['80% sentiment analysis accuracy', 'Full Arabic & English bilingual support', 'Easy integration with your existing systems', 'Comprehensive dashboards for all roles']
+                ? ['تحليل مشاعر بدقة اكثر من 80%', 'دعم ثنائي اللغة عربي / إنجليزي', 'تكامل سهل مع أنظمتك الحالية']
+                : [' sentiment analysis accuracy more than 80%', 'Full Arabic & English bilingual support', 'Easy integration with your existing systems']
               ).map((item, i) => (
                 <li key={i} className="flex items-center gap-3">
                   <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
@@ -616,8 +616,8 @@ export function LandingPage() {
               </h2>
               <p className="text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
                 {isAr
-                  ? 'فريقنا مستعد لمساعدتك في أي وقت. تواصل معنا لمعرفة المزيد عن منصتنا أو لطلب عرض تجريبي.'
-                  : "Our team is ready to help you anytime. Reach out to learn more about our platform or to request a demo."}
+                  ? 'فريقنا مستعد لمساعدتك في أي وقت. تواصل معنا لمعرفة المزيد عن منصتنا .'
+                  : "Our team is ready to help you anytime. Reach out to learn more about our platform ."}
               </p>
 
             </div>

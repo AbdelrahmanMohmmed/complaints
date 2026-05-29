@@ -6,7 +6,6 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Separator } from '../components/ui/separator';
-import { IntegrationSettings } from './IntegrationSettings';
 import { User } from 'lucide-react';
 import { request } from '../../services/api';
 
@@ -168,18 +167,6 @@ const [lName, setLName] = useState(user?.lastName || '');
         </CardContent>
       </Card>
 
-      {/* Integrations (Manager only) */}
-      {user?.role === 'manager' && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{isAr ? 'التكاملات' : 'Integrations'}</CardTitle>
-            <CardDescription>{isAr ? 'إدارة تكاملات الخدمات الخارجية' : 'Manage external service integrations'}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <IntegrationSettings />
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }

@@ -328,7 +328,7 @@ export function CompanyAdminDashboard() {
                   interval={0} 
                   tick={{ fontSize: isAr ? 12 : 12 }} 
                 />
-                <YAxis tickMargin={isAr ? 12 : 12} width={isAr ? 44 : 44} />
+                <YAxis tickMargin={isAr ? 30 : 12} width={isAr ? 44 : 44} />
                 <Tooltip />
                 <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                   {categoryData.map((_, index) => (

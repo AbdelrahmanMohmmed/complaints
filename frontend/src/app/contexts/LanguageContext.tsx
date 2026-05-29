@@ -19,6 +19,7 @@ const translations = {
     'nav.domains': 'Domains',
     'nav.companies': 'Companies',
     'nav.settings': 'Settings',
+    'nav.connectedChannels': 'Connected Channels',
     'nav.allFeedback': 'All Feedback',
     'nav.apis': 'APIs',
     'nav.reports': 'Reports',
@@ -33,6 +34,7 @@ const translations = {
     
     // Common
     'common.search': 'Search...',
+    'feedback.searchPlaceholder': 'Search feedback ...',
     'common.filter': 'Filter',
     'common.export': 'Export',
     'common.add': 'Add',
@@ -224,6 +226,7 @@ const translations = {
     'nav.domains': 'المجالات',
     'nav.companies': 'الشركات',
     'nav.settings': 'الإعدادات',
+    'nav.connectedChannels': 'القنوات المتصلة',
     'nav.allFeedback': 'جميع التعليقات',
     'nav.apis': 'واجهات API',
     'nav.reports': 'التقارير',
@@ -316,6 +319,7 @@ const translations = {
     'feedback.addNote': 'إضافة ملاحظة',
     'feedback.noteContent': 'محتوى الملاحظة',
     'feedback.notePlaceholder': 'أضف ملاحظة أو تعليقاً...',
+    'feedback.searchPlaceholder': 'ابحث عن التعليقات ...',
     
     // Status
     'status.open': 'مفتوح',

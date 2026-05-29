@@ -128,9 +128,9 @@ const routes = [
        */
       {
         path: 'integrations',
-        name: 'إعدادات التكامل',
+        name: 'Connected Channels',
         Component: IntegrationSettings,
-        allowedRoles: ['websiteConfigurator'],
+        allowedRoles: ['manager', 'websiteConfigurator'],
       },
     ],
   },

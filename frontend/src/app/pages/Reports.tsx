@@ -295,7 +295,7 @@ export function Reports() {
             {t('reports.title')}
           </h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">
-            {isAr ? 'تحليلات شاملة وتقارير مفصّلة عن أداء التعليقات' : 'Comprehensive analytics and detailed performance insights'}
+            {isAr ? 'تحليلات شاملة وتقارير مفصّلة عن التعليقات' : 'Comprehensive analytics and detailed performance insights'}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
