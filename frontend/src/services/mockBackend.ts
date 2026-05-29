@@ -400,6 +400,7 @@ function handleGetReports(token: string | null, dateRange: string): Response {
             sentiment_change: '+5.1%',
             positive_count: 142,
             negative_count: 67,
+            negative_change: '-2.4%',
             neutral_count: 39,
         },
         sentiment_trend: [

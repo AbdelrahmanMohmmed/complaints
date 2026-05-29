@@ -14,7 +14,7 @@ import {
 } from 'recharts';
 import {
   Download, FileText, TrendingUp, TrendingDown,
-  MessageSquare, Clock, Smile, Filter,
+  MessageSquare, Frown, Smile, Filter,
 } from 'lucide-react';
 import { cn } from '../components/ui/utils';
 
@@ -268,15 +268,15 @@ export function Reports() {
       color: 'text-violet-600 dark:text-violet-400',
       bg: 'bg-violet-50 dark:bg-violet-900/20',
     },
-    {
-      label: t('reports.negativeRate'),
-      value: `${negativeRate}%`,
-      change: '',
-      trend: 'down',
-      icon: Clock,
-      color: 'text-amber-600 dark:text-amber-400',
-      bg: 'bg-amber-50 dark:bg-amber-900/20',
-    },
+   {
+  label: t('reports.negativeRate'),
+  value: `${negativeRate}%`,
+  change: summary.negative_change,
+  trend: summary.negative_change.startsWith('+') ? 'up' : 'down',
+  icon: Frown,
+  color: 'text-red-600 dark:text-red-400',
+  bg: 'bg-red-50 dark:bg-red-900/20',
+},
   ];
 
   // Ensure channel data has colors
@@ -549,35 +549,67 @@ export function Reports() {
               </ResponsiveContainer>
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">{isAr ? 'ملخص التصنيفات' : 'Category Summary'}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4 max-h-80 overflow-y-auto pr-1">
-                {categoryData.map(cat => (
-                  <div key={cat.name} className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-semibold text-gray-900 dark:text-white">{cat.name}</span>
-                      <Badge variant="outline" className="text-xs">{cat.total} {isAr ? 'تعليقات' : 'items'}</Badge>
-                    </div>
-                    <div className="flex gap-1 h-2 rounded-full overflow-hidden">
-                      <div className="bg-green-500" style={{ width: `${cat.total ? (cat.positive / cat.total) * 100 : 0}%` }} />
-                      <div className="bg-red-500" style={{ width: `${cat.total ? (cat.negative / cat.total) * 100 : 0}%` }} />
-                      <div className="bg-gray-400" style={{ width: `${cat.total ? (cat.neutral / cat.total) * 100 : 0}%` }} />
-                    </div>
-                    <div className="flex justify-between mt-1 text-xs" dir={isAr ? 'rtl' : 'ltr'}>
-                      <span className="text-green-600">{cat.total ? Math.round((cat.positive / cat.total) * 100) : 0}% +</span>
-                      <span className="text-red-600">{cat.total ? Math.round((cat.negative / cat.total) * 100) : 0}% -</span>
-                    </div>
-                  </div>
-                ))}
-                {categoryData.length === 0 && (
-                  <p className="text-center text-gray-400 text-sm py-8">No category data available</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+        <Card>
+  <CardHeader className="pb-2">
+    <CardTitle className="text-base">
+      {isAr ? 'التصنيفات التي تحتاج اهتمام' : 'Categories Requiring Attention'}
+    </CardTitle>
+  </CardHeader>
+
+  <CardContent>
+    <ResponsiveContainer width="100%" height={300}>
+      <BarChart
+        data={[...categoryData]
+          .map(cat => ({
+            name: cat.name,
+            negativeRate: cat.total
+              ? Math.round((cat.negative / cat.total) * 100)
+              : 0,
+          }))
+          .sort((a, b) => b.negativeRate - a.negativeRate)}
+        layout="vertical"
+        margin={{ left: isAr ? 50 : 20, right: 20, top: 10, bottom: 10 }}
+      >
+        <CartesianGrid
+          strokeDasharray="3 3"
+          className="stroke-gray-200 dark:stroke-gray-700"
+        />
+
+        <XAxis
+          type="number"
+          domain={[0, 100]}
+          tickFormatter={(value) => `${value}%`}
+        />
+
+        <YAxis
+          type="category"
+          dataKey="name"
+          width={isAr ? 50 : 130}
+          tick={{
+            fontSize: 10,
+            dx: isAr ? -20 : 0,
+            textAnchor: isAr ? 'start' : 'end',
+          }}
+          tickMargin={isAr ? 25 : 8}
+          tickLine={false}
+          axisLine={false}
+          interval={0}
+        />
+
+        <Tooltip
+          formatter={(value) => [`${value}%`, 'Negative Rate']}
+        />
+
+        <Bar
+          dataKey="negativeRate"
+          fill="#ef4444"
+          radius={[0, 4, 4, 0]}
+          name={isAr ? 'نسبة السلبية' : 'Negative Rate'}
+        />
+      </BarChart>
+    </ResponsiveContainer>
+  </CardContent>
+</Card>
         </div>
       )}
 
