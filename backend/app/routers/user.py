@@ -30,7 +30,7 @@ def create_user(
         )
     data = user_data.dict()
     password = data.pop('password')
-    data['password_hash'] = utils.hash(password)
+    data['password_hash'] = utils.hash_password(password)
     data['company_id'] = current_user.company_id 
 
     new_user = models.User(**data)
@@ -189,5 +189,5 @@ def change_password(
         raise HTTPException(status_code=404, detail="User not found")
     if not utils.verify(pwd_data.current_password, user.password_hash):
         raise HTTPException(status_code=400, detail="Current password is incorrect")
-    user.password_hash = utils.hash(pwd_data.new_password)
+    user.password_hash = utils.hash_password(pwd_data.new_password)
     db.commit()

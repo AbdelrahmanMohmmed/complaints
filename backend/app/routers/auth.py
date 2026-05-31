@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 from fastapi import APIRouter, Depends, status, HTTPException, BackgroundTasks
 from fastapi.security.oauth2 import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -17,7 +17,7 @@ def login(
         .filter(models.User.email == user_credentials.username)
         .first()
     )
-    print(f"🔐 Login attempt: {user_credentials.username}")  # ← add this
+    print(f"🔐 Login attempt: {user_credentials.username}")
     if not user or not utils.verify(user_credentials.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Invalid Credentials"
@@ -73,10 +73,7 @@ def resend_verification(
     if not user or user.is_verified:
         raise HTTPException(status_code=400, detail="Invalid request")
 
-    code = utils.generate_verification_code()
-    user.verification_code = code
-    user.verification_expires_at = datetime.utcnow() + timedelta(minutes=15)
-    db.commit()
+    code = utils.set_verification_code(user, db)
 
     background_tasks.add_task(
         utils.send_verification_email, payload.email, code, user.f_name
@@ -95,10 +92,7 @@ def forgot_password(
     if not user:
         return {"message": "If this email exists, a reset code has been sent"}
 
-    code = utils.generate_verification_code()
-    user.verification_code = code
-    user.verification_expires_at = datetime.utcnow() + timedelta(minutes=15)
-    db.commit()
+    code = utils.set_verification_code(user, db)
 
     background_tasks.add_task(utils.send_reset_email, payload.email, code, user.f_name)
     return {"message": "If this email exists, a reset code has been sent"}
@@ -161,7 +155,7 @@ def reset_password(
             detail="Password must contain at least one special character",
         )
 
-    user.password_hash = utils.hash(payload.new_password)
+    user.password_hash = utils.hash_password(payload.new_password)
     user.verification_code = None
     user.verification_expires_at = None
     db.commit()

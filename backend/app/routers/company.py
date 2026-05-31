@@ -1,7 +1,7 @@
 from fastapi import APIRouter, status, HTTPException, Depends, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from .. import models, utils, database
 from ..schemas import company
 
@@ -21,10 +21,7 @@ def create_company(
     if existing:
         if not existing.is_verified:
         # Resend code instead of blocking
-            code = utils.generate_verification_code()
-            existing.verification_code = code
-            existing.verification_expires_at = datetime.utcnow() + timedelta(minutes=15)
-            db.commit()
+            code = utils.set_verification_code(existing,db)
             background_tasks.add_task(utils.send_verification_email, signup.email, code, existing.f_name)
             raise HTTPException(
                 status_code=400,
@@ -43,7 +40,7 @@ def create_company(
         db.flush()
 
         code = utils.generate_verification_code()
-        expires_at = datetime.utcnow() + timedelta(minutes=15)
+        expires_at = datetime.now(UTC) + timedelta(minutes=15)
 
         new_user = models.User(
             company_id=new_company.company_id,
@@ -51,7 +48,7 @@ def create_company(
             f_name=signup.f_name,
             l_name=signup.l_name,
             email=signup.email,
-            password_hash=utils.hash(signup.password),
+            password_hash=utils.hash_password(signup.password),
             is_verified=False,
             verification_code=code,
             verification_expires_at=expires_at,

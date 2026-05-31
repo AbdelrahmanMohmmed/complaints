@@ -21,14 +21,15 @@ import { cn } from '../components/ui/utils';
 interface ReportsData {
   summary: {
     total_feedback: number;
-    total_change: string;
+    total_change?: string;
     resolution_rate: number;
-    resolution_rate_change: string;
+    resolution_rate_change?: string;
     sentiment_pct: number;
-    sentiment_change: string;
+    sentiment_change?: string;
     positive_count: number;
     negative_count: number;
     neutral_count: number;
+    negative_change?: string;
   };
   sentiment_trend: { month: string; positive: number; negative: number; neutral: number }[];
   category_data: { name: string; total: number; positive: number; negative: number; neutral: number; problem_type_id?: number | null }[];
@@ -127,6 +128,10 @@ const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent
     </text>
   );
 };
+
+const getChangeTrend = (change?: string) => (change?.startsWith('+') ? 'up' : 'down');
+
+const getChangeValue = (change?: string) => change || '';
 
 export function Reports() {
   const { t, language } = useLanguage();
@@ -248,13 +253,16 @@ export function Reports() {
   }));
   const totalSentiment = summary.positive_count + summary.negative_count + summary.neutral_count || 1;
   const negativeRate = totalSentiment ? Math.round((summary.negative_count / totalSentiment) * 100) : 0;
+  const totalChange = getChangeValue(summary.total_change);
+  const sentimentChange = getChangeValue(summary.sentiment_change);
+  const negativeChange = getChangeValue(summary.negative_change);
 
   const summaryKpis = [
     {
       label: isAr ? 'إجمالي التعليقات' : 'Total Feedback',
       value: summary.total_feedback.toLocaleString(),
-      change: summary.total_change,
-      trend: summary.total_change.startsWith('+') ? 'up' : 'down',
+      change: totalChange,
+      trend: getChangeTrend(summary.total_change),
       icon: MessageSquare,
       color: 'text-blue-600 dark:text-blue-400',
       bg: 'bg-blue-50 dark:bg-blue-900/20',
@@ -262,8 +270,8 @@ export function Reports() {
     {
       label: isAr ? 'نسبة الإيجابية' : 'Positive Rate',
       value: `${summary.sentiment_pct}%`,
-      change: summary.sentiment_change,
-      trend: summary.sentiment_change.startsWith('+') ? 'up' : 'down',
+      change: sentimentChange,
+      trend: getChangeTrend(summary.sentiment_change),
       icon: Smile,
       color: 'text-violet-600 dark:text-violet-400',
       bg: 'bg-violet-50 dark:bg-violet-900/20',
@@ -271,8 +279,8 @@ export function Reports() {
    {
   label: t('reports.negativeRate'),
   value: `${negativeRate}%`,
-  change: summary.negative_change,
-  trend: summary.negative_change.startsWith('+') ? 'up' : 'down',
+  change: negativeChange,
+  trend: getChangeTrend(summary.negative_change),
   icon: Frown,
   color: 'text-red-600 dark:text-red-400',
   bg: 'bg-red-50 dark:bg-red-900/20',

@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import { mockDomains, Domain } from '../data/mockData';
 import * as authService from '../../services/authService';
+import { listDomains, type DomainRecord } from '../../services/domainService';
 import type { SignupRequest } from '../../types/api';
 import {
   Eye,
@@ -58,13 +58,41 @@ export function SignupPage() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [domains, setDomains] = useState<DomainRecord[]>([]);
+  const [loadingDomains, setLoadingDomains] = useState(true);
 
   // Step 2: Domain (required). Optional custom label; "remove label" = use domain name.
-  const [selectedDomain, setSelectedDomain] = useState<Domain | null>(null);
+  const [selectedDomain, setSelectedDomain] = useState<DomainRecord | null>(null);
   const [domainLabel, setDomainLabel] = useState('');
 
     // Step 3: At least one of Facebook, X; Email optional
     const [apis, setApis] = useState({ facebook: false, x: false, email: false });
+
+    useEffect(() => {
+      let isActive = true;
+
+      const loadDomains = async () => {
+        try {
+          const data = await listDomains();
+          if (!isActive) return;
+          setDomains(data);
+          setSelectedDomain((current) => current ?? data[0] ?? null);
+        } catch (loadError) {
+          if (!isActive) return;
+          setError(isAr ? 'فشل تحميل المجالات من الخادم' : 'Failed to load domains from the server');
+        } finally {
+          if (isActive) {
+            setLoadingDomains(false);
+          }
+        }
+      };
+
+      loadDomains();
+
+      return () => {
+        isActive = false;
+      };
+    }, [isAr]);
   const validateStep1 = (): string => {
   const phoneClean = form.phone.replace(/[\s\-\(\)]/g, '');
   if (!form.f_name.trim() || !form.l_name.trim() || !form.company.trim()) {
@@ -146,11 +174,11 @@ const handleNext = () => {
     const payload: SignupRequest = {
       f_name: form.f_name.trim(),
       l_name: form.l_name.trim(),
-        email: form.email.trim(),
+      email: form.email.trim(),
       company: form.company.trim(),
       phone: form.phone.trim(),
       password: form.password,
-      domainId: Number(selectedDomain.id),
+      domainId: selectedDomain.domain_id,
       domainLabel: domainLabel.trim() || undefined,
       apis: { ...apis },
     };
@@ -406,27 +434,36 @@ const handleNext = () => {
                   <p className="text-sm text-gray-600 dark:text-gray-400">
                     {isAr ? 'اختر مجالك .' : 'Select your domain'}
                   </p>
+                  {loadingDomains ? (
+                    <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-700 px-4 py-6 text-sm text-gray-500 dark:text-gray-400">
+                      {isAr ? 'جارٍ تحميل المجالات...' : 'Loading domains...'}
+                    </div>
+                  ) : domains.length === 0 ? (
+                    <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-700 px-4 py-6 text-sm text-gray-500 dark:text-gray-400">
+                      {isAr ? 'لا توجد مجالات متاحة حالياً' : 'No domains are available yet'}
+                    </div>
+                  ) : null}
                   <div className="space-y-2">
-                    {mockDomains.map((d) => (
+                    {domains.map((d) => (
                       <button
-                        key={d.id}
+                        key={d.domain_id}
                         type="button"
                         onClick={() => {
                           setSelectedDomain(d);
                           setDomainLabel('');
                         }}
-                        className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all ${selectedDomain?.id === d.id ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-500' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'} ${isAr ? 'text-right flex-row-reverse' : ''}`}
+                        className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all ${selectedDomain?.domain_id === d.domain_id ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-500' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'} ${isAr ? 'text-right flex-row-reverse' : ''}`}
                       >
                         <Globe className="w-5 h-5 text-blue-500 flex-shrink-0" />
                         <div className="flex-1 min-w-0">
                           <div className="font-medium text-gray-900 dark:text-white">
-                            {isAr ? (d.nameAr || d.name) : d.name}
+                            {d.domain_name}
                           </div>
                           <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                            {isAr ? (d.descriptionAr || d.description) : d.description}
+                            {isAr ? `${d.company_count} شركة و ${d.feedback_count} تعليق` : `${d.company_count} companies • ${d.feedback_count} feedback items`}
                           </div>
                         </div>
-                        {selectedDomain?.id === d.id && <CheckCircle2 className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />}
+                        {selectedDomain?.domain_id === d.domain_id && <CheckCircle2 className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />}
                       </button>
                     ))}
                   </div>

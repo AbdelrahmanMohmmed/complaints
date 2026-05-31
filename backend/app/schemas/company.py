@@ -1,15 +1,13 @@
+from typing import Optional
 from pydantic import BaseModel, EmailStr ,field_validator
 from datetime import datetime
-from typing import Optional
 import re
 
 class CompanyCreate(BaseModel):
-    """Schema for creating a company"""
     company_name: str
     email: Optional[EmailStr] = None
     phone: Optional[str] = None
     domain_id: int
-
 
 class CompanyOut(BaseModel):
     """Schema for company response"""
@@ -26,7 +24,7 @@ class CompanySignup(BaseModel):
     """Schema for company signup (creates company + admin user)"""
     company_name: str
     email: EmailStr
-    phone: Optional[str] = None
+    phone: str
     domain_id: int
     f_name: str
     l_name: str
@@ -42,7 +40,7 @@ class CompanySignup(BaseModel):
             raise ValueError('Password must contain at least one lowercase letter')
         if not re.search(r'[0-9]', v):
             raise ValueError('Password must contain at least one number')
-        if not re.search(r'[!@#$%^&*(),.?":{}|<>_\-\[\]\/\\]', v):
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>_\-\[\]/\\]', v):
             raise ValueError('Password must contain at least one special character')
         return v
 
@@ -50,7 +48,7 @@ class CompanySignup(BaseModel):
     @classmethod
     def validate_phone(cls, v):
         # Remove spaces and dashes for validation
-        cleaned = re.sub(r'[\s\-\(\)]', '', v)
+        cleaned = re.sub(r'[\s\-()]', '', v)
         if not re.match(r'^\+?[0-9]{7,15}$', cleaned):
             raise ValueError('Invalid phone number. Must be 7-15 digits, optionally starting with +')
         return v

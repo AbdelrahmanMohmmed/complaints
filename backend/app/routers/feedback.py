@@ -6,6 +6,7 @@ from collections import defaultdict
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.responses import HTMLResponse
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from .. import database, models, oauth2
@@ -73,6 +74,15 @@ def serialize_feedback(row: tuple[models.Feedback, str | None, str | None]) -> d
         "priority": fb.priority,
         "created_at": fb.created_at,
     }
+
+
+class FeedbackClassificationUpdate(BaseModel):
+    problem_type: str | None = None
+    problem_type_id: int | None = None
+    sentiment: str | None = None
+    sentiment_id: int | None = None
+    emotion: str | None = None
+    emotion_id: int | None = None
 
 
 # ============================================================================
@@ -156,6 +166,7 @@ def get_form(
     .card {{
       background: white;
       border-radius: 12px;
+    router = APIRouter(prefix="/feedback", tags=["Feedback"])
       padding: 40px;
       max-width: 500px;
       width: 100%;
@@ -584,6 +595,141 @@ def update_feedback_details(
         fb.priority = payload.priority
     fb.category_id = payload.category_id
 
+    db.commit()
+    db.refresh(fb)
+
+    row = (
+        db.query(
+            models.Feedback,
+            models.Api.channel_name,
+            models.FeedbackCategory.category_name,
+        )
+        .outerjoin(models.Api, models.Feedback.api_id == models.Api.api_id)
+        .outerjoin(
+            models.FeedbackCategory,
+            models.Feedback.category_id == models.FeedbackCategory.category_id,
+        )
+        .filter(models.Feedback.feedback_id == feedback_id)
+        .first()
+    )
+
+    return serialize_feedback(row) if row else serialize_feedback((fb, None, None))
+
+
+@router.patch("/{feedback_id}/problem-type", response_model=feedback.FeedbackOut)
+def update_feedback_problem_type(
+    feedback_id: int,
+    payload: FeedbackClassificationUpdate,
+    current_user: dict = Depends(oauth2.get_current_user_with_company),
+    db: Session = Depends(database.get_db),
+) -> dict:
+    fb = (
+        db.query(models.Feedback)
+        .filter(
+            models.Feedback.feedback_id == feedback_id,
+            models.Feedback.company_id == current_user["company_id"],
+        )
+        .first()
+    )
+
+    if not fb:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Feedback not found",
+        )
+
+    fb.problem_type = payload.problem_type
+    fb.problem_type_id = payload.problem_type_id
+    db.commit()
+    db.refresh(fb)
+
+    row = (
+        db.query(
+            models.Feedback,
+            models.Api.channel_name,
+            models.FeedbackCategory.category_name,
+        )
+        .outerjoin(models.Api, models.Feedback.api_id == models.Api.api_id)
+        .outerjoin(
+            models.FeedbackCategory,
+            models.Feedback.category_id == models.FeedbackCategory.category_id,
+        )
+        .filter(models.Feedback.feedback_id == feedback_id)
+        .first()
+    )
+
+    return serialize_feedback(row) if row else serialize_feedback((fb, None, None))
+
+
+@router.patch("/{feedback_id}/sentiment", response_model=feedback.FeedbackOut)
+def update_feedback_sentiment(
+    feedback_id: int,
+    payload: FeedbackClassificationUpdate,
+    current_user: dict = Depends(oauth2.get_current_user_with_company),
+    db: Session = Depends(database.get_db),
+) -> dict:
+    fb = (
+        db.query(models.Feedback)
+        .filter(
+            models.Feedback.feedback_id == feedback_id,
+            models.Feedback.company_id == current_user["company_id"],
+        )
+        .first()
+    )
+
+    if not fb:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Feedback not found",
+        )
+
+    fb.sentiment = payload.sentiment
+    fb.sentiment_id = payload.sentiment_id
+    db.commit()
+    db.refresh(fb)
+
+    row = (
+        db.query(
+            models.Feedback,
+            models.Api.channel_name,
+            models.FeedbackCategory.category_name,
+        )
+        .outerjoin(models.Api, models.Feedback.api_id == models.Api.api_id)
+        .outerjoin(
+            models.FeedbackCategory,
+            models.Feedback.category_id == models.FeedbackCategory.category_id,
+        )
+        .filter(models.Feedback.feedback_id == feedback_id)
+        .first()
+    )
+
+    return serialize_feedback(row) if row else serialize_feedback((fb, None, None))
+
+
+@router.patch("/{feedback_id}/emotion", response_model=feedback.FeedbackOut)
+def update_feedback_emotion(
+    feedback_id: int,
+    payload: FeedbackClassificationUpdate,
+    current_user: dict = Depends(oauth2.get_current_user_with_company),
+    db: Session = Depends(database.get_db),
+) -> dict:
+    fb = (
+        db.query(models.Feedback)
+        .filter(
+            models.Feedback.feedback_id == feedback_id,
+            models.Feedback.company_id == current_user["company_id"],
+        )
+        .first()
+    )
+
+    if not fb:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Feedback not found",
+        )
+
+    fb.emotion = payload.emotion
+    fb.emotion_id = payload.emotion_id
     db.commit()
     db.refresh(fb)
 

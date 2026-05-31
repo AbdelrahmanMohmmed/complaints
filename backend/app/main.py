@@ -5,19 +5,27 @@ import logging
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 import asyncio
-from . import models , database
-from .routers import  user, auth , company, integration ,feedback , categories , dashboard
+from . import models, database
+from .routers import (
+    auth,
+    company,
+    contact,
+    dashboard,
+    domain,
+    feedback,
+    integration,
+    categories,
+    user,
+)
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from . import database, models
 from .ai import load_models
 from .config import settings
-from .routers import auth, company, integration, user, feedback
 from .services.ai_analysis import ai_analysis_service
 from .services.feedback_ingestion import ingest_feedback
 from .services.preprocessing import preprocess_feedback_service
-
 
 # ============================================================================
 # Logging Configuration
@@ -25,8 +33,8 @@ from .services.preprocessing import preprocess_feedback_service
 
 logging.basicConfig(
     level=logging.DEBUG,
-    format='%(asctime)s | %(levelname)-8s | %(name)s:%(funcName)s | %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
+    format="%(asctime)s | %(levelname)-8s | %(name)s:%(funcName)s | %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
 )
 
 # Configure module-specific loggers
@@ -59,14 +67,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.include_router(user.router,prefix="/api/v1")
-app.include_router(auth.router,prefix="/api/v1")
-app.include_router(company.router,prefix="/api/v1")
-app.include_router(integration.router,prefix="/api/v1")
+app.include_router(user.router, prefix="/api/v1")
+app.include_router(auth.router, prefix="/api/v1")
+app.include_router(company.router, prefix="/api/v1")
+app.include_router(integration.router, prefix="/api/v1")
 app.include_router(feedback.router, prefix="/api/v1")
 app.include_router(categories.router, prefix="/api/v1")
+app.include_router(domain.router, prefix="/api/v1")
+app.include_router(contact.router, prefix="/api/v1")
 app.include_router(dashboard.router, prefix="/api/v1")
-
 
 
 # ============================================================================
@@ -85,7 +94,7 @@ def scheduled_feedback_ingestion() -> None:
 @app.on_event("startup")
 async def startup_event() -> None:
     """Initialize and start background schedulers on application startup.
-    
+
     Tasks:
     - Load pre-trained AI models from configured paths
     - Initialize APScheduler for feedback pipeline
@@ -152,7 +161,6 @@ async def shutdown_event() -> None:
             logger.info("Schedulers shut down gracefully")
         except Exception as e:
             logger.error(f"Error shutting down scheduler: {str(e)}", exc_info=True)
-
 
 
 # ============================================================================

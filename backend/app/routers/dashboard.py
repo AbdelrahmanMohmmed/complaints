@@ -35,6 +35,7 @@ def get_dashboard_stats(
     db: Session = Depends(database.get_db),
     current_user_id: int = Depends(oauth2.get_current_user),
 ):
+    #read data from db
     current_user = (
         db.query(models.User).filter(models.User.user_id == current_user_id).first()
     )
@@ -70,6 +71,7 @@ def get_dashboard_stats(
             if f.created_at
             and month_start <= f.created_at.replace(tzinfo=None) < month_end
         ]
+        #summary of data for each month (you can add more like number of satisfied or frustrated)
         monthly_data.append(
             {
                 "month": month_start.strftime("%b"),
@@ -153,8 +155,7 @@ def get_reports(
         f
         for f in all_feedback
         if f.created_at
-        and f.created_at.replace(tzinfo=None) < since
-        and f.created_at.replace(tzinfo=None) >= since - (now - since)
+           and since > f.created_at.replace(tzinfo=None) >= since - (now - since)
     ]
 
     total = len(filtered)

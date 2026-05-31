@@ -73,6 +73,8 @@ export function IntegrationSettings() {
   const [webformLoading, setWebformLoading] = useState(false);
   const [webformUrl, setWebformUrl] = useState('');
   const [webformError, setWebformError] = useState('');
+  const [webformCopied, setWebformCopied] = useState(false);
+  const [copiedIntegrationId, setCopiedIntegrationId] = useState<number | null>(null);
 
   // Delete state
   const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -183,6 +185,7 @@ export function IntegrationSettings() {
   const handleCreateWebform = async () => {
     setWebformError('');
     setWebformUrl('');
+    setWebformCopied(false);
     setWebformLoading(true);
     try {
       const data = await request<{ form_url: string }>('/integrations/webform', {
@@ -194,6 +197,30 @@ export function IntegrationSettings() {
       setWebformError(err?.message || (isAr ? 'فشل إنشاء نموذج الويب.' : 'Failed to create web form.'));
     } finally {
       setWebformLoading(false);
+    }
+  };
+
+  const handleCopyWebform = async () => {
+    if (!webformUrl) return;
+
+    try {
+      await navigator.clipboard.writeText(webformUrl);
+      setWebformCopied(true);
+      window.setTimeout(() => setWebformCopied(false), 2000);
+    } catch (err) {
+      setWebformError(isAr ? 'تعذر نسخ رابط نموذج الويب.' : 'Failed to copy the web form link.');
+    }
+  };
+
+  const handleCopyIntegrationUrl = async (integration: BackendIntegration) => {
+    if (!integration.api_base_url) return;
+
+    try {
+      await navigator.clipboard.writeText(integration.api_base_url);
+      setCopiedIntegrationId(integration.api_id);
+      window.setTimeout(() => setCopiedIntegrationId((current) => (current === integration.api_id ? null : current)), 2000);
+    } catch (err) {
+      setAddError(isAr ? 'تعذر نسخ رابط التكامل.' : 'Failed to copy the integration URL.');
     }
   };
 
@@ -292,9 +319,14 @@ export function IntegrationSettings() {
                   <p className="font-semibold mb-1">
                     {isAr ? 'رابط نموذج الويب' : 'Web form URL'}
                   </p>
-                  <a className="text-blue-600 dark:text-blue-400 break-all" href={webformUrl} target="_blank" rel="noreferrer">
-                    {webformUrl}
-                  </a>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                    <a className="text-blue-600 dark:text-blue-400 break-all flex-1" href={webformUrl} target="_blank" rel="noreferrer">
+                      {webformUrl}
+                    </a>
+                    <Button variant="outline" size="sm" className="shrink-0" onClick={handleCopyWebform}>
+                      {webformCopied ? (isAr ? 'تم النسخ' : 'Copied') : (isAr ? 'نسخ الرابط' : 'Copy link')}
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
@@ -570,6 +602,15 @@ export function IntegrationSettings() {
                   </div>
 
                   <div className="flex gap-2 pt-2">
+                    <Button
+                      variant="outline"
+                      className="gap-2"
+                      onClick={() => handleCopyIntegrationUrl(integration)}
+                    >
+                      {copiedIntegrationId === integration.api_id
+                        ? (isAr ? 'تم النسخ' : 'Copied')
+                        : (isAr ? 'نسخ الرابط' : 'Copy link')}
+                    </Button>
                     <Button
                       variant="outline"
                       className="flex-1 gap-2"
