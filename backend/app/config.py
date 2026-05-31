@@ -95,6 +95,16 @@ class Settings(BaseSettings):
     en_sentiment_huggingface_path: str = ""
     hugging_face_token: str = ""
 
+    # HF-only sentiment/emotion configuration
+    AR_SENTIMENT_HF_MODEL: str = "CAMeL-Lab/bert-base-arabic-camelbert-da-sentiment"
+    EN_SENTIMENT_HF_MODEL: str = (
+        "mrm8488/distilroberta-finetuned-financial-news-sentiment-analysis"
+    )
+    MULTILINGUAL_EMOTION_HF_MODEL: str = (
+        "tabularisai/multilingual-emotion-classification"
+    )
+    MULTILINGUAL_EMOTION_THRESHOLD: float = 0.5
+
     model_config = {"env_file": ".env", "case_sensitive": False}
 
 

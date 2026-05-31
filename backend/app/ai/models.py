@@ -40,15 +40,15 @@ def load_models(
         logger.info("=" * 80)
         logger.info("ENSEMBLE AI MODEL CONFIGURATION VALIDATION")
         logger.info("=" * 80)
-        
+
         # Check Arabic models
         logger.info("\nArabic Models:")
         arabic_models = {
             "FastText": settings.AR_FASTTEXT_PATH,
             "Tokenizer": settings.AR_TOKENIZER_PATH,
-            "Problem LR-F": settings.AR_PROBLEM_LR_F_PATH,
-            "Problem GRU": settings.AR_PROBLEM_GRU_PATH,
-            "Problem LR-A": settings.AR_PROBLEM_LR_A_PATH,
+            # "Problem LR-F": settings.AR_PROBLEM_LR_F_PATH,
+            # "Problem GRU": settings.AR_PROBLEM_GRU_PATH,
+            # "Problem LR-A": settings.AR_PROBLEM_LR_A_PATH,
             "Problem SVM-A": settings.AR_PROBLEM_SVM_A_PATH,
             # "Emotion LR-F": settings.AR_EMOTION_LR_F_PATH,
             # "Emotion BiLSTM": settings.AR_EMOTION_BILSTM_PATH,
@@ -62,7 +62,7 @@ def load_models(
             # "AraBERT Emotion": settings.AR_ARABERT_EMOTION_PATH,
             # "AraBERT Sentiment": settings.AR_ARABERT_SENTIMENT_PATH,
         }
-        
+
         arabic_configured = all(path != "" for path in arabic_models.values())
         for model_name, path in arabic_models.items():
             if path:
@@ -71,17 +71,18 @@ def load_models(
             else:
                 exists = False
                 status = "✗ (NOT CONFIGURED)"
-            logger.info(f"  {status} {model_name}: {path if path else 'NOT CONFIGURED'}")
-        
+            logger.info(
+                f"  {status} {model_name}: {path if path else 'NOT CONFIGURED'}"
+            )
+
         # Check English models
         logger.info("\nEnglish Models:")
         english_models = {
             "FastText": settings.EN_FASTTEXT_PATH,
             "Tokenizer": settings.EN_TOKENIZER_PATH,
-            "Problem LR": settings.EN_PROBLEM_LR_PATH,
-            "Problem RF": settings.EN_PROBLEM_RF_PATH,
+            # "Problem LR": settings.EN_PROBLEM_LR_PATH,
+            # "Problem RF": settings.EN_PROBLEM_RF_PATH,
             "Problem SVM": settings.EN_PROBLEM_SVM_PATH,
-            "Emotion BiLSTM": settings.EN_EMOTION_BILSTM_PATH,
             # "Emotion LR": settings.EN_EMOTION_LR_PATH,
             # "Sentiment SVM": settings.EN_SENTIMENT_SVM_PATH,
             # "Sentiment GRU": settings.EN_SENTIMENT_GRU_PATH,
@@ -90,7 +91,7 @@ def load_models(
             # "RoBERTa Sentiment": settings.EN_ROBERTA_SENTIMENT_PATH,
             # "BERT Problem": settings.EN_BERT_PROBLEM_PATH,
         }
-        
+
         english_configured = all(path != "" for path in english_models.values())
         for model_name, path in english_models.items():
             if path:
@@ -99,8 +100,20 @@ def load_models(
             else:
                 exists = False
                 status = "✗ (NOT CONFIGURED)"
-            logger.info(f"  {status} {model_name}: {path if path else 'NOT CONFIGURED'}")
-        
+            logger.info(
+                f"  {status} {model_name}: {path if path else 'NOT CONFIGURED'}"
+            )
+
+        logger.info("\nHF Sentiment/Emotion Models:")
+        logger.info("  ✓ Arabic Sentiment HF Model: %s", settings.AR_SENTIMENT_HF_MODEL)
+        logger.info(
+            "  ✓ English Sentiment HF Model: %s", settings.EN_SENTIMENT_HF_MODEL
+        )
+        logger.info(
+            "  ✓ Multilingual Emotion HF Model: %s",
+            settings.MULTILINGUAL_EMOTION_HF_MODEL,
+        )
+
         logger.info("\n" + "=" * 80)
         if arabic_configured and english_configured:
             logger.info("✓ ALL ENSEMBLE MODELS CONFIGURED AND READY")
@@ -108,19 +121,29 @@ def load_models(
             return True
         elif arabic_configured or english_configured:
             if arabic_configured:
-                logger.warning("✓ Arabic ensemble configured, English ensemble NOT CONFIGURED")
+                logger.warning(
+                    "✓ Arabic ensemble configured, English ensemble NOT CONFIGURED"
+                )
             else:
-                logger.warning("✓ English ensemble configured, Arabic ensemble NOT CONFIGURED")
+                logger.warning(
+                    "✓ English ensemble configured, Arabic ensemble NOT CONFIGURED"
+                )
             logger.info("=" * 80)
             return True
         else:
             logger.error("✗ NO ENSEMBLE MODELS CONFIGURED")
             logger.error("Please configure model paths in .env file:")
-            logger.error("  - Arabic models: AR_FASTTEXT_PATH, AR_TOKENIZER_PATH, AR_LR_F_PATH, etc.")
-            logger.error("  - English models: EN_FASTTEXT_PATH, EN_TOKENIZER_PATH, EN_LR_PATH, etc.")
+            logger.error(
+                "  - Arabic models: AR_FASTTEXT_PATH, AR_TOKENIZER_PATH, AR_LR_F_PATH, etc."
+            )
+            logger.error(
+                "  - English models: EN_FASTTEXT_PATH, EN_TOKENIZER_PATH, EN_LR_PATH, etc."
+            )
             logger.info("=" * 80)
             return False
-    
+
     except Exception as e:
-        logger.error(f"Error validating ensemble configuration: {str(e)}", exc_info=True)
+        logger.error(
+            f"Error validating ensemble configuration: {str(e)}", exc_info=True
+        )
         return False

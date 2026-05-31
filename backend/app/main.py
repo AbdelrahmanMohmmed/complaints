@@ -4,7 +4,6 @@ import asyncio
 import logging
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
-import asyncio
 from . import models, database
 from .routers import (
     auth,
@@ -20,7 +19,6 @@ from .routers import (
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from . import database, models
 from .ai import load_models
 from .config import settings
 from .services.ai_analysis import ai_analysis_service
