@@ -23,7 +23,7 @@ P_LABELS = {0: "Delivery Issue", 1: "Food Quality", 2: "Hygiene",
 S_LABELS = {0: "Negative", 1: "Neutral", 2: "Positive"}
 E_LABELS = {0: "Frustrated", 1: "Satisfied", 2: "Disgusted", 3: "Neutral"}
 
-# Load RoBERTa models once at startup
+# Load RoBERTa models once at startup (DISABLED - using HF models instead)
 en_roberta_problem_tokenizer = None
 en_roberta_problem_model = None
 en_roberta_emotion_tokenizer = None
@@ -31,37 +31,9 @@ en_roberta_emotion_model = None
 en_roberta_sentiment_tokenizer = None
 en_roberta_sentiment_model = None
 
-try:
-    en_roberta_problem_tokenizer = AutoTokenizer.from_pretrained(settings.EN_ROBERTA_PROBLEM_PATH)
-    en_roberta_problem_model = AutoModelForSequenceClassification.from_pretrained(settings.EN_ROBERTA_PROBLEM_PATH)
-    logger.info(f"Loaded English RoBERTa problem model from {settings.EN_ROBERTA_PROBLEM_PATH}")
-except Exception as e:
-    logger.error(f"Failed to load English RoBERTa problem model: {str(e)}")
-
-try:
-    en_roberta_emotion_tokenizer = AutoTokenizer.from_pretrained(settings.EN_ROBERTA_EMOTION_PATH)
-    en_roberta_emotion_model = AutoModelForSequenceClassification.from_pretrained(settings.EN_ROBERTA_EMOTION_PATH)
-    logger.info(f"Loaded English RoBERTa emotion model from {settings.EN_ROBERTA_EMOTION_PATH}")
-except Exception as e:
-    logger.error(f"Failed to load English RoBERTa emotion model: {str(e)}")
-
-try:
-    en_roberta_sentiment_tokenizer = AutoTokenizer.from_pretrained(settings.EN_ROBERTA_SENTIMENT_PATH)
-    en_roberta_sentiment_model = AutoModelForSequenceClassification.from_pretrained(settings.EN_ROBERTA_SENTIMENT_PATH)
-    logger.info(f"Loaded English RoBERTa sentiment model from {settings.EN_ROBERTA_SENTIMENT_PATH}")
-except Exception as e:
-    logger.error(f"Failed to load English RoBERTa sentiment model: {str(e)}")
-
-# Load BERT model once at startup (only for problem type)
+# Load BERT model once at startup (DISABLED - using HF models instead)
 en_bert_problem_tokenizer = None
 en_bert_problem_model = None
-
-try:
-    en_bert_problem_tokenizer = AutoTokenizer.from_pretrained(settings.EN_BERT_PROBLEM_PATH)
-    en_bert_problem_model = AutoModelForSequenceClassification.from_pretrained(settings.EN_BERT_PROBLEM_PATH)
-    logger.info(f"Loaded English BERT problem model from {settings.EN_BERT_PROBLEM_PATH}")
-except Exception as e:
-    logger.error(f"Failed to load English BERT problem model: {str(e)}")
 
 
 def predict_english_transformer_probs(text: str, model_name: str) -> np.ndarray:

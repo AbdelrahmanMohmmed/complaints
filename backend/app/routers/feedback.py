@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from .. import database, models, oauth2
 from ..schemas import feedback
 from app.ai.predict import run_ai_pipeline
+from app.preprocessing.router import preprocess_feedback
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -407,7 +408,7 @@ async def submit_form(
             detail="Complaint must not exceed 1000 characters",
         )
 
-    # Save feedback to database instantly
+    # Save feedback to database instantly with status "unprocessed"
     try:
         new_feedback = models.Feedback(
             company_id=integration.company_id,
@@ -420,9 +421,29 @@ async def submit_form(
         db.commit()
         db.refresh(new_feedback)
 
-        # Run AI pipeline synchronously for immediate feedback to frontend
+        # Step 1: Run preprocessing pipeline
+        logger.info(
+            f"Running preprocessing for feedback_id={new_feedback.feedback_id}"
+        )
         try:
-            ai_result = run_ai_pipeline(feedback_context)
+            cleaned_text = preprocess_feedback(feedback_context)
+            new_feedback.cleaned_text = cleaned_text
+            new_feedback.status = "preprocessed"
+            db.commit()
+            db.refresh(new_feedback)
+            logger.info(
+                f"Preprocessing complete for feedback_id={new_feedback.feedback_id}"
+            )
+        except Exception as e:
+            logger.error(
+                f"Preprocessing failed for feedback_id={new_feedback.feedback_id}: {str(e)}",
+                exc_info=True,
+            )
+            cleaned_text = feedback_context  # Fallback to original text
+
+        # Step 2: Run AI pipeline synchronously for immediate feedback to frontend
+        try:
+            ai_result = run_ai_pipeline(cleaned_text)
             # Update feedback record with AI results
             new_feedback.sentiment = ai_result.get("sentiment")
             new_feedback.sentiment_id = ai_result.get("sentiment_id")
@@ -431,14 +452,18 @@ async def submit_form(
             new_feedback.problem_type = ai_result.get("problem_type")
             new_feedback.problem_type_id = ai_result.get("problem_type_id")
             new_feedback.priority = ai_result.get("priority")
-            new_feedback.status = "processed"
+            new_feedback.status = "analyzed"
             db.commit()
             db.refresh(new_feedback)
+            logger.info(
+                f"AI analysis complete for feedback_id={new_feedback.feedback_id}, status=analyzed"
+            )
         except Exception as e:
-            logger.exception(
+            logger.error(
                 "AI pipeline failed for feedback_id=%s: %s",
                 new_feedback.feedback_id,
                 str(e),
+                exc_info=True,
             )
 
         logger.info(

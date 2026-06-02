@@ -6,8 +6,13 @@ Provides:
 - Language-aware orchestration
 - Priority scoring using sigmoid-based function
 
-Models are loaded on-demand by language modules when imported.
-No need to pre-load all models at startup.
+All 9 core models are loaded eagerly at application startup:
+- 2 FastText models (English & Arabic)
+- 2 Keras tokenizers (English & Arabic)
+- 2 problem type models (English SVM & Arabic SVM-A)
+- 1 Arabic sentiment model (CAMeL)
+- 1 English sentiment model (HuggingFace)
+- 1 multilingual emotion model (HuggingFace)
 """
 
 from .models import load_models

@@ -1,7 +1,7 @@
 """English text representation using FastText and Keras tokenizer.
 
-Lazy loads FastText model and tokenizer on first use to avoid memory exhaustion at startup.
 Supports both ML embeddings (FastText vectors) and DL sequences (tokenized & padded).
+Models use lazy loading to avoid memory issues at startup.
 """
 
 import fasttext
@@ -13,54 +13,62 @@ from app.config import settings
 
 logger = logging.getLogger(__name__)
 
-# Lazy loading with singleton pattern
-_en_ft_model = None
-_en_tokenizer = None
-_models_loaded = False
 _MAX_LEN = 65  # Sequence length for DL models (GRU, BiLSTM)
 
+# Lazy loading - models load on first use
+_en_ft_model = None
+_en_tokenizer = None
+_ft_model_loaded = False
+_tokenizer_loaded = False
 
-def _load_english_models():
-    """Lazy load English FastText model and tokenizer on first use."""
-    global _en_ft_model, _en_tokenizer, _models_loaded
+
+def _load_fasttext_model():
+    """Lazy load English FastText model."""
+    global _en_ft_model, _ft_model_loaded
+    if _ft_model_loaded:
+        return _en_ft_model
+    _ft_model_loaded = True
     
-    if _models_loaded:
-        return
-    
-    _models_loaded = True
-    
+    logger.info(f"Loading English FastText model from: {settings.EN_FASTTEXT_PATH}")
     try:
-        logger.info(f"Attempting to load English FastText from: {settings.EN_FASTTEXT_PATH}")
         if not settings.EN_FASTTEXT_PATH:
             raise ValueError("EN_FASTTEXT_PATH environment variable not set")
         _en_ft_model = fasttext.load_model(settings.EN_FASTTEXT_PATH)
-        logger.info(f"✓ Successfully loaded English FastText model from {settings.EN_FASTTEXT_PATH}")
+        logger.info(f"✓ Successfully loaded English FastText model")
     except Exception as e:
         logger.error(f"✗ Failed to load English FastText model: {type(e).__name__}: {str(e)}", exc_info=True)
         _en_ft_model = None
+    return _en_ft_model
 
+
+def _load_tokenizer():
+    """Lazy load English tokenizer."""
+    global _en_tokenizer, _tokenizer_loaded
+    if _tokenizer_loaded:
+        return _en_tokenizer
+    _tokenizer_loaded = True
+    
+    logger.info(f"Loading English tokenizer from: {settings.EN_TOKENIZER_PATH}")
     try:
-        logger.info(f"Attempting to load English tokenizer from: {settings.EN_TOKENIZER_PATH}")
         if not settings.EN_TOKENIZER_PATH:
             raise ValueError("EN_TOKENIZER_PATH environment variable not set")
         with open(settings.EN_TOKENIZER_PATH, "rb") as f:
             _en_tokenizer = pickle.load(f)
-        logger.info(f"✓ Successfully loaded English tokenizer from {settings.EN_TOKENIZER_PATH}")
+        logger.info(f"✓ Successfully loaded English tokenizer")
     except Exception as e:
         logger.error(f"✗ Failed to load English tokenizer: {type(e).__name__}: {str(e)}", exc_info=True)
         _en_tokenizer = None
+    return _en_tokenizer
 
 
 def get_en_ft_model():
-    """Get English FastText model, loading lazily if needed."""
-    _load_english_models()
-    return _en_ft_model
+    """Get English FastText model (lazy loaded on first use)."""
+    return _load_fasttext_model()
 
 
 def get_en_tokenizer():
-    """Get English Keras tokenizer, loading lazily if needed."""
-    _load_english_models()
-    return _en_tokenizer
+    """Get English Keras tokenizer (lazy loaded on first use)."""
+    return _load_tokenizer()
 
 
 def embed_english(text: str, for_ml: bool = True) -> np.ndarray:

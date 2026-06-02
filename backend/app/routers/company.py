@@ -1,7 +1,7 @@
 from fastapi import APIRouter, status, HTTPException, Depends, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from datetime import datetime, timedelta, UTC
+from datetime import datetime, timedelta, timezone
 from .. import models, utils, database
 from ..schemas import company
 
@@ -40,7 +40,7 @@ def create_company(
         db.flush()
 
         code = utils.generate_verification_code()
-        expires_at = datetime.now(UTC) + timedelta(minutes=15)
+        expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)
 
         new_user = models.User(
             company_id=new_company.company_id,

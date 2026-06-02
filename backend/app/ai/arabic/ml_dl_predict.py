@@ -35,24 +35,7 @@ ar_problem_gru = None
 ar_problem_lr_a = None
 ar_problem_svm_a = None
 
-try:
-    ar_problem_lr_f = pickle.load(open(settings.AR_PROBLEM_LR_F_PATH, "rb"))
-    logger.info(f"Loaded Arabic Problem Type LR-F model from {settings.AR_PROBLEM_LR_F_PATH}")
-except Exception as e:
-    logger.error(f"Failed to load Arabic Problem Type LR-F model: {str(e)}")
-
-try:
-    ar_problem_gru = keras.models.load_model(settings.AR_PROBLEM_GRU_PATH)
-    logger.info(f"Loaded Arabic Problem Type GRU model from {settings.AR_PROBLEM_GRU_PATH}")
-except Exception as e:
-    logger.error(f"Failed to load Arabic Problem Type GRU model: {str(e)}")
-
-try:
-    ar_problem_lr_a = pickle.load(open(settings.AR_PROBLEM_LR_A_PATH, "rb"))
-    logger.info(f"Loaded Arabic Problem Type LR-A model from {settings.AR_PROBLEM_LR_A_PATH}")
-except Exception as e:
-    logger.error(f"Failed to load Arabic Problem Type LR-A model: {str(e)}")
-
+# Only load SVM-A for problem type (others disabled to save memory)
 try:
     ar_problem_svm_a = pickle.load(open(settings.AR_PROBLEM_SVM_A_PATH, "rb"))
     logger.info(f"Loaded Arabic Problem Type SVM-A model from {settings.AR_PROBLEM_SVM_A_PATH}")
@@ -60,68 +43,20 @@ except Exception as e:
     logger.error(f"Failed to load Arabic Problem Type SVM-A model: {str(e)}")
 
 # ============================================================================
-# Emotion Models
+# Emotion Models (DISABLED - using HuggingFace models only)
 # ============================================================================
 ar_emotion_lr_f = None
 ar_emotion_bilstm = None
 ar_emotion_lr_a = None
 ar_emotion_svm_a = None
 
-try:
-    ar_emotion_lr_f = pickle.load(open(settings.AR_EMOTION_LR_F_PATH, "rb"))
-    logger.info(f"Loaded Arabic Emotion LR-F model from {settings.AR_EMOTION_LR_F_PATH}")
-except Exception as e:
-    logger.error(f"Failed to load Arabic Emotion LR-F model: {str(e)}")
-
-try:
-    ar_emotion_bilstm = keras.models.load_model(settings.AR_EMOTION_BILSTM_PATH)
-    logger.info(f"Loaded Arabic Emotion BiLSTM model from {settings.AR_EMOTION_BILSTM_PATH}")
-except Exception as e:
-    logger.error(f"Failed to load Arabic Emotion BiLSTM model: {str(e)}")
-
-try:
-    ar_emotion_lr_a = pickle.load(open(settings.AR_EMOTION_LR_A_PATH, "rb"))
-    logger.info(f"Loaded Arabic Emotion LR-A model from {settings.AR_EMOTION_LR_A_PATH}")
-except Exception as e:
-    logger.error(f"Failed to load Arabic Emotion LR-A model: {str(e)}")
-
-try:
-    ar_emotion_svm_a = pickle.load(open(settings.AR_EMOTION_SVM_A_PATH, "rb"))
-    logger.info(f"Loaded Arabic Emotion SVM-A model from {settings.AR_EMOTION_SVM_A_PATH}")
-except Exception as e:
-    logger.error(f"Failed to load Arabic Emotion SVM-A model: {str(e)}")
-
 # ============================================================================
-# Sentiment Models
+# Sentiment Models (DISABLED - using HuggingFace models only)
 # ============================================================================
 ar_sentiment_lr_f = None
 ar_sentiment_bilstm = None
 ar_sentiment_svm_a = None
 ar_sentiment_lr_a = None
-
-try:
-    ar_sentiment_lr_f = pickle.load(open(settings.AR_SENTIMENT_LR_F_PATH, "rb"))
-    logger.info(f"Loaded Arabic Sentiment LR-F model from {settings.AR_SENTIMENT_LR_F_PATH}")
-except Exception as e:
-    logger.error(f"Failed to load Arabic Sentiment LR-F model: {str(e)}")
-
-try:
-    ar_sentiment_bilstm = keras.models.load_model(settings.AR_SENTIMENT_BILSTM_PATH)
-    logger.info(f"Loaded Arabic Sentiment BiLSTM model from {settings.AR_SENTIMENT_BILSTM_PATH}")
-except Exception as e:
-    logger.error(f"Failed to load Arabic Sentiment BiLSTM model: {str(e)}")
-
-try:
-    ar_sentiment_svm_a = pickle.load(open(settings.AR_SENTIMENT_SVM_A_PATH, "rb"))
-    logger.info(f"Loaded Arabic Sentiment SVM-A model from {settings.AR_SENTIMENT_SVM_A_PATH}")
-except Exception as e:
-    logger.error(f"Failed to load Arabic Sentiment SVM-A model: {str(e)}")
-
-try:
-    ar_sentiment_lr_a = pickle.load(open(settings.AR_SENTIMENT_LR_A_PATH, "rb"))
-    logger.info(f"Loaded Arabic Sentiment LR-A model from {settings.AR_SENTIMENT_LR_A_PATH}")
-except Exception as e:
-    logger.error(f"Failed to load Arabic Sentiment LR-A model: {str(e)}")
 
 
 # ============================================================================

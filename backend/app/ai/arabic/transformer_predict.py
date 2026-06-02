@@ -19,43 +19,22 @@ S_LABELS = {0: "Negative", 1: "Neutral", 2: "Positive"}
 E_LABELS = {0: "Frustrated", 1: "Satisfied", 2: "Disgusted", 3: "Neutral"}
 
 # ============================================================================
-# Problem Type AraBERT (arabert_67)
+# DISABLED: Problem Type AraBERT (arabert_67) - using HF models instead
 # ============================================================================
 ar_bert_problem_tokenizer = None
 ar_bert_problem_model = None
 
-try:
-    ar_bert_problem_tokenizer = AutoTokenizer.from_pretrained(settings.AR_ARABERT_PROBLEM_PATH)
-    ar_bert_problem_model = AutoModelForSequenceClassification.from_pretrained(settings.AR_ARABERT_PROBLEM_PATH)
-    logger.info(f"Loaded Arabic AraBERT problem model from {settings.AR_ARABERT_PROBLEM_PATH}")
-except Exception as e:
-    logger.error(f"Failed to load Arabic AraBERT problem model: {str(e)}")
-
 # ============================================================================
-# Emotion AraBERT (arabert_70)
+# DISABLED: Emotion AraBERT (arabert_70) - using HF models instead
 # ============================================================================
 ar_bert_emotion_tokenizer = None
 ar_bert_emotion_model = None
 
-try:
-    ar_bert_emotion_tokenizer = AutoTokenizer.from_pretrained(settings.AR_ARABERT_EMOTION_PATH)
-    ar_bert_emotion_model = AutoModelForSequenceClassification.from_pretrained(settings.AR_ARABERT_EMOTION_PATH)
-    logger.info(f"Loaded Arabic AraBERT emotion model from {settings.AR_ARABERT_EMOTION_PATH}")
-except Exception as e:
-    logger.error(f"Failed to load Arabic AraBERT emotion model: {str(e)}")
-
 # ============================================================================
-# Sentiment AraBERT (arabert_85)
+# DISABLED: Sentiment AraBERT (arabert_85) - using HF models instead
 # ============================================================================
 ar_bert_sentiment_tokenizer = None
 ar_bert_sentiment_model = None
-
-try:
-    ar_bert_sentiment_tokenizer = AutoTokenizer.from_pretrained(settings.AR_ARABERT_SENTIMENT_PATH)
-    ar_bert_sentiment_model = AutoModelForSequenceClassification.from_pretrained(settings.AR_ARABERT_SENTIMENT_PATH)
-    logger.info(f"Loaded Arabic AraBERT sentiment model from {settings.AR_ARABERT_SENTIMENT_PATH}")
-except Exception as e:
-    logger.error(f"Failed to load Arabic AraBERT sentiment model: {str(e)}")
 
 
 def predict_arabert(text: str, clf_type: str) -> str:

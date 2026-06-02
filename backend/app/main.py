@@ -94,14 +94,14 @@ async def startup_event() -> None:
     """Initialize and start background schedulers on application startup.
 
     Tasks:
-    - Load pre-trained AI models from configured paths
+    - AI models are loaded eagerly when representation.py and ml_dl_predict.py are imported
     - Initialize APScheduler for feedback pipeline
     - Schedule three periodic jobs: ingestion, preprocessing, AI analysis
     """
     global scheduler
 
     try:
-        # Validate AI model configuration (models load lazily on first use)
+        # Validate AI model configuration
         logger.info("Validating AI model configuration...")
         models_loaded = load_models()
 
@@ -109,6 +109,10 @@ async def startup_event() -> None:
             logger.info("AI model configuration validated successfully")
         else:
             logger.warning("Some AI models are not configured. Check .env paths.")
+
+        logger.info("=" * 80)
+        logger.info("✓ AI MODELS LOADED SUCCESSFULLY AT STARTUP")
+        logger.info("=" * 80)
 
         # Initialize scheduler
         scheduler = BackgroundScheduler()

@@ -5,6 +5,8 @@ This module centralizes the new inference strategy:
 - English sentiment: Hugging Face text-classification model (configurable)
 - Arabic + English emotion: tabularisai/multilingual-emotion-classification
 
+All models are loaded lazily on first use to avoid memory issues.
+
 All functions return labels aligned with the existing priority engine:
 - Sentiment: Positive | Neutral | Negative
 - Emotion: Frustrated | Neutral | Disgusted | Satisfied
@@ -53,6 +55,10 @@ _english_sentiment_pipe = None
 _emotion_tokenizer = None
 _emotion_model = None
 
+_ar_sentiment_loaded = False
+_en_sentiment_loaded = False
+_emotion_loaded = False
+
 
 def _normalize_sentiment(label: str) -> str:
     normalized = (label or "").strip().lower()
@@ -74,102 +80,156 @@ def _map_multilingual_emotion_to_legacy(label: str) -> str:
     return "Neutral"
 
 
-def _get_camel_sentiment_analyzer():
-    global _camel_sentiment_analyzer
+# ============================================================================
+# LAZY LOADING: Load models on first use to avoid memory issues at startup
+# ============================================================================
 
-    if _camel_sentiment_analyzer is not None:
+def _load_arabic_sentiment_model():
+    """Lazy load Arabic sentiment model."""
+    global _camel_sentiment_analyzer, _ar_sentiment_loaded
+    if _ar_sentiment_loaded:
         return _camel_sentiment_analyzer
-
-    model_name = (
-        os.environ.get("AR_SENTIMENT_HF_MODEL")
-        or settings.AR_SENTIMENT_HF_MODEL
-        or DEFAULT_AR_SENTIMENT_MODEL
-    )
-
-    from camel_tools.sentiment import SentimentAnalyzer
-
-    logger.info("Loading Arabic sentiment analyzer: %s", model_name)
-    _camel_sentiment_analyzer = SentimentAnalyzer(model_name)
+    _ar_sentiment_loaded = True
+    
+    logger.info("Loading Arabic sentiment model...")
+    try:
+        model_path = (
+            os.environ.get("AR_SENTIMENT_HF_MODEL")
+            or settings.AR_SENTIMENT_HF_MODEL
+            or DEFAULT_AR_SENTIMENT_MODEL
+        )
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        ar_sentiment_tokenizer = AutoTokenizer.from_pretrained(model_path)
+        ar_sentiment_model = AutoModelForSequenceClassification.from_pretrained(model_path).to(device)
+        ar_sentiment_model.eval()
+        _camel_sentiment_analyzer = (ar_sentiment_tokenizer, ar_sentiment_model, device)
+        logger.info(f"✓ Successfully loaded Arabic sentiment model from: {model_path}")
+    except Exception as e:
+        logger.error(f"✗ Failed to load Arabic sentiment model: {str(e)}", exc_info=True)
+        _camel_sentiment_analyzer = None
+    
     return _camel_sentiment_analyzer
 
 
-def _get_english_sentiment_pipe():
-    global _english_sentiment_pipe
-
-    if _english_sentiment_pipe is not None:
+def _load_english_sentiment_model():
+    """Lazy load English sentiment model."""
+    global _english_sentiment_pipe, _en_sentiment_loaded
+    if _en_sentiment_loaded:
         return _english_sentiment_pipe
-
-    model_name = (
-        os.environ.get("EN_SENTIMENT_HF_MODEL")
-        or settings.EN_SENTIMENT_HF_MODEL
-        or DEFAULT_EN_SENTIMENT_MODEL
-    )
-    _english_sentiment_pipe = get_text_classification_pipeline(
-        model_name,
-        env_path_var="EN_SENTIMENT_HuggingFace_PATH",
-    )
+    _en_sentiment_loaded = True
+    
+    logger.info("Loading English sentiment model...")
+    try:
+        model_path = (
+            os.environ.get("EN_SENTIMENT_HF_MODEL")
+            or settings.EN_SENTIMENT_HF_MODEL
+            or DEFAULT_EN_SENTIMENT_MODEL
+        )
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        en_sentiment_tokenizer = AutoTokenizer.from_pretrained(model_path)
+        en_sentiment_model = AutoModelForSequenceClassification.from_pretrained(model_path).to(device)
+        en_sentiment_model.eval()
+        _english_sentiment_pipe = (en_sentiment_tokenizer, en_sentiment_model, device)
+        logger.info(f"✓ Successfully loaded English sentiment model from: {model_path}")
+    except Exception as e:
+        logger.error(f"✗ Failed to load English sentiment model: {str(e)}", exc_info=True)
+        _english_sentiment_pipe = None
+    
     return _english_sentiment_pipe
 
 
-def _get_multilingual_emotion_model():
-    global _emotion_tokenizer, _emotion_model
-
-    if _emotion_tokenizer is not None and _emotion_model is not None:
-        return _emotion_tokenizer, _emotion_model
-
-    model_name = (
-        os.environ.get("MULTILINGUAL_EMOTION_HF_MODEL")
-        or settings.MULTILINGUAL_EMOTION_HF_MODEL
-        or DEFAULT_MULTILINGUAL_EMOTION_MODEL
-    )
-
-    logger.info("Loading multilingual emotion model: %s", model_name)
-    _emotion_tokenizer = AutoTokenizer.from_pretrained(model_name)
-    _emotion_model = AutoModelForSequenceClassification.from_pretrained(model_name)
-    _emotion_model.eval()
-    return _emotion_tokenizer, _emotion_model
+def _load_multilingual_emotion_model():
+    """Lazy load multilingual emotion model."""
+    global _emotion_tokenizer, _emotion_model, _emotion_loaded
+    if _emotion_loaded:
+        return (_emotion_tokenizer, _emotion_model)
+    _emotion_loaded = True
+    
+    logger.info("Loading multilingual emotion model...")
+    try:
+        model_path = (
+            os.environ.get("MULTILINGUAL_EMOTION_HF_MODEL")
+            or settings.MULTILINGUAL_EMOTION_HF_MODEL
+            or DEFAULT_MULTILINGUAL_EMOTION_MODEL
+        )
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        _emotion_tokenizer = AutoTokenizer.from_pretrained(model_path)
+        _emotion_model = AutoModelForSequenceClassification.from_pretrained(model_path).to(device)
+        _emotion_model.eval()
+        logger.info(f"✓ Successfully loaded multilingual emotion model from: {model_path}")
+    except Exception as e:
+        logger.error(f"✗ Failed to load multilingual emotion model: {str(e)}", exc_info=True)
+        _emotion_tokenizer = None
+        _emotion_model = None
+    
+    return (_emotion_tokenizer, _emotion_model)
 
 
 def predict_arabic_sentiment_hf(text: str) -> str:
     try:
-        analyzer = _get_camel_sentiment_analyzer()
-        prediction = analyzer.predict([text])[0]
-        return _normalize_sentiment(prediction)
+        ar_sent = _load_arabic_sentiment_model()
+        if ar_sent is None:
+            logger.error("Arabic sentiment model not loaded")
+            return "Neutral"
+        tokenizer, model, device = ar_sent
+        inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=512).to(device)
+        with torch.no_grad():
+            outputs = model(**inputs)
+            probs = torch.softmax(outputs.logits, dim=1)
+            label_id = torch.argmax(probs, dim=1).item()
+        # Map to label - assume 3-class sentiment
+        labels = {0: "Negative", 1: "Neutral", 2: "Positive"}
+        label = labels.get(label_id, "Neutral")
+        return _normalize_sentiment(label)
     except Exception as e:
-        logger.error("Arabic HF sentiment prediction failed: %s", str(e), exc_info=True)
+        logger.error("Arabic sentiment prediction failed: %s", str(e), exc_info=True)
         return "Neutral"
 
 
 def predict_english_sentiment_hf(text: str) -> str:
     try:
-        pipe = _get_english_sentiment_pipe()
-        prediction = pipe(text)[0]
-        return _normalize_sentiment(str(prediction.get("label", "")))
+        en_sent = _load_english_sentiment_model()
+        if en_sent is None:
+            logger.error("English sentiment model not loaded")
+            return "Neutral"
+        tokenizer, model, device = en_sent
+        inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=512).to(device)
+        with torch.no_grad():
+            outputs = model(**inputs)
+            probs = torch.softmax(outputs.logits, dim=1)
+            label_id = torch.argmax(probs, dim=1).item()
+        # Map to label - assume 3-class sentiment
+        labels = {0: "Negative", 1: "Neutral", 2: "Positive"}
+        label = labels.get(label_id, "Neutral")
+        return _normalize_sentiment(label)
     except Exception as e:
-        logger.error(
-            "English HF sentiment prediction failed: %s", str(e), exc_info=True
-        )
+        logger.error("English sentiment prediction failed: %s", str(e), exc_info=True)
         return "Neutral"
 
 
 def predict_multilingual_emotion_hf(text: str) -> str:
     try:
-        tokenizer, model = _get_multilingual_emotion_model()
+        emotion_models = _load_multilingual_emotion_model()
+        _emotion_tokenizer, _emotion_model = emotion_models
+        if _emotion_tokenizer is None or _emotion_model is None:
+            logger.error("Multilingual emotion model not loaded")
+            return "Neutral"
         threshold = float(
             os.environ.get("MULTILINGUAL_EMOTION_THRESHOLD")
             or settings.MULTILINGUAL_EMOTION_THRESHOLD
             or 0.5
         )
-
+        
+        device = "cuda" if torch.cuda.is_available() else "cpu"
         with torch.no_grad():
-            inputs = tokenizer(
+            inputs = _emotion_tokenizer(
                 [text],
                 return_tensors="pt",
                 truncation=True,
                 padding=True,
                 max_length=192,
-            )
-            probs = torch.sigmoid(model(**inputs).logits)[0].cpu().numpy()
+            ).to(device)
+            probs = torch.sigmoid(_emotion_model(**inputs).logits)[0].cpu().numpy()
 
         picked = [
             (MULTILINGUAL_EMOTION_LABELS[idx], float(score))
@@ -187,7 +247,7 @@ def predict_multilingual_emotion_hf(text: str) -> str:
         return _map_multilingual_emotion_to_legacy(top_label)
     except Exception as e:
         logger.error(
-            "Multilingual HF emotion prediction failed: %s", str(e), exc_info=True
+            "Multilingual emotion prediction failed: %s", str(e), exc_info=True
         )
         return "Neutral"
 

@@ -35,22 +35,7 @@ en_problem_lr = None
 en_problem_rf = None
 en_problem_svm = None
 
-try:
-    en_problem_lr = pickle.load(open(settings.EN_PROBLEM_LR_PATH, "rb"))
-    logger.info(
-        f"Loaded English Problem Type LR model from {settings.EN_PROBLEM_LR_PATH}"
-    )
-except Exception as e:
-    logger.error(f"Failed to load English Problem Type LR model: {str(e)}")
-
-try:
-    en_problem_rf = pickle.load(open(settings.EN_PROBLEM_RF_PATH, "rb"))
-    logger.info(
-        f"Loaded English Problem Type RF model from {settings.EN_PROBLEM_RF_PATH}"
-    )
-except Exception as e:
-    logger.error(f"Failed to load English Problem Type RF model: {str(e)}")
-
+# Only load SVM for problem type (others disabled to save memory)
 try:
     en_problem_svm = pickle.load(open(settings.EN_PROBLEM_SVM_PATH, "rb"))
     logger.info(
@@ -60,46 +45,16 @@ except Exception as e:
     logger.error(f"Failed to load English Problem Type SVM model: {str(e)}")
 
 # ============================================================================
-# Emotion Models
+# Emotion Models (DISABLED - using HuggingFace models only)
 # ============================================================================
 en_emotion_bilstm = None
 en_emotion_lr = None
 
-try:
-    en_emotion_bilstm = keras.models.load_model(settings.EN_EMOTION_BILSTM_PATH)
-    logger.info(
-        f"Loaded English Emotion BiLSTM model from {settings.EN_EMOTION_BILSTM_PATH}"
-    )
-except Exception as e:
-    logger.error(f"Failed to load English Emotion BiLSTM model: {str(e)}")
-
-try:
-    en_emotion_lr = pickle.load(open(settings.EN_EMOTION_LR_PATH, "rb"))
-    logger.info(f"Loaded English Emotion LR model from {settings.EN_EMOTION_LR_PATH}")
-except Exception as e:
-    logger.error(f"Failed to load English Emotion LR model: {str(e)}")
-
 # ============================================================================
-# Sentiment Models
+# Sentiment Models (DISABLED - using HuggingFace models only)
 # ============================================================================
 en_sentiment_svm = None
 en_sentiment_gru = None
-
-try:
-    en_sentiment_svm = pickle.load(open(settings.EN_SENTIMENT_SVM_PATH, "rb"))
-    logger.info(
-        f"Loaded English Sentiment SVM model from {settings.EN_SENTIMENT_SVM_PATH}"
-    )
-except Exception as e:
-    logger.error(f"Failed to load English Sentiment SVM model: {str(e)}")
-
-try:
-    en_sentiment_gru = keras.models.load_model(settings.EN_SENTIMENT_GRU_PATH)
-    logger.info(
-        f"Loaded English Sentiment GRU model from {settings.EN_SENTIMENT_GRU_PATH}"
-    )
-except Exception as e:
-    logger.error(f"Failed to load English Sentiment GRU model: {str(e)}")
 
 
 def predict_english_ml_probs(model, text: str) -> np.ndarray:
