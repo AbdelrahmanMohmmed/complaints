@@ -3,10 +3,9 @@ from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from .. import models, database, oauth2
 from ..ai.labels import (
-    EMOTION_LABEL2ID,
     PROBLEM_TYPE_DEFAULT_LABEL,
     PROBLEM_TYPE_ID2LABEL,
-    PROBLEM_TYPE_LABEL2ID,
+    SENTIMENT_ID2LABEL,
 )
 from ..schemas import dashboard
 from collections import defaultdict
@@ -15,19 +14,17 @@ router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
 
 def _resolve_problem_type_id(feedback: models.Feedback) -> int | None:
-    if feedback.problem_type_id is not None:
-        return feedback.problem_type_id
-    if feedback.problem_type:
-        return PROBLEM_TYPE_LABEL2ID.get(feedback.problem_type)
-    return None
+    return feedback.problem_type_id
 
 
 def _resolve_emotion_id(feedback: models.Feedback) -> int | None:
-    if feedback.emotion_id is not None:
-        return feedback.emotion_id
-    if feedback.emotion:
-        return EMOTION_LABEL2ID.get(feedback.emotion)
-    return None
+    return feedback.emotion_id
+
+
+def _resolve_sentiment_label(feedback: models.Feedback) -> str | None:
+    if feedback.sentiment_id is None:
+        return None
+    return SENTIMENT_ID2LABEL.get(feedback.sentiment_id)
 
 
 @router.get("/stats", response_model=dashboard.DashboardStats)
@@ -35,7 +32,7 @@ def get_dashboard_stats(
     db: Session = Depends(database.get_db),
     current_user_id: int = Depends(oauth2.get_current_user),
 ):
-    #read data from db
+    # read data from db
     current_user = (
         db.query(models.User).filter(models.User.user_id == current_user_id).first()
     )
@@ -51,9 +48,9 @@ def get_dashboard_stats(
     resolved = sum(1 for f in feedback if f.status == "resolved")
     closed = sum(1 for f in feedback if f.status == "closed")
     high_priority = sum(1 for f in feedback if f.priority == "high")
-    positive = sum(1 for f in feedback if f.sentiment == "positive")
-    negative = sum(1 for f in feedback if f.sentiment == "negative")
-    neutral = sum(1 for f in feedback if f.sentiment == "neutral")
+    positive = sum(1 for f in feedback if _resolve_sentiment_label(f) == "positive")
+    negative = sum(1 for f in feedback if _resolve_sentiment_label(f) == "negative")
+    neutral = sum(1 for f in feedback if _resolve_sentiment_label(f) == "neutral")
     frustrated = sum(1 for f in feedback if _resolve_emotion_id(f) == 0)
     neutral_emotion = sum(1 for f in feedback if _resolve_emotion_id(f) == 1)
     disgusted = sum(1 for f in feedback if _resolve_emotion_id(f) == 2)
@@ -71,7 +68,7 @@ def get_dashboard_stats(
             if f.created_at
             and month_start <= f.created_at.replace(tzinfo=None) < month_end
         ]
-        #summary of data for each month (you can add more like number of satisfied or frustrated)
+        # summary of data for each month (you can add more like number of satisfied or frustrated)
         monthly_data.append(
             {
                 "month": month_start.strftime("%b"),
@@ -155,7 +152,7 @@ def get_reports(
         f
         for f in all_feedback
         if f.created_at
-           and since > f.created_at.replace(tzinfo=None) >= since - (now - since)
+        and since > f.created_at.replace(tzinfo=None) >= since - (now - since)
     ]
 
     total = len(filtered)
@@ -170,10 +167,12 @@ def get_reports(
     )
 
     # Sentiment counts
-    positive = sum(1 for f in filtered if f.sentiment == "positive")
-    negative = sum(1 for f in filtered if f.sentiment == "negative")
-    neutral = sum(1 for f in filtered if f.sentiment == "neutral")
-    prev_positive = sum(1 for f in prev_filtered if f.sentiment == "positive")
+    positive = sum(1 for f in filtered if _resolve_sentiment_label(f) == "positive")
+    negative = sum(1 for f in filtered if _resolve_sentiment_label(f) == "negative")
+    neutral = sum(1 for f in filtered if _resolve_sentiment_label(f) == "neutral")
+    prev_positive = sum(
+        1 for f in prev_filtered if _resolve_sentiment_label(f) == "positive"
+    )
 
     sentiment_pct = round((positive / total * 100), 1) if total else 0
     prev_sentiment_pct = (
@@ -200,9 +199,15 @@ def get_reports(
         sentiment_trend.append(
             {
                 "month": m_start.strftime("%b"),
-                "positive": sum(1 for f in month_fb if f.sentiment == "positive"),
-                "negative": sum(1 for f in month_fb if f.sentiment == "negative"),
-                "neutral": sum(1 for f in month_fb if f.sentiment == "neutral"),
+                "positive": sum(
+                    1 for f in month_fb if _resolve_sentiment_label(f) == "positive"
+                ),
+                "negative": sum(
+                    1 for f in month_fb if _resolve_sentiment_label(f) == "negative"
+                ),
+                "neutral": sum(
+                    1 for f in month_fb if _resolve_sentiment_label(f) == "neutral"
+                ),
             }
         )
 
@@ -225,9 +230,10 @@ def get_reports(
         cat_map[problem_type_id]["problem_type_id"] = problem_type_id
         cat_map[problem_type_id]["name"] = name
         cat_map[problem_type_id]["total"] += 1
-        if f.sentiment == "positive":
+        sentiment_label = _resolve_sentiment_label(f)
+        if sentiment_label == "positive":
             cat_map[problem_type_id]["positive"] += 1
-        elif f.sentiment == "negative":
+        elif sentiment_label == "negative":
             cat_map[problem_type_id]["negative"] += 1
         else:
             cat_map[problem_type_id]["neutral"] += 1
@@ -271,9 +277,10 @@ def get_reports(
             continue
         emotion_map[emotion_id]["emotion_id"] = emotion_id
         emotion_map[emotion_id]["total"] += 1
-        if f.sentiment == "positive":
+        sentiment_label = _resolve_sentiment_label(f)
+        if sentiment_label == "positive":
             emotion_map[emotion_id]["positive"] += 1
-        elif f.sentiment == "negative":
+        elif sentiment_label == "negative":
             emotion_map[emotion_id]["negative"] += 1
         else:
             emotion_map[emotion_id]["neutral"] += 1

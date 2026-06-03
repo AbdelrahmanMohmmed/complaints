@@ -1,6 +1,3 @@
-// NOTE: This page currently reads feedback and user data from MOCK sources (`mockData.ts`).
-// TODO: Replace `mockFeedback` and `mockUsers` with real `/api/v1/complaints` and `/api/v1/users` API calls.
-
 import React, { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -27,7 +24,6 @@ interface BackendFeedback {
   company_id: number;
   api_id: number | null;
   channel_name?: string | null;
-  category_name?: string | null;
   customer_name: string | null;
   feedback_context: string | null;
   status: string;
@@ -203,7 +199,6 @@ export function FeedbackList() {
     const fetchFeedback = async () => {
       try {
         const data = await request<BackendFeedback[]>('/feedback/');
-        console.log('Fetched feedback:', data); // ← add this temporarily
         setFeedbackList(data);
         setFeedbackStatuses(Object.fromEntries(data.map(fb => [fb.feedback_id, fb.status || 'open'])));
         setFeedbackPriorities(Object.fromEntries(data.map(fb => [fb.feedback_id, fb.priority || 'low'])));
@@ -228,7 +223,7 @@ export function FeedbackList() {
     const sentimentKey = getSentimentKey(fb.sentiment_id, fb.sentiment);
     const matchesSentiment = sentimentFilter === 'all' || sentimentKey === sentimentFilter;
     const matchesPriority = priorityFilter === 'all' || currentPriority === priorityFilter;
-    const matchesCategory = categoryFilter === 'all' || (fb.category_name || '—') === categoryFilter;
+    const matchesCategory = categoryFilter === 'all' || (fb.problem_type || '—') === categoryFilter;
     const matchesEmotion = emotionFilter === 'all' || String(fb.emotion_id ?? 'none') === emotionFilter;
     return matchesSearch && matchesStatus && matchesSentiment && matchesPriority && matchesCategory && matchesEmotion;
   });
@@ -250,7 +245,7 @@ export function FeedbackList() {
   }, [currentPage, totalPages]);
 
   const categoryOptions = Array.from(
-    new Set(feedbackList.map(fb => fb.category_name || '—'))
+    new Set(feedbackList.map(fb => fb.problem_type || '—'))
   ).filter(name => name && name !== '—');
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString(isAr ? 'ar-SA' : 'en-US', {

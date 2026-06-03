@@ -13,14 +13,11 @@ from .routers import (
     domain,
     feedback,
     integration,
-    categories,
     user,
 )
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .ai import load_models
-from .config import settings
 from .services.ai_analysis import ai_analysis_service
 from .services.feedback_ingestion import ingest_feedback
 from .services.preprocessing import preprocess_feedback_service
@@ -70,7 +67,6 @@ app.include_router(auth.router, prefix="/api/v1")
 app.include_router(company.router, prefix="/api/v1")
 app.include_router(integration.router, prefix="/api/v1")
 app.include_router(feedback.router, prefix="/api/v1")
-app.include_router(categories.router, prefix="/api/v1")
 app.include_router(domain.router, prefix="/api/v1")
 app.include_router(contact.router, prefix="/api/v1")
 app.include_router(dashboard.router, prefix="/api/v1")
@@ -101,15 +97,6 @@ async def startup_event() -> None:
     global scheduler
 
     try:
-        # Validate AI model configuration (models load lazily on first use)
-        logger.info("Validating AI model configuration...")
-        models_loaded = load_models()
-
-        if models_loaded:
-            logger.info("AI model configuration validated successfully")
-        else:
-            logger.warning("Some AI models are not configured. Check .env paths.")
-
         # Initialize scheduler
         scheduler = BackgroundScheduler()
 

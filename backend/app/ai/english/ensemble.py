@@ -3,20 +3,9 @@
 Problem type remains ensemble-based.
 Sentiment and emotion are now Hugging Face-only.
 """
-
-import numpy as np
-import logging
-from app.ai.english.ml_dl_predict import (
-    predict_english_ml_probs,
-    en_problem_lr,
-    en_problem_rf,
-    en_problem_svm,
-)
+from app.ai.english.ml_dl_predict import *
 from app.ai.english.transformer_predict import predict_english_transformer_probs
-from app.ai.hf_predict import (
-    predict_english_emotion_hf,
-    predict_english_sentiment_hf,
-)
+
 
 logger = logging.getLogger(__name__)
 
@@ -98,20 +87,40 @@ def predict_english_problem_type(text: str) -> str:
 
 
 def predict_english_emotion(text: str) -> str:
-    """Predict English emotion using multilingual Hugging Face model."""
+    """Predict English emotion using weighted soft voting (3 models)."""
     try:
-        return predict_english_emotion_hf(text)
+        weights = [2.0, 1.5, 1.2]
+        sum_weights = sum(weights)
+
+        p1 = predict_english_transformer_probs(text, "roberta_emotion")
+        p2 = predict_english_dl_probs(en_emotion_bilstm, text)
+        p3 = predict_english_ml_probs(en_emotion_lr, text)
+
+        weighted = (weights[0] * p1 + weights[1] * p2 + weights[2] * p3) / sum_weights
+
+        final_idx = np.argmax(weighted, axis=1)[0]
+        return E_LABELS[final_idx]
 
     except Exception as e:
-        logger.error(f"Error in English emotion prediction: {str(e)}", exc_info=True)
+        logger.error("Error in English emotion: %s", e, exc_info=True)
         return "Neutral"
 
 
 def predict_english_sentiment(text: str) -> str:
-    """Predict English sentiment using Hugging Face model."""
+    """Predict English sentiment using weighted soft voting (3 models)."""
     try:
-        return predict_english_sentiment_hf(text)
+        weights = [2.0, 1.5, 1.2]
+        sum_weights = sum(weights)
+
+        p1 = predict_english_transformer_probs(text, "roberta_sentiment")
+        p2 = predict_english_ml_probs(en_sentiment_svm, text)
+        p3 = predict_english_dl_probs(en_sentiment_gru, text)
+
+        weighted = (weights[0] * p1 + weights[1] * p2 + weights[2] * p3) / sum_weights
+
+        final_idx = np.argmax(weighted, axis=1)[0]
+        return S_LABELS[final_idx]
 
     except Exception as e:
-        logger.error(f"Error in English sentiment prediction: {str(e)}", exc_info=True)
+        logger.error("Error in English sentiment: %s", e, exc_info=True)
         return "Neutral"

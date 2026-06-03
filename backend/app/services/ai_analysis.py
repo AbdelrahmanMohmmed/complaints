@@ -17,13 +17,10 @@ from sqlalchemy.sql import func
 from .. import database, models
 from ..ai.labels import (
     EMOTION_DEFAULT_ID,
-    EMOTION_DEFAULT_LABEL,
     EMOTION_LABEL2ID,
     PROBLEM_TYPE_DEFAULT_ID,
-    PROBLEM_TYPE_DEFAULT_LABEL,
     PROBLEM_TYPE_LABEL2ID,
     SENTIMENT_DEFAULT_ID,
-    SENTIMENT_DEFAULT_LABEL,
     SENTIMENT_LABEL2ID,
 )
 from ..ai.predict import run_ai_pipeline
@@ -41,69 +38,46 @@ def _is_empty_text(text: str) -> bool:
     return not text or text.strip() == ""
 
 
+def _get_company_domain_name(db: Session, company_id: int) -> str | None:
+    company = (
+        db.query(models.Company, models.Domain.domain_name)
+        .join(models.Domain, models.Company.domain_id == models.Domain.domain_id)
+        .filter(models.Company.company_id == company_id)
+        .first()
+    )
+    if not company:
+        return None
+    _, domain_name = company
+    return domain_name
+
+
 def _handle_empty_feedback(feedback: models.Feedback, db: Session) -> None:
     """Mark feedback with empty text as analyzed with neutral defaults."""
     feedback.status = "analyzed"
-    feedback.sentiment = SENTIMENT_DEFAULT_LABEL
     feedback.sentiment_id = SENTIMENT_DEFAULT_ID
-    feedback.emotion = EMOTION_DEFAULT_LABEL
     feedback.emotion_id = EMOTION_DEFAULT_ID
-    feedback.problem_type = PROBLEM_TYPE_DEFAULT_LABEL
     feedback.problem_type_id = PROBLEM_TYPE_DEFAULT_ID
     feedback.ml_processed_at = func.now()
     db.commit()
     logger.debug(f"Feedback {feedback.feedback_id}: marked as analyzed (empty content)")
 
 
-def _resolve_category_id(
-    db: Session, company_id: int, category_name: str
-) -> int | None:
-    """Resolve feedback_categories.category_id by company domain + category name."""
-    if not category_name:
-        return None
-
-    domain_id = (
-        db.query(models.Company.domain_id)
-        .filter(models.Company.company_id == company_id)
-        .scalar()
-    )
-    if not domain_id:
-        return None
-
-    category = (
-        db.query(models.FeedbackCategory)
-        .filter(
-            models.FeedbackCategory.domain_id == domain_id,
-            models.FeedbackCategory.category_name == category_name,
-        )
-        .first()
-    )
-
-    return category.category_id if category else None
-
-
 def _update_feedback_with_results(
     feedback: models.Feedback, results: Dict[str, Any], db: Session
 ) -> None:
     """Update feedback record with AI analysis results and timestamp."""
-    feedback.sentiment = results["sentiment"]
     feedback.sentiment_id = results.get("sentiment_id") or SENTIMENT_LABEL2ID.get(
         results.get("sentiment", ""), SENTIMENT_DEFAULT_ID
     )
-    feedback.emotion = results["emotion"]
     feedback.emotion_id = results.get("emotion_id") or EMOTION_LABEL2ID.get(
         results.get("emotion", ""), EMOTION_DEFAULT_ID
     )
-    feedback.problem_type = results["problem_type"]
     feedback.problem_type_id = results.get(
         "problem_type_id"
     ) or PROBLEM_TYPE_LABEL2ID.get(
         results.get("problem_type", ""), PROBLEM_TYPE_DEFAULT_ID
     )
     feedback.priority = results["priority"]
-    feedback.category_id = _resolve_category_id(
-        db, feedback.company_id, results.get("problem_type")
-    )
     feedback.status = "analyzed"
     feedback.ml_processed_at = func.now()
     db.commit()
@@ -148,6 +122,8 @@ def run_ai_job(db: Session) -> int:
             .all()
         )
 
+        company_domain_cache: dict[int, str | None] = {}
+
         logger.info(
             f"Starting AI analysis for {len(preprocessed_feedback)} feedback records"
         )
@@ -162,7 +138,15 @@ def run_ai_job(db: Session) -> int:
                     continue
 
                 # Run AI pipeline on cleaned text
-                results = run_ai_pipeline(feedback.cleaned_text)
+                if feedback.company_id not in company_domain_cache:
+                    company_domain_cache[feedback.company_id] = (
+                        _get_company_domain_name(db, feedback.company_id)
+                    )
+
+                results = run_ai_pipeline(
+                    feedback.cleaned_text,
+                    domain_name=company_domain_cache[feedback.company_id],
+                )
 
                 # Update feedback record with analysis results
                 _update_feedback_with_results(feedback, results, db)
@@ -210,5 +194,4 @@ def ai_analysis_service() -> None:
     except Exception as e:
         logger.error(f"Error in AI analysis service: {str(e)}", exc_info=True)
     finally:
-        db.close()
         db.close()

@@ -1,57 +1,54 @@
-"""Hugging Face and CAMeL-based predictors for sentiment and emotion.
+"""Hugging Face predictors for sentiment and emotion.
 
-This module centralizes the new inference strategy:
-- Arabic sentiment: CAMeL-Lab/bert-base-arabic-camelbert-da-sentiment
-- English sentiment: Hugging Face text-classification model (configurable)
-- Arabic + English emotion: tabularisai/multilingual-emotion-classification
-
-All functions return labels aligned with the existing priority engine:
-- Sentiment: Positive | Neutral | Negative
-- Emotion: Frustrated | Neutral | Disgusted | Satisfied
+Loads models from local disk only. Never downloads from Hugging Face Hub.
 """
-
-from __future__ import annotations
 
 import logging
 import os
-from typing import Final
+from pathlib import Path
 
 import torch
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
+from transformers import AutoModelForSequenceClassification, AutoTokenizer, pipeline
 
-from app.ai.hf_loader import get_text_classification_pipeline
 from app.config import settings
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_AR_SENTIMENT_MODEL: Final[str] = (
-    "CAMeL-Lab/bert-base-arabic-camelbert-da-sentiment"
-)
-DEFAULT_EN_SENTIMENT_MODEL: Final[str] = (
-    "mrm8488/distilroberta-finetuned-financial-news-sentiment-analysis"
-)
-DEFAULT_MULTILINGUAL_EMOTION_MODEL: Final[str] = (
-    "tabularisai/multilingual-emotion-classification"
-)
+# ── Cached model instances ────────────────────────────────────────────────
 
-MULTILINGUAL_EMOTION_LABELS: Final[list[str]] = [
-    "anger",
-    "contempt",
-    "disgust",
-    "fear",
-    "frustration",
-    "gratitude",
-    "joy",
-    "love",
-    "neutral",
-    "sadness",
-    "surprise",
-]
-
-_camel_sentiment_analyzer = None
-_english_sentiment_pipe = None
+_ar_sentiment_pipe = None
+_en_sentiment_pipe = None
 _emotion_tokenizer = None
 _emotion_model = None
+
+
+# ── Helpers ─────────────────────────────────────────────────────────────────
+
+def _get_path(env_var: str) -> str:
+    """Read path from env or settings, fail if missing."""
+    path = os.environ.get(env_var) or getattr(settings, env_var.lower(), None)
+    if not path:
+        raise ValueError(f"{env_var} must be set in .env")
+    return path
+
+
+def _load_local_pipeline(model_path: str, task: str = "text-classification"):
+    path = Path(model_path)
+    if not path.exists():
+        raise FileNotFoundError(f"Model not found at {path}")
+    logger.info("Loading pipeline from local path: %s", path)
+    return pipeline(task, model=str(path), tokenizer=str(model_path))
+
+
+def _load_local_model_and_tokenizer(model_path: str):
+    path = Path(model_path)
+    if not path.exists():
+        raise FileNotFoundError(f"Model not found at {path}")
+    logger.info("Loading model+tokenizer from local path: %s", path)
+    tokenizer = AutoTokenizer.from_pretrained(str(path), local_files_only=True)
+    model = AutoModelForSequenceClassification.from_pretrained(str(path), local_files_only=True)
+    model.eval()
+    return tokenizer, model
 
 
 def _normalize_sentiment(label: str) -> str:
@@ -63,7 +60,7 @@ def _normalize_sentiment(label: str) -> str:
     return "Neutral"
 
 
-def _map_multilingual_emotion_to_legacy(label: str) -> str:
+def _map_emotion_to_legacy(label: str) -> str:
     key = (label or "").strip().lower()
     if key in {"anger", "frustration", "fear", "sadness"}:
         return "Frustrated"
@@ -74,90 +71,60 @@ def _map_multilingual_emotion_to_legacy(label: str) -> str:
     return "Neutral"
 
 
-def _get_camel_sentiment_analyzer():
-    global _camel_sentiment_analyzer
+# ── Model loaders (lazy, cached) ────────────────────────────────────────────
 
-    if _camel_sentiment_analyzer is not None:
-        return _camel_sentiment_analyzer
-
-    model_name = (
-        os.environ.get("AR_SENTIMENT_HF_MODEL")
-        or settings.AR_SENTIMENT_HF_MODEL
-        or DEFAULT_AR_SENTIMENT_MODEL
-    )
-
-    from camel_tools.sentiment import SentimentAnalyzer
-
-    logger.info("Loading Arabic sentiment analyzer: %s", model_name)
-    _camel_sentiment_analyzer = SentimentAnalyzer(model_name)
-    return _camel_sentiment_analyzer
+def _get_ar_sentiment_pipe():
+    global _ar_sentiment_pipe
+    if _ar_sentiment_pipe is None:
+        path = _get_path("AR_SENTIMENT_HF_PATH")
+        _ar_sentiment_pipe = _load_local_pipeline(path)
+    return _ar_sentiment_pipe
 
 
-def _get_english_sentiment_pipe():
-    global _english_sentiment_pipe
-
-    if _english_sentiment_pipe is not None:
-        return _english_sentiment_pipe
-
-    model_name = (
-        os.environ.get("EN_SENTIMENT_HF_MODEL")
-        or settings.EN_SENTIMENT_HF_MODEL
-        or DEFAULT_EN_SENTIMENT_MODEL
-    )
-    _english_sentiment_pipe = get_text_classification_pipeline(
-        model_name,
-        env_path_var="EN_SENTIMENT_HuggingFace_PATH",
-    )
-    return _english_sentiment_pipe
+def _get_en_sentiment_pipe():
+    global _en_sentiment_pipe
+    if _en_sentiment_pipe is None:
+        path = _get_path("EN_SENTIMENT_HF_PATH")
+        _en_sentiment_pipe = _load_local_pipeline(path)
+    return _en_sentiment_pipe
 
 
-def _get_multilingual_emotion_model():
+def _get_emotion_model():
     global _emotion_tokenizer, _emotion_model
-
-    if _emotion_tokenizer is not None and _emotion_model is not None:
-        return _emotion_tokenizer, _emotion_model
-
-    model_name = (
-        os.environ.get("MULTILINGUAL_EMOTION_HF_MODEL")
-        or settings.MULTILINGUAL_EMOTION_HF_MODEL
-        or DEFAULT_MULTILINGUAL_EMOTION_MODEL
-    )
-
-    logger.info("Loading multilingual emotion model: %s", model_name)
-    _emotion_tokenizer = AutoTokenizer.from_pretrained(model_name)
-    _emotion_model = AutoModelForSequenceClassification.from_pretrained(model_name)
-    _emotion_model.eval()
+    if _emotion_tokenizer is None or _emotion_model is None:
+        path = _get_path("MULTILINGUAL_EMOTION_HF_PATH")
+        _emotion_tokenizer, _emotion_model = _load_local_model_and_tokenizer(path)
     return _emotion_tokenizer, _emotion_model
 
 
+# ── Predictors ──────────────────────────────────────────────────────────────
+
 def predict_arabic_sentiment_hf(text: str) -> str:
     try:
-        analyzer = _get_camel_sentiment_analyzer()
-        prediction = analyzer.predict([text])[0]
-        return _normalize_sentiment(prediction)
+        pipe = _get_ar_sentiment_pipe()
+        prediction = pipe(text)[0]
+        return _normalize_sentiment(str(prediction.get("label", "")))
     except Exception as e:
-        logger.error("Arabic HF sentiment prediction failed: %s", str(e), exc_info=True)
+        logger.error("Arabic sentiment failed: %s", e, exc_info=True)
         return "Neutral"
 
 
 def predict_english_sentiment_hf(text: str) -> str:
     try:
-        pipe = _get_english_sentiment_pipe()
+        pipe = _get_en_sentiment_pipe()
         prediction = pipe(text)[0]
         return _normalize_sentiment(str(prediction.get("label", "")))
     except Exception as e:
-        logger.error(
-            "English HF sentiment prediction failed: %s", str(e), exc_info=True
-        )
+        logger.error("English sentiment failed: %s", e, exc_info=True)
         return "Neutral"
 
 
 def predict_multilingual_emotion_hf(text: str) -> str:
     try:
-        tokenizer, model = _get_multilingual_emotion_model()
+        tokenizer, model = _get_emotion_model()
         threshold = float(
             os.environ.get("MULTILINGUAL_EMOTION_THRESHOLD")
-            or settings.MULTILINGUAL_EMOTION_THRESHOLD
+            or settings.multilingual_emotion_threshold
             or 0.5
         )
 
@@ -169,26 +136,20 @@ def predict_multilingual_emotion_hf(text: str) -> str:
                 padding=True,
                 max_length=192,
             )
-            probs = torch.sigmoid(model(**inputs).logits)[0].cpu().numpy()
+            logits = model(**inputs).logits
+            probs = torch.sigmoid(logits)[0].cpu().numpy()
 
-        picked = [
-            (MULTILINGUAL_EMOTION_LABELS[idx], float(score))
-            for idx, score in enumerate(probs)
-            if score >= threshold
+        labels = [
+            "anger", "contempt", "disgust", "fear", "frustration",
+            "gratitude", "joy", "love", "neutral", "sadness", "surprise",
         ]
+        picked = [(labels[i], float(p)) for i, p in enumerate(probs) if p >= threshold]
         picked.sort(key=lambda x: -x[1])
 
-        if picked:
-            top_label = picked[0][0]
-        else:
-            neutral_idx = MULTILINGUAL_EMOTION_LABELS.index("neutral")
-            top_label = MULTILINGUAL_EMOTION_LABELS[neutral_idx]
-
-        return _map_multilingual_emotion_to_legacy(top_label)
+        top = picked[0][0] if picked else "neutral"
+        return _map_emotion_to_legacy(top)
     except Exception as e:
-        logger.error(
-            "Multilingual HF emotion prediction failed: %s", str(e), exc_info=True
-        )
+        logger.error("Emotion prediction failed: %s", e, exc_info=True)
         return "Neutral"
 
 

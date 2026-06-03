@@ -22,8 +22,6 @@ interface BackendFeedback {
   company_id: number;
   api_id: number | null;
   channel_name?: string | null;
-  category_id: number | null;
-  category_name: string | null;
   customer_name: string | null;
   feedback_context: string | null;
   status: string;
@@ -35,11 +33,6 @@ interface BackendFeedback {
   problem_type_id: number | null;
   priority: string | null;
   created_at: string;
-}
-
-interface Category {
-  category_id: number;
-  category_name: string;
 }
 
 const sentimentColors: Record<string, string> = {
@@ -136,14 +129,12 @@ export function FeedbackDetails() {
   const isAr = language === 'ar';
 
   const [feedback, setFeedback] = useState<BackendFeedback | null>(null);
-  const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
   // Editable fields
   const [status, setStatus] = useState('open');
   const [priority, setPriority] = useState('low');
-  const [categoryId, setCategoryId] = useState<string>('');
   const [saveLoading, setSaveLoading] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState('');
   const [saveError, setSaveError] = useState('');
@@ -159,15 +150,10 @@ export function FeedbackDetails() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [fb, cats] = await Promise.all([
-          request<BackendFeedback>(`/feedback/${id}`),
-          request<Category[]>('/categories/'),
-        ]);
+        const fb = await request<BackendFeedback>(`/feedback/${id}`);
         setFeedback(fb);
         setStatus(normalizeStatus(fb.status || 'open'));
         setPriority(normalizePriority(fb.priority || 'low'));
-        setCategoryId(fb.category_id ? String(fb.category_id) : '');
-        setCategories(cats);
       } catch (err) {
         setNotFound(true);
       } finally {
@@ -193,10 +179,9 @@ export function FeedbackDetails() {
         method: 'PATCH',
         body: JSON.stringify({
           priority,
-          category_id: categoryId ? Number(categoryId) : null,
         }),
       });
-      setFeedback(prev => prev ? { ...prev, status, priority, category_id: categoryId ? Number(categoryId) : null } : prev);
+      setFeedback(prev => prev ? { ...prev, status, priority } : prev);
       setSaveSuccess('Changes saved successfully.');
     } catch (err: any) {
       setSaveError(err?.message || 'Failed to save changes.');
@@ -317,25 +302,6 @@ export function FeedbackDetails() {
                       <SelectItem value="low">{t('priority.low')}</SelectItem>
                       <SelectItem value="medium">{t('priority.medium')}</SelectItem>
                       <SelectItem value="high">{t('priority.high')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              {/* Category - manager/admin */}
-              {canEdit && (
-                <div>
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">
-                    {t('feedback.category')}
-                  </label>
-                  <Select value={categoryId} onValueChange={setCategoryId}>
-                    <SelectTrigger><SelectValue placeholder="Select category..." /></SelectTrigger>
-                    <SelectContent>
-                      {categories.map(cat => (
-                        <SelectItem key={cat.category_id} value={String(cat.category_id)}>
-                          {cat.category_name}
-                        </SelectItem>
-                      ))}
                     </SelectContent>
                   </Select>
                 </div>

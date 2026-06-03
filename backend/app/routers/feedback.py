@@ -11,6 +11,11 @@ from sqlalchemy.orm import Session
 
 from .. import database, models, oauth2
 from ..schemas import feedback
+from ..ai.labels import (
+    get_emotion_label,
+    get_problem_type_label,
+    get_sentiment_label,
+)
 from app.ai.predict import run_ai_pipeline
 
 # Configure logging
@@ -53,23 +58,21 @@ def check_rate_limit(remote_address: str) -> bool:
     return True
 
 
-def serialize_feedback(row: tuple[models.Feedback, str | None, str | None]) -> dict:
-    fb, channel_name, category_name = row
+def serialize_feedback(row: tuple[models.Feedback, str | None]) -> dict:
+    fb, channel_name = row
     return {
         "feedback_id": fb.feedback_id,
         "company_id": fb.company_id,
         "api_id": fb.api_id,
         "channel_name": channel_name,
-        "category_id": fb.category_id,
-        "category_name": category_name,
         "customer_name": fb.customer_name,
         "feedback_context": fb.feedback_context,
         "status": fb.status,
-        "sentiment": fb.sentiment,
+        "sentiment": get_sentiment_label(fb.sentiment_id),
         "sentiment_id": fb.sentiment_id,
-        "emotion": fb.emotion,
+        "emotion": get_emotion_label(fb.emotion_id),
         "emotion_id": fb.emotion_id,
-        "problem_type": fb.problem_type,
+        "problem_type": get_problem_type_label(fb.problem_type_id),
         "problem_type_id": fb.problem_type_id,
         "priority": fb.priority,
         "created_at": fb.created_at,
@@ -77,11 +80,8 @@ def serialize_feedback(row: tuple[models.Feedback, str | None, str | None]) -> d
 
 
 class FeedbackClassificationUpdate(BaseModel):
-    problem_type: str | None = None
     problem_type_id: int | None = None
-    sentiment: str | None = None
     sentiment_id: int | None = None
-    emotion: str | None = None
     emotion_id: int | None = None
 
 
@@ -409,6 +409,14 @@ async def submit_form(
 
     # Save feedback to database instantly
     try:
+        company = (
+            db.query(models.Company)
+            .join(models.Domain, models.Company.domain_id == models.Domain.domain_id)
+            .filter(models.Company.company_id == integration.company_id)
+            .first()
+        )
+        domain_name = company.domain.domain_name if company and company.domain else None
+
         new_feedback = models.Feedback(
             company_id=integration.company_id,
             api_id=integration.api_id,
@@ -422,13 +430,10 @@ async def submit_form(
 
         # Run AI pipeline synchronously for immediate feedback to frontend
         try:
-            ai_result = run_ai_pipeline(feedback_context)
+            ai_result = run_ai_pipeline(feedback_context, domain_name=domain_name)
             # Update feedback record with AI results
-            new_feedback.sentiment = ai_result.get("sentiment")
             new_feedback.sentiment_id = ai_result.get("sentiment_id")
-            new_feedback.emotion = ai_result.get("emotion")
             new_feedback.emotion_id = ai_result.get("emotion_id")
-            new_feedback.problem_type = ai_result.get("problem_type")
             new_feedback.problem_type_id = ai_result.get("problem_type_id")
             new_feedback.priority = ai_result.get("priority")
             new_feedback.status = "processed"
@@ -474,13 +479,8 @@ def list_feedback(
         db.query(
             models.Feedback,
             models.Api.channel_name,
-            models.FeedbackCategory.category_name,
         )
         .outerjoin(models.Api, models.Feedback.api_id == models.Api.api_id)
-        .outerjoin(
-            models.FeedbackCategory,
-            models.Feedback.category_id == models.FeedbackCategory.category_id,
-        )
         .filter(models.Feedback.company_id == current_user["company_id"])
         .order_by(models.Feedback.created_at.desc())
         .all()
@@ -500,13 +500,8 @@ def get_feedback(
         db.query(
             models.Feedback,
             models.Api.channel_name,
-            models.FeedbackCategory.category_name,
         )
         .outerjoin(models.Api, models.Feedback.api_id == models.Api.api_id)
-        .outerjoin(
-            models.FeedbackCategory,
-            models.Feedback.category_id == models.FeedbackCategory.category_id,
-        )
         .filter(
             models.Feedback.feedback_id == feedback_id,
             models.Feedback.company_id == current_user["company_id"],
@@ -554,18 +549,13 @@ def update_feedback_status(
         db.query(
             models.Feedback,
             models.Api.channel_name,
-            models.FeedbackCategory.category_name,
         )
         .outerjoin(models.Api, models.Feedback.api_id == models.Api.api_id)
-        .outerjoin(
-            models.FeedbackCategory,
-            models.Feedback.category_id == models.FeedbackCategory.category_id,
-        )
         .filter(models.Feedback.feedback_id == feedback_id)
         .first()
     )
 
-    return serialize_feedback(row) if row else serialize_feedback((fb, None, None))
+    return serialize_feedback(row) if row else serialize_feedback((fb, None))
 
 
 @router.patch("/{feedback_id}/details", response_model=feedback.FeedbackOut)
@@ -575,7 +565,7 @@ def update_feedback_details(
     current_user: dict = Depends(oauth2.get_current_user_with_company),
     db: Session = Depends(database.get_db),
 ) -> dict:
-    """Update feedback priority and category."""
+    """Update feedback priority."""
     fb = (
         db.query(models.Feedback)
         .filter(
@@ -593,7 +583,6 @@ def update_feedback_details(
 
     if payload.priority is not None:
         fb.priority = payload.priority
-    fb.category_id = payload.category_id
 
     db.commit()
     db.refresh(fb)
@@ -602,18 +591,13 @@ def update_feedback_details(
         db.query(
             models.Feedback,
             models.Api.channel_name,
-            models.FeedbackCategory.category_name,
         )
         .outerjoin(models.Api, models.Feedback.api_id == models.Api.api_id)
-        .outerjoin(
-            models.FeedbackCategory,
-            models.Feedback.category_id == models.FeedbackCategory.category_id,
-        )
         .filter(models.Feedback.feedback_id == feedback_id)
         .first()
     )
 
-    return serialize_feedback(row) if row else serialize_feedback((fb, None, None))
+    return serialize_feedback(row) if row else serialize_feedback((fb, None))
 
 
 @router.patch("/{feedback_id}/problem-type", response_model=feedback.FeedbackOut)
@@ -638,7 +622,6 @@ def update_feedback_problem_type(
             detail="Feedback not found",
         )
 
-    fb.problem_type = payload.problem_type
     fb.problem_type_id = payload.problem_type_id
     db.commit()
     db.refresh(fb)
@@ -647,18 +630,13 @@ def update_feedback_problem_type(
         db.query(
             models.Feedback,
             models.Api.channel_name,
-            models.FeedbackCategory.category_name,
         )
         .outerjoin(models.Api, models.Feedback.api_id == models.Api.api_id)
-        .outerjoin(
-            models.FeedbackCategory,
-            models.Feedback.category_id == models.FeedbackCategory.category_id,
-        )
         .filter(models.Feedback.feedback_id == feedback_id)
         .first()
     )
 
-    return serialize_feedback(row) if row else serialize_feedback((fb, None, None))
+    return serialize_feedback(row) if row else serialize_feedback((fb, None))
 
 
 @router.patch("/{feedback_id}/sentiment", response_model=feedback.FeedbackOut)
@@ -683,7 +661,6 @@ def update_feedback_sentiment(
             detail="Feedback not found",
         )
 
-    fb.sentiment = payload.sentiment
     fb.sentiment_id = payload.sentiment_id
     db.commit()
     db.refresh(fb)
@@ -692,18 +669,13 @@ def update_feedback_sentiment(
         db.query(
             models.Feedback,
             models.Api.channel_name,
-            models.FeedbackCategory.category_name,
         )
         .outerjoin(models.Api, models.Feedback.api_id == models.Api.api_id)
-        .outerjoin(
-            models.FeedbackCategory,
-            models.Feedback.category_id == models.FeedbackCategory.category_id,
-        )
         .filter(models.Feedback.feedback_id == feedback_id)
         .first()
     )
 
-    return serialize_feedback(row) if row else serialize_feedback((fb, None, None))
+    return serialize_feedback(row) if row else serialize_feedback((fb, None))
 
 
 @router.patch("/{feedback_id}/emotion", response_model=feedback.FeedbackOut)
@@ -728,7 +700,6 @@ def update_feedback_emotion(
             detail="Feedback not found",
         )
 
-    fb.emotion = payload.emotion
     fb.emotion_id = payload.emotion_id
     db.commit()
     db.refresh(fb)
@@ -737,15 +708,10 @@ def update_feedback_emotion(
         db.query(
             models.Feedback,
             models.Api.channel_name,
-            models.FeedbackCategory.category_name,
         )
         .outerjoin(models.Api, models.Feedback.api_id == models.Api.api_id)
-        .outerjoin(
-            models.FeedbackCategory,
-            models.Feedback.category_id == models.FeedbackCategory.category_id,
-        )
         .filter(models.Feedback.feedback_id == feedback_id)
         .first()
     )
 
-    return serialize_feedback(row) if row else serialize_feedback((fb, None, None))
+    return serialize_feedback(row) if row else serialize_feedback((fb, None))

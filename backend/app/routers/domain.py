@@ -119,15 +119,10 @@ def delete_domain(domain_id: int, db: Session = Depends(database.get_db)):
     has_companies = (
         db.query(models.Company).filter(models.Company.domain_id == domain_id).first()
     )
-    has_categories = (
-        db.query(models.FeedbackCategory)
-        .filter(models.FeedbackCategory.domain_id == domain_id)
-        .first()
-    )
-    if has_companies or has_categories:
+    if has_companies:
         raise HTTPException(
             status_code=400,
-            detail="Domain cannot be deleted while companies or categories still use it",
+            detail="Domain cannot be deleted while companies still use it",
         )
 
     db.delete(domain)

@@ -8,7 +8,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 import {
-  MessageSquare, Building2, Smile, TrendingDown
+  MessageSquare, Building2, Smile, TrendingDown ,Angry
 } from 'lucide-react';
 import { cn } from '../../components/ui/utils';
 
@@ -154,9 +154,9 @@ export function CompanyAdminDashboard() {
   const kpis = [
     { label: t('dashboard.totalFeedback'), value: stats.total_feedback, icon: MessageSquare, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
     { label: t('dashboard.highPriority'), value: stats.high_priority_count, icon: TrendingDown, color: 'text-red-600', bg: 'bg-red-50 dark:bg-red-900/20' },
-    { label: t('sentiment.negative'), value: stats.negative_count, icon: Smile, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20' },
-    { label: t('dashboard.frustrationRate'), value: `${frustrationRate}%`, icon: Smile, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20' },
-    { label: t('dashboard.disgustedRate'), value: `${disgustedRate}%`, icon: Smile, color: 'text-rose-600', bg: 'bg-rose-50 dark:bg-rose-900/20' },
+    { label: t('sentiment.negative'), value: stats.negative_count, icon: Angry, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20' },
+    { label: t('dashboard.frustrationRate'), value: `${frustrationRate}%`, icon: Angry, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20' },
+    { label: t('dashboard.disgustedRate'), value: `${disgustedRate}%`, icon: Angry, color: 'text-rose-600', bg: 'bg-rose-50 dark:bg-rose-900/20' },
   ];
 
   return (

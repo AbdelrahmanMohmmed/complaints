@@ -1,5 +1,7 @@
 """Label mappings for AI classifications."""
 
+from __future__ import annotations
+
 # English label mapping for problem type (8 categories)
 PROBLEM_TYPE_ID2LABEL = {
     0: "Delivery Issue",
@@ -60,3 +62,27 @@ SENTIMENT_ID2LABEL = {
 SENTIMENT_DEFAULT_ID = 1
 SENTIMENT_DEFAULT_LABEL = SENTIMENT_ID2LABEL[SENTIMENT_DEFAULT_ID]
 SENTIMENT_LABEL2ID = {label: label_id for label_id, label in SENTIMENT_ID2LABEL.items()}
+
+
+def get_problem_type_label(
+    problem_type_id: int | None, language: str = "en"
+) -> str | None:
+    if problem_type_id is None:
+        return None
+    if language.lower().startswith("ar"):
+        return PROBLEM_TYPE_ID2AR_LABEL.get(problem_type_id, PROBLEM_TYPE_DEFAULT_LABEL)
+    return PROBLEM_TYPE_ID2LABEL.get(problem_type_id, PROBLEM_TYPE_DEFAULT_LABEL)
+
+
+def get_emotion_label(emotion_id: int | None, language: str = "en") -> str | None:
+    if emotion_id is None:
+        return None
+    if language.lower().startswith("ar"):
+        return EMOTION_ID2AR_LABEL.get(emotion_id, EMOTION_DEFAULT_LABEL)
+    return EMOTION_ID2LABEL.get(emotion_id, EMOTION_DEFAULT_LABEL)
+
+
+def get_sentiment_label(sentiment_id: int | None, language: str = "en") -> str | None:
+    if sentiment_id is None:
+        return None
+    return SENTIMENT_ID2LABEL.get(sentiment_id, SENTIMENT_DEFAULT_LABEL)

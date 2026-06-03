@@ -13,6 +13,7 @@ import hashlib
 import hmac
 import secrets
 from typing import List
+from urllib.parse import urlencode, urlparse
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from fastapi.responses import RedirectResponse
@@ -50,6 +51,48 @@ ALLOWED_ROLES_VIEW = [1, 3]  # Manager (1) and Tech Admin (2)
 # ============================================================================
 # Helper Functions
 # ============================================================================
+
+
+def _is_local_host(hostname: str | None) -> bool:
+    """Return True when hostname is localhost/loopback for local development."""
+    if not hostname:
+        return False
+    return hostname in {"localhost", "127.0.0.1", "::1"}
+
+
+def _resolve_facebook_redirect_uri(request: Request | None = None) -> str:
+    """Resolve OAuth callback URI and enforce HTTPS for non-local environments."""
+    configured_uri = (settings.FACEBOOK_REDIRECT_URI or "").strip()
+
+    if configured_uri:
+        redirect_uri = configured_uri
+    elif request is not None:
+        redirect_uri = str(request.url_for("facebook_callback"))
+    else:
+        return ""
+
+    # Respect proxy scheme when app runs behind a reverse proxy.
+    forwarded_proto = ""
+    if request is not None:
+        forwarded_proto = (
+            (request.headers.get("x-forwarded-proto") or "")
+            .split(",")[0]
+            .strip()
+            .lower()
+        )
+
+    if forwarded_proto == "https" and redirect_uri.startswith("http://"):
+        redirect_uri = f"https://{redirect_uri[len('http://') :]}"
+
+    parsed = urlparse(redirect_uri)
+    if parsed.scheme == "http" and not _is_local_host(parsed.hostname):
+        secure_uri = f"https://{redirect_uri[len('http://') :]}"
+        logger.warning(
+            "FACEBOOK_REDIRECT_URI is HTTP in non-local environment; forcing HTTPS for OAuth flow"
+        )
+        redirect_uri = secure_uri
+
+    return redirect_uri
 
 
 def validate_gmail_credentials(
@@ -520,6 +563,9 @@ def delete_integration(
         )
 
     try:
+        db.query(models.Feedback).filter(
+            models.Feedback.api_id == integration.api_id
+        ).update({models.Feedback.api_id: None}, synchronize_session=False)
         db.delete(integration)
         db.commit()
     except Exception as e:
@@ -579,67 +625,6 @@ def update_integration_status(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to update integration status",
-        )
-
-
-# ============================================================================
-# Delete Integration
-# ============================================================================
-
-
-@router.delete("/{integration_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_integration(
-    integration_id: int,
-    current_user: dict = Depends(oauth2.get_current_user_with_company),
-    db: Session = Depends(database.get_db),
-) -> None:
-    """Delete an integration.
-
-    Manager (1) and Tech Admin (2) only. Integration must belong to company.
-
-    Args:
-        integration_id: Integration ID to delete
-        current_user: Current user with company info
-        db: Database session
-
-    Raises:
-        HTTPException: 403 if user role not authorized
-        HTTPException: 404 if integration not found or doesn't belong to company
-    """
-    # RBAC: Only Manager or Tech Admin can delete
-    if current_user["role_id"] not in ALLOWED_ROLES_MANAGE:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only Manager or Tech Admin can delete integrations",
-        )
-
-    company_id = current_user["company_id"]
-
-    # Find integration and verify ownership
-    integration = (
-        db.query(models.Api)
-        .filter(
-            models.Api.api_id == integration_id,
-            models.Api.company_id == company_id,
-        )
-        .first()
-    )
-
-    if not integration:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Integration not found"
-        )
-
-    # Delete integration
-    try:
-        db.delete(integration)
-        db.commit()
-    except Exception as e:
-        db.rollback()
-        print(f"Error deleting integration: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete integration",
         )
 
 
@@ -744,6 +729,7 @@ def create_webform_integration(
 
 @router.get("/facebook/connect")
 def facebook_connect(
+    request: Request,
     current_user: dict = Depends(oauth2.get_current_user_with_company),
 ) -> dict:
     """Generate Facebook OAuth authorization URL.
@@ -772,13 +758,23 @@ def facebook_connect(
     ).hexdigest()
     state = f"{state_data}|{signature}"
 
+    redirect_uri = _resolve_facebook_redirect_uri(request)
+    if not (settings.FACEBOOK_APP_ID or "").strip() or not redirect_uri:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Facebook OAuth is not configured correctly on the server",
+        )
+
+    oauth_params = {
+        "client_id": settings.FACEBOOK_APP_ID,
+        "redirect_uri": redirect_uri,
+        "scope": "pages_read_engagement,pages_show_list,pages_read_user_content",
+        "response_type": "code",
+        "state": state,
+    }
+
     facebook_oauth_url = (
-        f"https://www.facebook.com/dialog/oauth"
-        f"?client_id={settings.FACEBOOK_APP_ID}"
-        f"&redirect_uri={settings.FACEBOOK_REDIRECT_URI}"
-        f"&scope=pages_read_engagement,pages_show_list,pages_read_user_content"
-        f"&response_type=code"
-        f"&state={state}"
+        f"https://www.facebook.com/dialog/oauth?{urlencode(oauth_params)}"
     )
 
     logger.info(
@@ -790,8 +786,13 @@ def facebook_connect(
 
 @router.get("/facebook/callback")
 async def facebook_callback(
-    code: str = Query(..., description="Authorization code from Facebook"),
-    state: str = Query(..., description="State parameter with company_id"),
+    request: Request,
+    code: str | None = Query(None, description="Authorization code from Facebook"),
+    state: str | None = Query(None, description="State parameter with company_id"),
+    error_code: str | None = Query(None, description="OAuth error code from Facebook"),
+    error_message: str | None = Query(
+        None, description="OAuth error message from Facebook"
+    ),
     db: Session = Depends(database.get_db),
 ):
     """Handle Facebook OAuth callback.
@@ -825,6 +826,33 @@ async def facebook_callback(
         HTTPException: 504 if timeout
     """
     try:
+        frontend_base = (settings.FRONTEND_BASE_URL or "").rstrip("/")
+
+        # Facebook can return errors without code/state (e.g., insecure login blocked).
+        if error_code or error_message:
+            fb_error = (error_message or "Facebook authorization failed").strip()
+            logger.warning(
+                f"Facebook OAuth callback returned error_code={error_code}, error_message={fb_error}"
+            )
+            query = urlencode(
+                {
+                    "integration": "error",
+                    "provider": "facebook",
+                    "error_code": error_code or "oauth_error",
+                    "message": fb_error,
+                }
+            )
+            return RedirectResponse(
+                url=f"{frontend_base}/app/integrations?{query}",
+                status_code=status.HTTP_302_FOUND,
+            )
+
+        if not code or not state:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Missing Facebook OAuth code/state",
+            )
+
         # ===== Step 0: Validate state parameter =====
         if not state or "|" not in state:
             logger.warning("Invalid state parameter received")
@@ -857,7 +885,7 @@ async def facebook_callback(
         token_params = {
             "client_id": settings.FACEBOOK_APP_ID,
             "client_secret": settings.FACEBOOK_APP_SECRET,
-            "redirect_uri": settings.FACEBOOK_REDIRECT_URI,
+            "redirect_uri": _resolve_facebook_redirect_uri(request),
             "code": code,
         }
 
@@ -1019,7 +1047,6 @@ async def facebook_callback(
         )
 
         # ===== Step 5: Redirect back to dashboard =====
-        frontend_base = (settings.FRONTEND_BASE_URL or "").rstrip("/")
         return RedirectResponse(
             url=f"{frontend_base}/app/integrations?integration=success&pages={saved_count}",
             status_code=status.HTTP_302_FOUND,

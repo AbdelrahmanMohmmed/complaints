@@ -2,27 +2,26 @@ from typing import List
 from fastapi import APIRouter, status, HTTPException, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from .. import models, utils, database, oauth2 ,schemas
+from .. import models, utils, database, oauth2
 from ..schemas import user
-from ..schemas import user as schemas
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.UserOut)
+@router.post("/", status_code=status.HTTP_201_CREATED, response_model=user.UserOut)
 def create_user(
-    user_data: schemas.UserCreate,
+    user_data: user.UserCreate,
     db: Session = Depends(database.get_db),
     current_user_id: int = Depends(oauth2.get_current_user)  # ← require login
 ):
     # Check role
     current_user = db.query(models.User).filter(models.User.user_id == current_user_id).first()
+    # no need for these 2 if statement cause in frontend only admin have userManagement page
     if not current_user or current_user.role_id != 1:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only admins can create users"
         )
-    # ← ADD THIS: prevent creating another admin via this endpoint
     if user_data.role_id == 1:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -75,7 +74,7 @@ def get_me(
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
-@router.get("/", response_model=List[schemas.UserOut])
+@router.get("/", response_model=List[user.UserOut])
 def get_users(
     db: Session = Depends(database.get_db),
     current_user_id: int = Depends(oauth2.get_current_user)
@@ -87,7 +86,7 @@ def get_users(
     users = db.query(models.User).filter(models.User.company_id == current_user.company_id).all()
     return users
 
-@router.patch("/{user_id}/status", response_model=schemas.UserOut)
+@router.patch("/{user_id}/status", response_model=user.UserOut)
 def toggle_user_status(
     user_id: int,
     db: Session = Depends(database.get_db),
@@ -109,9 +108,9 @@ def toggle_user_status(
     db.refresh(user)
     return user
 
-@router.put("/me", response_model=schemas.UserOut)
+@router.put("/me", response_model=user.UserOut)
 def update_me(
-    user_data: schemas.UserProfileUpdate,
+    user_data: user.UserProfileUpdate,
     db: Session = Depends(database.get_db),
     current_user_id: int = Depends(oauth2.get_current_user)
 ):
@@ -129,10 +128,10 @@ def update_me(
         raise HTTPException(status_code=400, detail="Email already in use")
     return user
 
-@router.put("/{user_id}", response_model=schemas.UserOut)
+@router.put("/{user_id}", response_model=user.UserOut)
 def update_user(
     user_id: int,
-    user_data: schemas.UserUpdate,
+    user_data: user.UserUpdate,
     db: Session = Depends(database.get_db),
     current_user_id: int = Depends(oauth2.get_current_user)
 ):
@@ -180,7 +179,7 @@ def delete_user(
 
 @router.put("/me/password", status_code=status.HTTP_204_NO_CONTENT)
 def change_password(
-    pwd_data: schemas.UserPasswordUpdate,
+    pwd_data: user.UserPasswordUpdate,
     db: Session = Depends(database.get_db),
     current_user_id: int = Depends(oauth2.get_current_user)
 ):

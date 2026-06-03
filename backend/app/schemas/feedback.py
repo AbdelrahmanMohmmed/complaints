@@ -34,8 +34,6 @@ class FeedbackOut(BaseModel):
     company_id: int
     api_id: int | None
     channel_name: str | None = None
-    category_id: int | None
-    category_name: str | None = None
     customer_name: str | None = None
     feedback_context: str | None = None
     status: str
@@ -58,4 +56,3 @@ class FeedbackStatusUpdate(BaseModel):
 
 class FeedbackDetailsUpdate(BaseModel):
     priority: str | None = None
-    category_id: int | None = None
