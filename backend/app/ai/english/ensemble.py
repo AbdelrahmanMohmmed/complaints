@@ -20,7 +20,6 @@ from app.ai.english.ml_dl_predict import (
     en_sentiment_gru,
 )
 from app.ai.english.transformer_predict import predict_english_transformer_probs
-from app.ai.hf_loader import get_text_classification_pipeline
 
 logger = logging.getLogger(__name__)
 
@@ -159,48 +158,6 @@ def predict_english_sentiment(text: str) -> str:
     """
     try:
         # If text is short, prefer a fine-tuned Hugging Face transformer (local if downloaded)
-        word_count = len((text or "").split())
-        if word_count > 0 and word_count < 25:
-            # Model name can be provided via env var `EN_SHORT_HF_MODEL`, otherwise use default
-            # Prefer explicit local path from .env if set
-            hf_env_var = "EN_SENTIMENT_HuggingFace_PATH"
-            hf_model = os.environ.get(
-                "EN_SHORT_HF_MODEL",
-                "mrm8488/distilroberta-finetuned-financial-news-sentiment-analysis",
-            )
-            try:
-                # cache pipeline on module to avoid repeated loads
-                if (
-                    not hasattr(predict_english_sentiment, "_hf_pipe")
-                    or getattr(predict_english_sentiment, "_hf_pipe") is None
-                ):
-                    if os.environ.get(hf_env_var):
-                        setattr(
-                            predict_english_sentiment,
-                            "_hf_pipe",
-                            get_text_classification_pipeline(
-                                hf_model, env_path_var=hf_env_var
-                            ),
-                        )
-                    else:
-                        setattr(
-                            predict_english_sentiment,
-                            "_hf_pipe",
-                            get_text_classification_pipeline(hf_model),
-                        )
-                pipe = getattr(predict_english_sentiment, "_hf_pipe")
-                pred = pipe(text)
-                label = (pred[0].get("label", "")).strip().lower()
-                if label in ("positive", "pos", "4", "2"):
-                    return "Positive"
-                if label in ("negative", "neg", "0"):
-                    return "Negative"
-                return "Neutral"
-            except Exception as e:
-                logger.warning(
-                    f"HF short-text sentiment failed, falling back to ensemble: {e}"
-                )
-
         weights = [2.0, 1.5, 1.2]
         sum_weights = sum(weights)
 

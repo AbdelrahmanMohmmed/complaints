@@ -181,7 +181,7 @@ class Feedback(Base):
     # Primary Keys & Foreign Keys
     feedback_id = Column(Integer, primary_key=True, autoincrement=True)
     company_id = Column(Integer, ForeignKey("companies.company_id"), nullable=False)
-    api_id = Column(Integer, ForeignKey("apis.api_id"), nullable=False)
+    api_id = Column(Integer, ForeignKey("apis.api_id",ondelete="SET NULL"), nullable=True)
     category_id = Column(
         Integer, ForeignKey("feedback_categories.category_id"), nullable=True
     )

@@ -94,7 +94,18 @@ class Settings(BaseSettings):
     # Backwards-compatible fields for Hugging Face env vars present in .env
     en_sentiment_huggingface_path: str = ""
     hugging_face_token: str = ""
+    # HF model paths
+    ar_sentiment_hf_path: str = ""
+    en_sentiment_hf_path: str = ""
+    multilingual_emotion_hf_path: str = ""
 
+    # HF model names
+    ar_sentiment_hf_model: str = ""
+    en_sentiment_hf_model: str = ""
+    multilingual_emotion_hf_model: str = ""
+
+    # HF threshold
+    multilingual_emotion_threshold: float = 0.5
     model_config = {"env_file": ".env", "case_sensitive": False}
 
 
