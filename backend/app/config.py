@@ -14,11 +14,11 @@ class Settings(BaseSettings):
     DATABASE_NAME: str
 
     # Authentication configuration
-    SECRET_KEY: str
-    ALGORITHM: str
-    ACCESS_TOKEN_EXPIRE_MINUTES: int
-    GMAIL_USER: str
-    GMAIL_APP_PASSWORD: str # ← add
+    secret_key: str
+    algorithm: str
+    access_token_expire_minutes: int
+    gmail_user: str  # ← add
+    gmail_app_password: str  # ← add
 
     # Optional third-party auth for auto-connect/scraping
     FACEBOOK_APP_ID: str = ""

@@ -30,88 +30,52 @@ model_loader = ModelLoad()
 # ============================================================================
 
 def ar_problem_lr_f():
-    """Lazy load Problem Type LR-F model"""
-    if not hasattr(ar_problem_lr_f, "_model"):
-        ar_problem_lr_f._model = model_loader.load_pickle(settings.AR_PROBLEM_LR_F_PATH)
-    return ar_problem_lr_f._model
+    return model_loader.load_pickle(settings.AR_PROBLEM_LR_F_PATH)
 
 
 def ar_problem_gru():
-    """Lazy load Problem Type GRU model"""
-    if not hasattr(ar_problem_gru, "_model"):
-        ar_problem_gru._model = model_loader.load_keras_model(settings.AR_PROBLEM_GRU_PATH)
-    return ar_problem_gru._model
+    return model_loader.load_keras_model(settings.AR_PROBLEM_GRU_PATH)
 
+#corrupted
+# def ar_problem_lr_a():
+#     return model_loader.load_pickle(settings.AR_PROBLEM_LR_A_PATH)
 
-def ar_problem_lr_a():
-    """Lazy load Problem Type LR-A model"""
-    if not hasattr(ar_problem_lr_a, "_model"):
-        ar_problem_lr_a._model = model_loader.load_pickle(settings.AR_PROBLEM_LR_A_PATH)
-    return ar_problem_lr_a._model
-
-
-def ar_problem_svm_a():
-    """Lazy load Problem Type SVM-A model"""
-    if not hasattr(ar_problem_svm_a, "_model"):
-        ar_problem_svm_a._model = model_loader.load_pickle(settings.AR_PROBLEM_SVM_A_PATH)
-    return ar_problem_svm_a._model
-
+#corrupted
+# def ar_problem_svm_a():
+#     return model_loader.load_pickle(settings.AR_PROBLEM_SVM_A_PATH)
 
 # ============================================================================
 # Lazy Loading Getter Functions - Emotion
 # ============================================================================
 
 def ar_emotion_lr_f():
-    if not hasattr(ar_emotion_lr_f, "_model"):
-        ar_emotion_lr_f._model = model_loader.load_pickle(settings.AR_EMOTION_LR_F_PATH)
-    print('model emotion loaded')
-    return ar_emotion_lr_f._model
-
+    return model_loader.load_pickle(settings.AR_EMOTION_LR_F_PATH)
 
 def ar_emotion_bilstm():
-    if not hasattr(ar_emotion_bilstm, "_model"):
-        ar_emotion_bilstm._model = model_loader.load_keras_model(settings.AR_EMOTION_BILSTM_PATH)
-    return ar_emotion_bilstm._model
+    return model_loader.load_keras_model(settings.AR_EMOTION_BILSTM_PATH)
 
-
-def ar_emotion_lr_a():
-    if not hasattr(ar_emotion_lr_a, "_model"):
-        ar_emotion_lr_a._model = model_loader.load_pickle(settings.AR_EMOTION_LR_A_PATH)
-    return ar_emotion_lr_a._model
-
-
-def ar_emotion_svm_a():
-    if not hasattr(ar_emotion_svm_a, "_model"):
-        ar_emotion_svm_a._model = model_loader.load_pickle(settings.AR_EMOTION_SVM_A_PATH)
-    return ar_emotion_svm_a._model
-
+#corrupted
+# def ar_emotion_lr_a():
+#     return model_loader.load_pickle(settings.AR_EMOTION_LR_A_PATH)
+#
+# def ar_emotion_svm_a():
+#     return model_loader.load_pickle(settings.AR_EMOTION_SVM_A_PATH)
 
 # ============================================================================
 # Lazy Loading Getter Functions - Sentiment
 # ============================================================================
 
 def ar_sentiment_lr_f():
-    if not hasattr(ar_sentiment_lr_f, "_model"):
-        ar_sentiment_lr_f._model = model_loader.load_pickle(settings.AR_SENTIMENT_LR_F_PATH)
-    return ar_sentiment_lr_f._model
-
+    return model_loader.load_pickle(settings.AR_SENTIMENT_LR_F_PATH)
 
 def ar_sentiment_bilstm():
-    if not hasattr(ar_sentiment_bilstm, "_model"):
-        ar_sentiment_bilstm._model = model_loader.load_keras_model(settings.AR_SENTIMENT_BILSTM_PATH)
-    return ar_sentiment_bilstm._model
+    return model_loader.load_keras_model(settings.AR_SENTIMENT_BILSTM_PATH)
 
-
-def ar_sentiment_svm_a():
-    if not hasattr(ar_sentiment_svm_a, "_model"):
-        ar_sentiment_svm_a._model = model_loader.load_pickle(settings.AR_SENTIMENT_SVM_A_PATH)
-    return ar_sentiment_svm_a._model
-
-
-def ar_sentiment_lr_a():
-    if not hasattr(ar_sentiment_lr_a, "_model"):
-        ar_sentiment_lr_a._model = model_loader.load_pickle(settings.AR_SENTIMENT_LR_A_PATH)
-    return ar_sentiment_lr_a._model
+# def ar_sentiment_svm_a():
+#     return model_loader.load_pickle(settings.AR_SENTIMENT_SVM_A_PATH)
+#
+# def ar_sentiment_lr_a():
+#     return model_loader.load_pickle(settings.AR_SENTIMENT_LR_A_PATH)
 # ============================================================================
 # AraBERT Embedding Extraction (for SVM models)
 # ============================================================================

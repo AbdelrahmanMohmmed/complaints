@@ -51,16 +51,12 @@ def predict_english_problem_type(text: str) -> str:
         Predicted problem type label
     """
     try:
-        weights = [2.4, 3.0, 1.6, 1.2, 2.2]
+        weights = [2.4, 1.6, 1.2, 2.2]
         sum_weights = sum(weights)
 
         # Model 1: RoBERTa
         p1 = predict_english_transformer_probs(text, "roberta_problem")
         logger.debug(f"English RoBERTa problem: {P_LABELS[np.argmax(p1)]}")
-
-        # Model 2: BERT
-        p2 = predict_english_transformer_probs(text, "bert_problem")
-        logger.debug(f"English BERT problem: {P_LABELS[np.argmax(p2)]}")
 
         # Model 3: LR (problem type)
         p3 = predict_english_ml_probs(en_problem_lr, text)
@@ -83,10 +79,9 @@ def predict_english_problem_type(text: str) -> str:
         # Weighted soft vote
         weighted = (
             weights[0] * p1
-            + weights[1] * p2
-            + weights[2] * p3
-            + weights[3] * p4
-            + weights[4] * p5
+            + weights[1] * p3
+            + weights[2] * p4
+            + weights[3] * p5
         ) / sum_weights
 
         final_idx = np.argmax(weighted, axis=1)[0]

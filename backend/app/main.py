@@ -1,12 +1,8 @@
 """Main FastAPI application with middleware, routes, and background schedulers."""
-
-import asyncio
 import logging
-import threading
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 import asyncio
-from . import models, database
 from .routers import (
     auth,
     company,
@@ -22,8 +18,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from . import database, models
-from .ai import load_models
-from .config import settings
 from .services.ai_analysis import ai_analysis_service
 from .services.feedback_ingestion import ingest_feedback
 from .services.preprocessing import preprocess_feedback_service
@@ -102,29 +96,7 @@ async def startup_event() -> None:
     - Schedule three periodic jobs: ingestion, preprocessing, AI analysis
     """
     global scheduler
-    def _preload():
-        logger.info("Background model preloading started...")
-        from app.ai.arabic.ensemble import predict_arabic_problem_type, predict_arabic_emotion, predict_arabic_sentiment
-        from app.ai.english.ensemble import predict_english_problem_type, predict_english_emotion, predict_english_sentiment
-        predict_arabic_problem_type("test")
-        predict_arabic_emotion("test")
-        predict_arabic_sentiment("test")
-        predict_english_problem_type("test")
-        predict_english_emotion("test")
-        predict_english_sentiment("test")
-        logger.info("Background model preloading complete")
-    
-    threading.Thread(target=_preload, daemon=True).start()
     try:
-        # Validate AI model configuration (models load lazily on first use)
-        logger.info("Validating AI model configuration...")
-        models_loaded = load_models()
-
-        if models_loaded:
-            logger.info("AI model configuration validated successfully")
-        else:
-            logger.warning("Some AI models are not configured. Check .env paths.")
-
         # Initialize scheduler
         scheduler = BackgroundScheduler()
 
