@@ -3,7 +3,7 @@
 Models are organized into three categories:
 - Configuration: Domain, Role (system setup)
 - Business: Company, User, Api (core entities)
-- Processing: Feedback (feedback pipeline)
+- Processing: Feedback, FeedbackCategory (feedback pipeline)
 
 """
 
@@ -38,6 +38,7 @@ class Domain(Base):
 
     # Relationships
     companies = relationship("Company", back_populates="domain")
+    feedback_categories = relationship("FeedbackCategory", back_populates="domain")
 
     def __repr__(self):
         return f"<Domain(domain_id={self.domain_id}, name={self.domain_name})>"
@@ -144,6 +145,24 @@ class Api(Base):
 # ============================================================================
 
 
+class FeedbackCategory(Base):
+    """FeedbackCategory model - categorizes feedback by type."""
+
+    __tablename__ = "feedback_categories"
+
+    category_id = Column(Integer, primary_key=True, autoincrement=True)
+    domain_id = Column(Integer, ForeignKey("domains.domain_id"), nullable=False)
+    category_name = Column(String(100), nullable=False)
+    label_id = Column(Integer, nullable=True)
+
+    # Relationships
+    domain = relationship("Domain", back_populates="feedback_categories")
+    feedbacks = relationship("Feedback", back_populates="category")
+
+    def __repr__(self):
+        return f"<FeedbackCategory(category_id={self.category_id}, name={self.category_name})>"
+
+
 class Feedback(Base):
     """Feedback model - represents customer feedback with ML analysis results.
 
@@ -152,7 +171,7 @@ class Feedback(Base):
     Fields:
     - Raw: feedback_context, customer_name
     - Processed: cleaned_text (after preprocessing)
-    - Analyzed: sentiment_id, emotion_id, problem_type_id, priority (after ML analysis)
+    - Analyzed: sentiment, emotion, problem_type, priority (after ML analysis)
     - Tracking: created_at, ml_processed_at (timestamps)
     """
 
@@ -162,8 +181,9 @@ class Feedback(Base):
     # Primary Keys & Foreign Keys
     feedback_id = Column(Integer, primary_key=True, autoincrement=True)
     company_id = Column(Integer, ForeignKey("companies.company_id"), nullable=False)
-    api_id = Column(
-        Integer, ForeignKey("apis.api_id", ondelete="SET NULL"), nullable=True
+    api_id = Column(Integer, ForeignKey("apis.api_id",ondelete="SET NULL"), nullable=True)
+    category_id = Column(
+        Integer, ForeignKey("feedback_categories.category_id"), nullable=True
     )
 
     # Raw Feedback Data
@@ -177,8 +197,11 @@ class Feedback(Base):
     )  # unprocessed, preprocessed, analyzed
 
     # ML Analysis Results
+    sentiment = Column(String(20), nullable=True)  # positive, negative, neutral
     sentiment_id = Column(Integer, nullable=True)
+    emotion = Column(String(20), nullable=True)  # happy, sad, angry, etc.
     emotion_id = Column(Integer, nullable=True)
+    problem_type = Column(String(50), nullable=True)  # Service Quality, Billing, etc.
     problem_type_id = Column(Integer, nullable=True)
     priority = Column(String(20), nullable=True)  # high, medium, low
 
@@ -189,9 +212,10 @@ class Feedback(Base):
     # Relationships
     company = relationship("Company", back_populates="feedbacks")
     api = relationship("Api", back_populates="feedbacks")
+    category = relationship("FeedbackCategory", back_populates="feedbacks")
 
     def __repr__(self):
         return (
             f"<Feedback(feedback_id={self.feedback_id}, status={self.status}, "
-            f"sentiment_id={self.sentiment_id}, priority={self.priority})>"
+            f"sentiment={self.sentiment}, priority={self.priority})>"
         )

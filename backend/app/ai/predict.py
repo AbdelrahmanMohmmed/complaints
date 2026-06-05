@@ -6,8 +6,27 @@ Language is re-detected from cleaned_text using route_pipeline function.
 """
 
 import logging
-from .labels import *
-from app.ai.model_registry import predict_task
+from .labels import (
+    EMOTION_DEFAULT_ID,
+    EMOTION_DEFAULT_LABEL,
+    EMOTION_LABEL2ID,
+    PROBLEM_TYPE_DEFAULT_ID,
+    PROBLEM_TYPE_DEFAULT_LABEL,
+    PROBLEM_TYPE_LABEL2ID,
+    SENTIMENT_DEFAULT_ID,
+    SENTIMENT_DEFAULT_LABEL,
+    SENTIMENT_LABEL2ID,
+)
+from app.ai.arabic.ensemble import (
+    predict_arabic_sentiment,
+    predict_arabic_emotion,
+    predict_arabic_problem_type,
+)
+from app.ai.english.ensemble import (
+    predict_english_sentiment,
+    predict_english_emotion,
+    predict_english_problem_type,
+)
 from app.ai.priority import calculate_priority
 from app.preprocessing.router import route_pipeline
 
@@ -41,7 +60,7 @@ def should_classify_problem_type(sentiment: str, emotion: str) -> bool:
     return True
 
 
-def run_ai_pipeline(text: str, domain_name: str | None = None) -> dict:
+def run_ai_pipeline(text: str) -> dict:
     """
     Run the complete AI prediction pipeline with language-aware ensemble voting.
 
@@ -55,7 +74,6 @@ def run_ai_pipeline(text: str, domain_name: str | None = None) -> dict:
 
     Args:
         text: Cleaned text to analyze (preprocessed and potentially language-converted)
-        domain_name: Optional company/domain key used to pick a model profile
 
     Returns:
         Dictionary with keys: sentiment, emotion, problem_type, priority
@@ -83,12 +101,13 @@ def run_ai_pipeline(text: str, domain_name: str | None = None) -> dict:
 
         # Step 2 & 3: Predict sentiment and emotion based on language
         if language == "arabic":
-            logger.debug("Running Arabic provider selection")
-        else:
-            logger.debug("Running English provider selection")
-
-        sentiment = predict_task("sentiment", text, language, domain_name)
-        emotion = predict_task("emotion", text, language, domain_name)
+            logger.debug("Running Arabic ensemble predictions")
+            sentiment = predict_arabic_sentiment(text)
+            emotion = predict_arabic_emotion(text)
+        else:  # english
+            logger.debug("Running English ensemble predictions")
+            sentiment = predict_english_sentiment(text)
+            emotion = predict_english_emotion(text)
 
         sentiment_key = (sentiment or "").strip().lower()
         emotion_key = (emotion or "").strip().lower()
@@ -108,7 +127,10 @@ def run_ai_pipeline(text: str, domain_name: str | None = None) -> dict:
             logger.debug(
                 f"Classifying problem type (sentiment={sentiment}, emotion={emotion})"
             )
-            problem_type = predict_task("problem_type", text, language, domain_name)
+            if language == "arabic":
+                problem_type = predict_arabic_problem_type(text)
+            else:  # english
+                problem_type = predict_english_problem_type(text)
         else:
             # Feedback is positive or neutral+satisfied — no problem to classify
             problem_type = None
