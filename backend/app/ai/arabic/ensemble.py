@@ -32,7 +32,7 @@ from app.ai.arabic.ml_dl_predict import (
     ar_emotion_lr_f, ar_emotion_bilstm, ar_emotion_lr_a, ar_emotion_svm_a,
     ar_sentiment_lr_f, ar_sentiment_bilstm, ar_sentiment_svm_a, ar_sentiment_lr_a
 )
-from app.ai.arabic.transformer_predict import predict_arabert
+# from app.ai.arabic.transformer_predict import predict_arabert
 
 logger = logging.getLogger(__name__)
 
@@ -40,13 +40,18 @@ logger = logging.getLogger(__name__)
 def predict_arabic_problem_type(text: str) -> str:
     """Predict Arabic problem type using hard voting (5 models, arabert_67)."""
     try:
-        pred1 = predict_arabert(text, "P")  # AraBERT 67
-        pred2 = predict_arabic_ml(ar_problem_lr_f, text, "P")  # LR-F
-        pred3 = predict_arabic_dl(ar_problem_gru, text, "P")  # GRU
-        pred4 = predict_arabic_ml(ar_problem_lr_a, text, "P")  # LR-A
-        pred5 = predict_arabic_ml(ar_problem_svm_a, text, "P")  # SVM-A
+        # print("Step 0: Starting")
+        # pred1 = predict_arabert(text, "P")  # AraBERT 67
+        # print(f"Step 1: AraBERT done -> {pred1}")
+        pred2 = predict_arabic_ml(ar_problem_lr_f(), text, "P")  # LR-F
+        print(f"Step 2: LR-F prediction done -> {pred2}")
+        # pred3 = predict_arabic_dl(ar_problem_gru(), text, "P")  # GRU
+        # print(f"Step 3: LR-F prediction done -> {pred3}")
+        pred4 = predict_arabic_ml(ar_problem_lr_a(), text, "P")  # LR-A
+        print(f"Step 4: LR-F prediction done -> {pred4}")
+        pred5 = predict_arabic_ml(ar_problem_svm_a(), text, "P")  # SVM-A
         
-        preds = [pred1, pred2, pred3, pred4, pred5]
+        preds = [ pred2, pred4, pred5]
         votes = Counter(preds)
         final_pred = votes.most_common(1)[0][0]
         
@@ -60,16 +65,16 @@ def predict_arabic_problem_type(text: str) -> str:
 def predict_arabic_emotion(text: str) -> str:
     """Predict Arabic emotion using hard voting (5 models, arabert_70)."""
     try:
-        pred1 = predict_arabert(text, "E")  # AraBERT 70
-        pred2 = predict_arabic_ml(ar_emotion_lr_f, text, "E")  # LR-F
-        pred3 = predict_arabic_dl(ar_emotion_bilstm, text, "E")  # BiLSTM
-        pred4 = predict_arabic_ml(ar_emotion_lr_a, text, "E")  # LR-A
-        pred5 = predict_arabic_ml(ar_emotion_svm_a, text, "E")  # SVM-A
-        
-        preds = [pred1, pred2, pred3, pred4, pred5]
+        # pred1 = predict_arabert(text, "E")  # AraBERT 70
+        pred2 = predict_arabic_ml(ar_emotion_lr_f(), text, "E")  # LR-F
+        pred3 = predict_arabic_dl(ar_emotion_bilstm(), text, "E")  # BiLSTM
+        pred4 = predict_arabic_ml(ar_emotion_lr_a(), text, "E")  # LR-A
+        pred5 = predict_arabic_ml(ar_emotion_svm_a(), text, "E")  # SVM-A
+
+        preds = [ pred2, pred3, pred4, pred5]
         votes = Counter(preds)
         final_pred = votes.most_common(1)[0][0]
-        
+
         logger.debug(f"Arabic emotion hard vote - votes: {preds}, final: {final_pred}")
         return final_pred
     except Exception as e:
@@ -80,16 +85,16 @@ def predict_arabic_emotion(text: str) -> str:
 def predict_arabic_sentiment(text: str) -> str:
     """Predict Arabic sentiment using hard voting (5 models, arabert_85)."""
     try:
-        pred1 = predict_arabert(text, "S")  # AraBERT 85
-        pred2 = predict_arabic_ml(ar_sentiment_lr_f, text, "S")  # LR-F
-        pred3 = predict_arabic_dl(ar_sentiment_bilstm, text, "S")  # BiLSTM
-        pred4 = predict_arabic_ml(ar_sentiment_svm_a, text, "S")  # SVM-A (note: SVM before LR)
-        pred5 = predict_arabic_ml(ar_sentiment_lr_a, text, "S")  # LR-A
-        
-        preds = [pred1, pred2, pred3, pred4, pred5]
+        # pred1 = predict_arabert(text, "S")  # AraBERT 85
+        pred2 = predict_arabic_ml(ar_sentiment_lr_f(), text, "S")  # LR-F
+        pred3 = predict_arabic_dl(ar_sentiment_bilstm(), text, "S")  # BiLSTM
+        pred4 = predict_arabic_ml(ar_sentiment_svm_a(), text, "S")  # SVM-A (note: SVM before LR)
+        pred5 = predict_arabic_ml(ar_sentiment_lr_a(), text, "S")  # LR-A
+
+        preds = [pred2, pred3, pred4, pred5]
         votes = Counter(preds)
         final_pred = votes.most_common(1)[0][0]
-        
+
         logger.debug(f"Arabic sentiment hard vote - votes: {preds}, final: {final_pred}")
         return final_pred
     except Exception as e:

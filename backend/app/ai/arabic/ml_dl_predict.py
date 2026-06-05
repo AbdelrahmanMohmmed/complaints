@@ -9,15 +9,12 @@ Model input types:
 - SVM models: AraBERT embeddings (768 dims) - CRITICAL DIFFERENCE
 """
 
-import pickle
 import numpy as np
-from tensorflow import keras
 import logging
 import torch
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from app.config import settings
 from app.ai.arabic.representation import embed_arabic
-
+from app.ai.modelLoad import ModelLoad
 logger = logging.getLogger(__name__)
 
 # Label mappings for Arabic models
@@ -27,103 +24,94 @@ P_LABELS = {0: "Delivery Issue", 1: "Food Quality", 2: "Hygiene",
 S_LABELS = {0: "Negative", 1: "Neutral", 2: "Positive"}
 E_LABELS = {0: "Frustrated", 1: "Satisfied", 2: "Disgusted", 3: "Neutral"}
 
+model_loader = ModelLoad()
 # ============================================================================
-# Problem Type Models
+# Lazy Loading Getter Functions - Problem Type
 # ============================================================================
-ar_problem_lr_f = None
-ar_problem_gru = None
-ar_problem_lr_a = None
-ar_problem_svm_a = None
 
-try:
-    ar_problem_lr_f = pickle.load(open(settings.AR_PROBLEM_LR_F_PATH, "rb"))
-    logger.info(f"Loaded Arabic Problem Type LR-F model from {settings.AR_PROBLEM_LR_F_PATH}")
-except Exception as e:
-    logger.error(f"Failed to load Arabic Problem Type LR-F model: {str(e)}")
+def ar_problem_lr_f():
+    """Lazy load Problem Type LR-F model"""
+    if not hasattr(ar_problem_lr_f, "_model"):
+        ar_problem_lr_f._model = model_loader.load_pickle(settings.AR_PROBLEM_LR_F_PATH)
+    return ar_problem_lr_f._model
 
-try:
-    ar_problem_gru = keras.models.load_model(settings.AR_PROBLEM_GRU_PATH)
-    logger.info(f"Loaded Arabic Problem Type GRU model from {settings.AR_PROBLEM_GRU_PATH}")
-except Exception as e:
-    logger.error(f"Failed to load Arabic Problem Type GRU model: {str(e)}")
 
-try:
-    ar_problem_lr_a = pickle.load(open(settings.AR_PROBLEM_LR_A_PATH, "rb"))
-    logger.info(f"Loaded Arabic Problem Type LR-A model from {settings.AR_PROBLEM_LR_A_PATH}")
-except Exception as e:
-    logger.error(f"Failed to load Arabic Problem Type LR-A model: {str(e)}")
+def ar_problem_gru():
+    """Lazy load Problem Type GRU model"""
+    if not hasattr(ar_problem_gru, "_model"):
+        ar_problem_gru._model = model_loader.load_keras_model(settings.AR_PROBLEM_GRU_PATH)
+    return ar_problem_gru._model
 
-try:
-    ar_problem_svm_a = pickle.load(open(settings.AR_PROBLEM_SVM_A_PATH, "rb"))
-    logger.info(f"Loaded Arabic Problem Type SVM-A model from {settings.AR_PROBLEM_SVM_A_PATH}")
-except Exception as e:
-    logger.error(f"Failed to load Arabic Problem Type SVM-A model: {str(e)}")
 
-# ============================================================================
-# Emotion Models
-# ============================================================================
-ar_emotion_lr_f = None
-ar_emotion_bilstm = None
-ar_emotion_lr_a = None
-ar_emotion_svm_a = None
+def ar_problem_lr_a():
+    """Lazy load Problem Type LR-A model"""
+    if not hasattr(ar_problem_lr_a, "_model"):
+        ar_problem_lr_a._model = model_loader.load_pickle(settings.AR_PROBLEM_LR_A_PATH)
+    return ar_problem_lr_a._model
 
-try:
-    ar_emotion_lr_f = pickle.load(open(settings.AR_EMOTION_LR_F_PATH, "rb"))
-    logger.info(f"Loaded Arabic Emotion LR-F model from {settings.AR_EMOTION_LR_F_PATH}")
-except Exception as e:
-    logger.error(f"Failed to load Arabic Emotion LR-F model: {str(e)}")
 
-try:
-    ar_emotion_bilstm = keras.models.load_model(settings.AR_EMOTION_BILSTM_PATH)
-    logger.info(f"Loaded Arabic Emotion BiLSTM model from {settings.AR_EMOTION_BILSTM_PATH}")
-except Exception as e:
-    logger.error(f"Failed to load Arabic Emotion BiLSTM model: {str(e)}")
+def ar_problem_svm_a():
+    """Lazy load Problem Type SVM-A model"""
+    if not hasattr(ar_problem_svm_a, "_model"):
+        ar_problem_svm_a._model = model_loader.load_pickle(settings.AR_PROBLEM_SVM_A_PATH)
+    return ar_problem_svm_a._model
 
-try:
-    ar_emotion_lr_a = pickle.load(open(settings.AR_EMOTION_LR_A_PATH, "rb"))
-    logger.info(f"Loaded Arabic Emotion LR-A model from {settings.AR_EMOTION_LR_A_PATH}")
-except Exception as e:
-    logger.error(f"Failed to load Arabic Emotion LR-A model: {str(e)}")
-
-try:
-    ar_emotion_svm_a = pickle.load(open(settings.AR_EMOTION_SVM_A_PATH, "rb"))
-    logger.info(f"Loaded Arabic Emotion SVM-A model from {settings.AR_EMOTION_SVM_A_PATH}")
-except Exception as e:
-    logger.error(f"Failed to load Arabic Emotion SVM-A model: {str(e)}")
 
 # ============================================================================
-# Sentiment Models
+# Lazy Loading Getter Functions - Emotion
 # ============================================================================
-ar_sentiment_lr_f = None
-ar_sentiment_bilstm = None
-ar_sentiment_svm_a = None
-ar_sentiment_lr_a = None
 
-try:
-    ar_sentiment_lr_f = pickle.load(open(settings.AR_SENTIMENT_LR_F_PATH, "rb"))
-    logger.info(f"Loaded Arabic Sentiment LR-F model from {settings.AR_SENTIMENT_LR_F_PATH}")
-except Exception as e:
-    logger.error(f"Failed to load Arabic Sentiment LR-F model: {str(e)}")
-
-try:
-    ar_sentiment_bilstm = keras.models.load_model(settings.AR_SENTIMENT_BILSTM_PATH)
-    logger.info(f"Loaded Arabic Sentiment BiLSTM model from {settings.AR_SENTIMENT_BILSTM_PATH}")
-except Exception as e:
-    logger.error(f"Failed to load Arabic Sentiment BiLSTM model: {str(e)}")
-
-try:
-    ar_sentiment_svm_a = pickle.load(open(settings.AR_SENTIMENT_SVM_A_PATH, "rb"))
-    logger.info(f"Loaded Arabic Sentiment SVM-A model from {settings.AR_SENTIMENT_SVM_A_PATH}")
-except Exception as e:
-    logger.error(f"Failed to load Arabic Sentiment SVM-A model: {str(e)}")
-
-try:
-    ar_sentiment_lr_a = pickle.load(open(settings.AR_SENTIMENT_LR_A_PATH, "rb"))
-    logger.info(f"Loaded Arabic Sentiment LR-A model from {settings.AR_SENTIMENT_LR_A_PATH}")
-except Exception as e:
-    logger.error(f"Failed to load Arabic Sentiment LR-A model: {str(e)}")
+def ar_emotion_lr_f():
+    if not hasattr(ar_emotion_lr_f, "_model"):
+        ar_emotion_lr_f._model = model_loader.load_pickle(settings.AR_EMOTION_LR_F_PATH)
+    print('model emotion loaded')
+    return ar_emotion_lr_f._model
 
 
+def ar_emotion_bilstm():
+    if not hasattr(ar_emotion_bilstm, "_model"):
+        ar_emotion_bilstm._model = model_loader.load_keras_model(settings.AR_EMOTION_BILSTM_PATH)
+    return ar_emotion_bilstm._model
+
+
+def ar_emotion_lr_a():
+    if not hasattr(ar_emotion_lr_a, "_model"):
+        ar_emotion_lr_a._model = model_loader.load_pickle(settings.AR_EMOTION_LR_A_PATH)
+    return ar_emotion_lr_a._model
+
+
+def ar_emotion_svm_a():
+    if not hasattr(ar_emotion_svm_a, "_model"):
+        ar_emotion_svm_a._model = model_loader.load_pickle(settings.AR_EMOTION_SVM_A_PATH)
+    return ar_emotion_svm_a._model
+
+
+# ============================================================================
+# Lazy Loading Getter Functions - Sentiment
+# ============================================================================
+
+def ar_sentiment_lr_f():
+    if not hasattr(ar_sentiment_lr_f, "_model"):
+        ar_sentiment_lr_f._model = model_loader.load_pickle(settings.AR_SENTIMENT_LR_F_PATH)
+    return ar_sentiment_lr_f._model
+
+
+def ar_sentiment_bilstm():
+    if not hasattr(ar_sentiment_bilstm, "_model"):
+        ar_sentiment_bilstm._model = model_loader.load_keras_model(settings.AR_SENTIMENT_BILSTM_PATH)
+    return ar_sentiment_bilstm._model
+
+
+def ar_sentiment_svm_a():
+    if not hasattr(ar_sentiment_svm_a, "_model"):
+        ar_sentiment_svm_a._model = model_loader.load_pickle(settings.AR_SENTIMENT_SVM_A_PATH)
+    return ar_sentiment_svm_a._model
+
+
+def ar_sentiment_lr_a():
+    if not hasattr(ar_sentiment_lr_a, "_model"):
+        ar_sentiment_lr_a._model = model_loader.load_pickle(settings.AR_SENTIMENT_LR_A_PATH)
+    return ar_sentiment_lr_a._model
 # ============================================================================
 # AraBERT Embedding Extraction (for SVM models)
 # ============================================================================

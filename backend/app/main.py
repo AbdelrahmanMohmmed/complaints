@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import threading
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 import asyncio
@@ -101,7 +102,19 @@ async def startup_event() -> None:
     - Schedule three periodic jobs: ingestion, preprocessing, AI analysis
     """
     global scheduler
-
+    def _preload():
+        logger.info("Background model preloading started...")
+        from app.ai.arabic.ensemble import predict_arabic_problem_type, predict_arabic_emotion, predict_arabic_sentiment
+        from app.ai.english.ensemble import predict_english_problem_type, predict_english_emotion, predict_english_sentiment
+        predict_arabic_problem_type("test")
+        predict_arabic_emotion("test")
+        predict_arabic_sentiment("test")
+        predict_english_problem_type("test")
+        predict_english_emotion("test")
+        predict_english_sentiment("test")
+        logger.info("Background model preloading complete")
+    
+    threading.Thread(target=_preload, daemon=True).start()
     try:
         # Validate AI model configuration (models load lazily on first use)
         logger.info("Validating AI model configuration...")

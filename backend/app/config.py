@@ -1,5 +1,7 @@
 from pydantic_settings import BaseSettings
-
+import os
+from pathlib import Path
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 class Settings(BaseSettings):
     """Application configuration loaded from environment variables."""
@@ -12,11 +14,11 @@ class Settings(BaseSettings):
     DATABASE_NAME: str
 
     # Authentication configuration
-    secret_key: str
-    algorithm: str
-    access_token_expire_minutes: int
-    gmail_user: str  # ← add
-    gmail_app_password: str  # ← add
+    SECRET_KEY: str
+    ALGORITHM: str
+    ACCESS_TOKEN_EXPIRE_MINUTES: int
+    GMAIL_USER: str
+    GMAIL_APP_PASSWORD: str # ← add
 
     # Optional third-party auth for auto-connect/scraping
     FACEBOOK_APP_ID: str = ""
@@ -106,7 +108,8 @@ class Settings(BaseSettings):
 
     # HF threshold
     multilingual_emotion_threshold: float = 0.5
-    model_config = {"env_file": ".env", "case_sensitive": False}
+    model_config = {"env_file": os.path.join(BASE_DIR, ".env")
+    , "case_sensitive": False}
 
 
 settings = Settings()
