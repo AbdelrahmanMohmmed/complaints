@@ -558,7 +558,7 @@ export function IntegrationSettings() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" data-tour="integration-cards">
           {integrations.map((integration) => {
             const Icon = channelIcons[integration.channel_name] || Plug;
             const isActive = integration.status === 'active';

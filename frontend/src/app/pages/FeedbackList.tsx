@@ -453,6 +453,7 @@ export function FeedbackList() {
 
       </div>
       {/* Feedback Table */}
+      <div data-tour="feedback-table">
       <Card>
         <div className="overflow-x-auto">
           <Table>
@@ -652,7 +653,7 @@ export function FeedbackList() {
           </Table>
         </div>
       </Card>
-
+      </div>
       {/* Results Count */}
       <div className="text-xs text-gray-500 dark:text-gray-400">
         {isAr

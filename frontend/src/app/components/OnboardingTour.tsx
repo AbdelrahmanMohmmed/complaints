@@ -5,13 +5,17 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { X, ChevronRight, ChevronLeft, Sparkles } from 'lucide-react';
 import { cn } from '../components/ui/utils';
 
-interface TourStep {
-  target: string;          // CSS selector for the element to highlight
+export interface TourStep {
+  target: string;
   title: string;
   description: string;
-  position?: 'top' | 'bottom' | 'left' | 'right';
-  route?: string;          // Navigate to this route before showing step
-  action?: () => void;     // Optional action before showing step
+  position?: 'top' | 'bottom' | 'left' | 'right' | 'auto';
+  route?: string;
+  action?: () => void;
+  /** Override: don't auto-scroll to this element */
+  noScroll?: boolean;
+  /** Fine-tune tooltip offset: { x: 0, y: 0 } */
+  offset?: { x?: number; y?: number };
 }
 
 interface OnboardingTourProps {
@@ -22,7 +26,7 @@ interface OnboardingTourProps {
 }
 
 export function OnboardingTour({ steps, onComplete, onSkip, isOpen }: OnboardingTourProps) {
-  const { t, language } = useLanguage();
+  const { language } = useLanguage();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
   const [highlightRect, setHighlightRect] = useState<DOMRect | null>(null);
@@ -31,24 +35,40 @@ export function OnboardingTour({ steps, onComplete, onSkip, isOpen }: Onboarding
 
   const currentStepData = steps[currentStep];
 
+  // ─── FIND ELEMENT & CALCULATE POSITION ─────────────────────────────
   const updateHighlight = useCallback(() => {
     if (!currentStepData) return;
 
-    // Small delay to allow route transitions / renders
     setTimeout(() => {
       const element = document.querySelector(currentStepData.target);
-      if (element) {
-        const rect = element.getBoundingClientRect();
-        setHighlightRect(rect);
-        // Scroll element into view smoothly
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      } else {
+      if (!element) {
         setHighlightRect(null);
+        return;
       }
-    }, 300);
+
+      const rect = element.getBoundingClientRect();
+      setHighlightRect(rect);
+
+      // Only scroll if element is mostly off-screen, and scroll minimally
+      if (!currentStepData.noScroll) {
+        const viewportHeight = window.innerHeight;
+        const elementTop = rect.top;
+        const elementBottom = rect.bottom;
+
+        // Element is above viewport
+        if (elementTop < 100) {
+          window.scrollBy({ top: elementTop - 120, behavior: 'smooth' });
+        }
+        // Element is below viewport
+        else if (elementBottom > viewportHeight - 100) {
+          window.scrollBy({ top: elementBottom - viewportHeight + 180, behavior: 'smooth' });
+        }
+        // Otherwise: element is visible, don't scroll at all
+      }
+    }, 400);
   }, [currentStepData]);
 
-  // Navigate to route if needed, then update highlight
+  // ─── ROUTE CHANGE EFFECT ──────────────────────────────────────────
   useEffect(() => {
     if (!isOpen) return;
 
@@ -58,7 +78,6 @@ export function OnboardingTour({ steps, onComplete, onSkip, isOpen }: Onboarding
       if (currentStepData?.route) {
         navigate(currentStepData.route);
       }
-
       if (currentStepData?.action) {
         await currentStepData.action();
       }
@@ -70,7 +89,7 @@ export function OnboardingTour({ steps, onComplete, onSkip, isOpen }: Onboarding
     runStep();
   }, [currentStep, isOpen, currentStepData, navigate, updateHighlight]);
 
-  // Update on window resize
+  // ─── RESIZE HANDLER ───────────────────────────────────────────────
   useEffect(() => {
     if (!isOpen) return;
     const handleResize = () => updateHighlight();
@@ -80,6 +99,7 @@ export function OnboardingTour({ steps, onComplete, onSkip, isOpen }: Onboarding
 
   if (!isOpen) return null;
 
+  // ─── NAVIGATION ────────────────────────────────────────────────────
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(prev => prev + 1);
@@ -94,89 +114,114 @@ export function OnboardingTour({ steps, onComplete, onSkip, isOpen }: Onboarding
     }
   };
 
-  // Calculate tooltip position
+  // ─── SMART TOOLTIP POSITIONING ────────────────────────────────────
   const getTooltipPosition = () => {
-    if (!highlightRect) return { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' };
-
-    const padding = 16;
-    const tooltipWidth = 320;
-    const tooltipHeight = 180;
-    const position = currentStepData?.position || 'bottom';
-
-    let top = 0;
-    let left = 0;
-
-    switch (position) {
-      case 'bottom':
-        top = highlightRect.bottom + padding;
-        left = highlightRect.left + highlightRect.width / 2 - tooltipWidth / 2;
-        break;
-      case 'top':
-        top = highlightRect.top - tooltipHeight - padding;
-        left = highlightRect.left + highlightRect.width / 2 - tooltipWidth / 2;
-        break;
-      case 'right':
-        top = highlightRect.top + highlightRect.height / 2 - tooltipHeight / 2;
-        left = highlightRect.right + padding;
-        break;
-      case 'left':
-        top = highlightRect.top + highlightRect.height / 2 - tooltipHeight / 2;
-        left = highlightRect.left - tooltipWidth - padding;
-        break;
+    if (!highlightRect) {
+      return { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' };
     }
 
-    // Keep within viewport
-    const maxLeft = window.innerWidth - tooltipWidth - 20;
-    const maxTop = window.innerHeight - tooltipHeight - 20;
-    left = Math.max(20, Math.min(left, maxLeft));
-    top = Math.max(20, Math.min(top, maxTop));
+    const TOOLTIP_WIDTH = 340;
+    const TOOLTIP_HEIGHT = 220; // approximate max height
+    const GAP = 16;
+    const offsetX = currentStepData?.offset?.x ?? 0;
+    const offsetY = currentStepData?.offset?.y ?? 0;
 
-    return { top: `${top}px`, left: `${left}px`, transform: 'none' };
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    // Try each position, pick the one that fits best
+    const positions = currentStepData?.position === 'auto' || !currentStepData?.position
+      ? ['bottom', 'top', 'right', 'left'] as const
+      : [currentStepData.position] as const;
+
+    for (const pos of positions) {
+      let top = 0;
+      let left = 0;
+
+      switch (pos) {
+        case 'bottom':
+          top = highlightRect.bottom + GAP;
+          left = highlightRect.left + highlightRect.width / 2 - TOOLTIP_WIDTH / 2;
+          break;
+        case 'top':
+          top = highlightRect.top - TOOLTIP_HEIGHT - GAP;
+          left = highlightRect.left + highlightRect.width / 2 - TOOLTIP_WIDTH / 2;
+          break;
+        case 'right':
+          top = highlightRect.top + highlightRect.height / 2 - TOOLTIP_HEIGHT / 2;
+          left = highlightRect.right + GAP;
+          break;
+        case 'left':
+          top = highlightRect.top + highlightRect.height / 2 - TOOLTIP_HEIGHT / 2;
+          left = highlightRect.left - TOOLTIP_WIDTH - GAP;
+          break;
+      }
+
+      // Apply custom offset
+      top += offsetY;
+      left += offsetX;
+
+      // Check if this position fits in viewport
+      const fits = (
+        top >= 10 &&
+        left >= 10 &&
+        top + TOOLTIP_HEIGHT <= vh - 10 &&
+        left + TOOLTIP_WIDTH <= vw - 10
+      );
+
+      if (fits) {
+        return { top: `${top}px`, left: `${left}px`, transform: 'none' };
+      }
+    }
+
+    // Fallback: center in viewport if nothing fits
+    return {
+      top: `${Math.max(10, Math.min(vh - TOOLTIP_HEIGHT - 10, highlightRect.top + highlightRect.height + GAP))}px`,
+      left: `${Math.max(10, Math.min(vw - TOOLTIP_WIDTH - 10, (vw - TOOLTIP_WIDTH) / 2))}px`,
+      transform: 'none',
+    };
   };
 
   const tooltipPos = getTooltipPosition();
 
   return (
     <div className="fixed inset-0 z-[9999]" dir={isAr ? 'rtl' : 'ltr'}>
-      {/* Dark overlay with cutout */}
+      {/* SVG Mask Overlay */}
       <svg className="absolute inset-0 w-full h-full pointer-events-none">
         <defs>
           <mask id="highlight-mask">
             <rect x="0" y="0" width="100%" height="100%" fill="white" />
             {highlightRect && (
               <rect
-                x={highlightRect.left - 8}
-                y={highlightRect.top - 8}
-                width={highlightRect.width + 16}
-                height={highlightRect.height + 16}
-                rx={12}
+                x={highlightRect.left - 6}
+                y={highlightRect.top - 6}
+                width={highlightRect.width + 12}
+                height={highlightRect.height + 12}
+                rx={10}
                 fill="black"
               />
             )}
           </mask>
         </defs>
         <rect
-          x="0"
-          y="0"
-          width="100%"
-          height="100%"
-          fill="rgba(0, 0, 0, 0.6)"
+          x="0" y="0" width="100%" height="100%"
+          fill="rgba(0, 0, 0, 0.65)"
           mask="url(#highlight-mask)"
           className="pointer-events-auto"
           onClick={onSkip}
         />
       </svg>
 
-      {/* Highlight border */}
+      {/* Highlight Border */}
       {highlightRect && (
         <div
           className="absolute pointer-events-none border-2 border-blue-500 rounded-xl animate-pulse"
           style={{
-            top: highlightRect.top - 8,
-            left: highlightRect.left - 8,
-            width: highlightRect.width + 16,
-            height: highlightRect.height + 16,
-            boxShadow: '0 0 20px rgba(59, 130, 246, 0.5), inset 0 0 20px rgba(59, 130, 246, 0.1)',
+            top: highlightRect.top - 6,
+            left: highlightRect.left - 6,
+            width: highlightRect.width + 12,
+            height: highlightRect.height + 12,
+            boxShadow: '0 0 25px rgba(59, 130, 246, 0.4), inset 0 0 20px rgba(59, 130, 246, 0.08)',
           }}
         />
       )}
@@ -184,38 +229,33 @@ export function OnboardingTour({ steps, onComplete, onSkip, isOpen }: Onboarding
       {/* Tooltip */}
       <div
         className={cn(
-          "absolute bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 p-5 w-[320px] transition-all duration-300",
+          "absolute bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 p-5 w-[340px] transition-all duration-300",
           isTransitioning && "opacity-0 scale-95"
         )}
         style={tooltipPos}
       >
-        {/* Progress dots */}
+        {/* Progress */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex gap-1.5">
             {steps.map((_, idx) => (
               <div
                 key={idx}
                 className={cn(
-                  "w-2 h-2 rounded-full transition-colors",
-                  idx === currentStep ? "bg-blue-500" : idx < currentStep ? "bg-blue-300" : "bg-gray-300 dark:bg-gray-600"
+                  "h-1.5 rounded-full transition-all duration-300",
+                  idx === currentStep ? "w-6 bg-blue-500" : idx < currentStep ? "w-1.5 bg-blue-300" : "w-1.5 bg-gray-300 dark:bg-gray-600"
                 )}
               />
             ))}
           </div>
-          <button
-            onClick={onSkip}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
-          >
+          <button onClick={onSkip} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Icon */}
         <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mb-3">
           <Sparkles className="w-5 h-5 text-white" />
         </div>
 
-        {/* Content */}
         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
           {currentStepData?.title}
         </h3>
@@ -223,34 +263,28 @@ export function OnboardingTour({ steps, onComplete, onSkip, isOpen }: Onboarding
           {currentStepData?.description}
         </p>
 
-        {/* Navigation */}
         <div className="flex items-center justify-between">
           <button
             onClick={handlePrev}
             disabled={currentStep === 0}
             className={cn(
               "flex items-center gap-1 text-sm font-medium transition-colors",
-              currentStep === 0
-                ? "text-gray-300 dark:text-gray-600 cursor-not-allowed"
-                : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              currentStep === 0 ? "text-gray-300 dark:text-gray-600 cursor-not-allowed" : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
             )}
           >
             <ChevronLeft className={cn("w-4 h-4", isAr && "rotate-180")} />
             {isAr ? 'السابق' : 'Previous'}
           </button>
 
-          <span className="text-xs text-gray-400">
+          <span className="text-xs text-gray-400 font-medium">
             {currentStep + 1} / {steps.length}
           </span>
 
           <button
             onClick={handleNext}
-            className="flex items-center gap-1 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-medium rounded-xl hover:shadow-lg hover:shadow-blue-500/25 transition-all"
+            className="flex items-center gap-1 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-medium rounded-xl hover:shadow-lg hover:shadow-blue-500/25 transition-all hover:scale-105"
           >
-            {currentStep === steps.length - 1
-              ? (isAr ? 'إنهاء' : 'Finish')
-              : (isAr ? 'التالي' : 'Next')
-            }
+            {currentStep === steps.length - 1 ? (isAr ? 'إنهاء' : 'Finish') : (isAr ? 'التالي' : 'Next')}
             <ChevronRight className={cn("w-4 h-4", isAr && "rotate-180")} />
           </button>
         </div>

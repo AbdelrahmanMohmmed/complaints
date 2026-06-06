@@ -17,7 +17,9 @@ export const getTourSteps = (isAr: boolean): TourStep[] => [
     description: isAr
       ? 'تصفح التعليقات، رشّحها حسب المشاعر أو الأولوية أو الحالة، وانقر على أي تعليق لعرض التفاصيل الكاملة.'
       : 'Browse feedback, filter by sentiment, priority, or status, and click any item to view full details.',
-    position: 'bottom',
+    position: 'top',
+    offset: { y: 10 },     // shift tooltip up by 20px
+    noScroll: false,
     route: '/app/feedback',
   },
   {
@@ -35,7 +37,7 @@ export const getTourSteps = (isAr: boolean): TourStep[] => [
     description: isAr
       ? 'شاهد حالة كل قناة، فعّلها أو ألغِ تفعيلها، أو احذفها. انقر على "إضافة تكامل" لربط قناة جديدة.'
       : 'See the status of each channel, activate/deactivate, or remove them. Click "Add Integration" to connect a new channel.',
-    position: 'bottom',
+    position: 'top',
     route: '/app/integrations',
   },
   {
@@ -72,6 +74,6 @@ export const getTourSteps = (isAr: boolean): TourStep[] => [
       ? 'نظرة عامة سريعة على أداء خدمة العملاء مع أهم المؤشرات والإحصائيات.'
       : 'A quick overview of your customer service performance with key metrics and stats.',
     position: 'right',
-    route: '/app/dashboard',
+      route: '/app',
   },
 ];

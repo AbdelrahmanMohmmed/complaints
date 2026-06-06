@@ -6,12 +6,14 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Separator } from '../components/ui/separator';
-import { User } from 'lucide-react';
+import { User ,RotateCcw, Sparkles } from 'lucide-react';
 import { request } from '../../services/api';
+import { useOnboarding } from '../hooks/useOnboarding';
 
 export function Settings() {
   const { t, language } = useLanguage();
   const { user, login } = useAuth();
+  const { resetOnboarding } = useOnboarding();
   const isAr = language === 'ar';
 
   // Profile state
@@ -166,7 +168,28 @@ const [lName, setLName] = useState(user?.lastName || '');
           </div>
         </CardContent>
       </Card>
-
+    {/* Onboarding */}
+      <Card className="border-blue-200 dark:border-blue-800 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-blue-600" />
+            {isAr ? 'جولة التعريف' : 'Getting Started Tour'}
+          </CardTitle>
+          <CardDescription>
+            {isAr ? 'إعادة عرض جولة التعريف التفاعلية لاستكشاف التطبيق' : 'Replay the interactive tour to explore the app'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button
+            variant="outline"
+            onClick={resetOnboarding}
+            className="gap-2 border-blue-300 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/30"
+          >
+            <RotateCcw className="w-4 h-4" />
+            {isAr ? 'إعادة تشغيل الجولة' : 'Restart Tour'}
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

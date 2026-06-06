@@ -359,7 +359,7 @@ export function Reports() {
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200 dark:border-gray-700">
+      <div data-tour="reports-tabs" className="border-b border-gray-200 dark:border-gray-700">
         <nav className="flex gap-1 -mb-px overflow-x-auto">
           {tabs.map(tab => (
             <button
