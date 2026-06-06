@@ -15,14 +15,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
 
 from .. import database, models
-from ..ai.labels import (
-    EMOTION_DEFAULT_ID,
-    EMOTION_LABEL2ID,
-    PROBLEM_TYPE_DEFAULT_ID,
-    PROBLEM_TYPE_LABEL2ID,
-    SENTIMENT_DEFAULT_ID,
-    SENTIMENT_LABEL2ID,
-)
+from ..ai.labels import *
 from ..ai.predict import run_ai_pipeline
 
 logger = logging.getLogger(__name__)
@@ -145,7 +138,6 @@ def run_ai_job(db: Session) -> int:
 
                 results = run_ai_pipeline(
                     feedback.cleaned_text,
-                    domain_name=company_domain_cache[feedback.company_id],
                 )
 
                 # Update feedback record with analysis results

@@ -1,12 +1,6 @@
 """Franko (Franco-Arabic) text preprocessing pipeline."""
 import logging
-import re
-
-try:
-    import requests
-    REQUESTS_AVAILABLE = True
-except ImportError:
-    REQUESTS_AVAILABLE = False
+import requests
 
 from .arabic import arabic_pipeline
 
@@ -24,9 +18,7 @@ def franko_pipeline(text: str) -> str:
     Returns:
         Cleaned and processed text
     """
-    if not REQUESTS_AVAILABLE:
-        logger.warning("requests library not available, returning original text")
-        return text
+
     
     # Convert Franko to Arabic using Google API
     arabic_text = _franko_to_arabic(text)

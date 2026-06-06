@@ -1,7 +1,7 @@
 import os
 import sys
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 from app.ai.arabic.ml_dl_predict import *
 
@@ -15,6 +15,8 @@ if __name__ == "__main__":
         pt = predict_arabic_dl(ar_problem_gru(), text, "P")
         print(pt)
         pt = predict_arabic_ml(ar_problem_lr_f(), text, "P")
+        print(pt)
+        pt = predict_arabic_ml(ar_problem_svm_a(), text, "P")
         print(pt)
         s = predict_arabic_ml(ar_emotion_lr_f(), text, "E")
         print(s)

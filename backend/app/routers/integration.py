@@ -422,7 +422,7 @@ async def scrape_twitter_replies(
             target_username=payload.username,
             auth_token=auth_token,
             ct0=ct0,
-            scroll_count=payload.scroll_count,
+            max_comments_per_post=payload.scroll_count,
             scroll_delay_s=payload.scroll_delay_s,
             max_posts=payload.max_posts,
             goto_timeout_ms=payload.goto_timeout_ms,

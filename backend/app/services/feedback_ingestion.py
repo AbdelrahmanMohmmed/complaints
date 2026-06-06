@@ -403,7 +403,6 @@ async def fetch_twitter_comments(
                     created_at=created_at,
                     customer_name=author_name,
                 ):
-                    db.add(new_feedback)
                     comments_added += 1
 
             db.commit()

@@ -1,17 +1,26 @@
+// src/components/Layout.tsx
 import React, { useState } from 'react';
 import { Outlet } from 'react-router';
 import { Sidebar } from '../components/Sidebar';
 import { TopBar } from '../components/TopBar';
 import { ProtectedRoute } from '../components/ProtectedRoute';
+import { OnboardingTour } from '../components/OnboardingTour';
+import { useOnboarding } from '../hooks/useOnboarding';
+import { getTourSteps } from '../config/tourSteps';
+import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { cn } from '../components/ui/utils';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../components/ui/sheet';
-import { useLanguage } from '../contexts/LanguageContext';
 
 export function Layout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { language } = useLanguage();
+  const { user } = useAuth();
+  const { showOnboarding, completeOnboarding, skipOnboarding } = useOnboarding();
   const isAr = language === 'ar';
+
+  const tourSteps = getTourSteps(isAr, user?.role);
 
   return (
     <ProtectedRoute>
@@ -49,6 +58,14 @@ export function Layout() {
             <Outlet />
           </main>
         </div>
+
+        {/* Onboarding Tour */}
+        <OnboardingTour
+          steps={tourSteps}
+          isOpen={showOnboarding}
+          onComplete={completeOnboarding}
+          onSkip={skipOnboarding}
+        />
       </div>
     </ProtectedRoute>
   );

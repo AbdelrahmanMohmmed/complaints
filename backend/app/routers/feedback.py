@@ -428,23 +428,7 @@ async def submit_form(
         db.commit()
         db.refresh(new_feedback)
 
-        # Run AI pipeline synchronously for immediate feedback to frontend
-        try:
-            ai_result = run_ai_pipeline(feedback_context, domain_name=domain_name)
-            # Update feedback record with AI results
-            new_feedback.sentiment_id = ai_result.get("sentiment_id")
-            new_feedback.emotion_id = ai_result.get("emotion_id")
-            new_feedback.problem_type_id = ai_result.get("problem_type_id")
-            new_feedback.priority = ai_result.get("priority")
-            new_feedback.status = "processed"
-            db.commit()
-            db.refresh(new_feedback)
-        except Exception as e:
-            logger.exception(
-                "AI pipeline failed for feedback_id=%s: %s",
-                new_feedback.feedback_id,
-                str(e),
-            )
+        
 
         logger.info(
             f"Web form feedback received from company_id={integration.company_id}, "

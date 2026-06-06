@@ -33,12 +33,7 @@ PROBLEM_TYPE_ID2AR_LABEL = {
 }
 
 # English label mapping for emotion (4 categories)
-EMOTION_ID2LABEL = {
-    0: "frustrated",
-    1: "neutral",
-    2: "disgusted",
-    3: "satisfied",
-}
+EMOTION_ID2LABEL = {0: "Frustrated", 1: "Satisfied", 2: "Disgusted", 3: "Neutral"}
 
 EMOTION_DEFAULT_ID = 1
 EMOTION_DEFAULT_LABEL = EMOTION_ID2LABEL[EMOTION_DEFAULT_ID]
@@ -53,11 +48,7 @@ EMOTION_ID2AR_LABEL = {
 }
 
 # English label mapping for sentiment (3 categories)
-SENTIMENT_ID2LABEL = {
-    0: "negative",
-    1: "neutral",
-    2: "positive",
-}
+SENTIMENT_ID2LABEL = {0: "Negative", 1: "Neutral", 2: "Positive"}
 
 SENTIMENT_DEFAULT_ID = 1
 SENTIMENT_DEFAULT_LABEL = SENTIMENT_ID2LABEL[SENTIMENT_DEFAULT_ID]

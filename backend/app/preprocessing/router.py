@@ -3,13 +3,7 @@
 import re
 import logging
 from typing import Literal
-
-try:
-    from langdetect import detect
-
-    LANGDETECT_AVAILABLE = True
-except ImportError:
-    LANGDETECT_AVAILABLE = False
+from langdetect import detect
 
 from .arabic import arabic_pipeline
 from .english import english_pipeline
@@ -117,11 +111,6 @@ def route_pipeline(text: str) -> Literal["arabic", "english", "franko"]:
     if contains_arabic_script(text):
         logger.debug("Detected Arabic script text")
         return "arabic"
-
-    # Use langdetect for language detection
-    if not LANGDETECT_AVAILABLE:
-        logger.warning("langdetect not available, defaulting to English pipeline")
-        return "english"
 
     try:
         lang = detect(text)

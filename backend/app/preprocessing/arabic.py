@@ -2,24 +2,9 @@
 import re
 import logging
 from pathlib import Path
-
-try:
-    import emoji
-    EMOJI_AVAILABLE = True
-except ImportError:
-    EMOJI_AVAILABLE = False
-
-try:
-    import nltk
-    NLTK_AVAILABLE = True
-except ImportError:
-    NLTK_AVAILABLE = False
-
-try:
-    from camel_tools.disambig.mle import MLEDisambiguator
-    CAMEL_AVAILABLE = True
-except ImportError:
-    CAMEL_AVAILABLE = False
+import emoji
+import nltk
+from camel_tools.disambig.mle import MLEDisambiguator
 
 logger = logging.getLogger(__name__)
 
@@ -60,11 +45,10 @@ def arabic_pipeline(text: str) -> str:
         Cleaned and lemmatized Arabic text
     """
     # Remove emojis
-    if EMOJI_AVAILABLE:
-        try:
-            text = emoji.demojize(text, language="ar")
-        except Exception as e:
-            logger.debug(f"Emoji removal failed: {e}")
+    try:
+        text = emoji.demojize(text, language="ar")
+    except Exception as e:
+        logger.debug(f"Emoji removal failed: {e}")
     
     # Remove Arabic diacritics
     arabic_diacritics = re.compile(r"[\u0617-\u061A\u064B-\u0652]")
@@ -82,11 +66,7 @@ def arabic_pipeline(text: str) -> str:
     
     if not text:
         return text
-    
-    # Tokenization
-    if not NLTK_AVAILABLE:
-        logger.warning("NLTK not available, returning whitespace-split text")
-        return text
+
     
     try:
         text_tokens = nltk.word_tokenize(text)
@@ -104,16 +84,12 @@ def arabic_pipeline(text: str) -> str:
         return ""
     
     # Lemmatization with camel_tools if available
-    if CAMEL_AVAILABLE:
-        try:
-            EGY_mle = MLEDisambiguator.pretrained("calima-egy-r13")
-            EGY_disambig = EGY_mle.disambiguate(filtered)
-            lemmas = [d.analyses[0].analysis["lex"] for d in EGY_disambig if d.analyses]
-        except Exception as e:
-            logger.debug(f"Camel tools lemmatization failed: {e}, using original tokens")
-            lemmas = filtered
-    else:
-        logger.debug("Camel tools not available, using original tokens")
+    try:
+        EGY_mle = MLEDisambiguator.pretrained("calima-egy-r13")
+        EGY_disambig = EGY_mle.disambiguate(filtered)
+        lemmas = [d.analyses[0].analysis["lex"] for d in EGY_disambig if d.analyses]
+    except Exception as e:
+        logger.debug(f"Camel tools lemmatization failed: {e}, using original tokens")
         lemmas = filtered
     
     # Join and clean again

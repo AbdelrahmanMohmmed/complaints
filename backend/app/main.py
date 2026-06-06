@@ -11,7 +11,6 @@ from .routers import (
     domain,
     feedback,
     integration,
-    categories,
     user,
 )
 from fastapi import FastAPI
@@ -67,7 +66,6 @@ app.include_router(auth.router, prefix="/api/v1")
 app.include_router(company.router, prefix="/api/v1")
 app.include_router(integration.router, prefix="/api/v1")
 app.include_router(feedback.router, prefix="/api/v1")
-app.include_router(categories.router, prefix="/api/v1")
 app.include_router(domain.router, prefix="/api/v1")
 app.include_router(contact.router, prefix="/api/v1")
 app.include_router(dashboard.router, prefix="/api/v1")
