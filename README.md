@@ -10,17 +10,10 @@ A short description of the project.
 
 ```
 ├── LICENSE            <- Open-source license if one is chosen
-├── Makefile           <- Makefile with convenience commands like `make data` or `make train`
 ├── README.md          <- The top-level README for developers using this project.
-├── data
-│   ├── external       <- Data from third party sources.
-│   ├── interim        <- Intermediate data that has been transformed.
-│   ├── processed      <- The final, canonical data sets for modeling.
-│   └── raw            <- The original, immutable data dump.
-│
 ├── docs               <- A default mkdocs project; see www.mkdocs.org for details
 │
-├── models             <- Trained and serialized models, model predictions, or model summaries
+├── models             <- Code for all the models
 │
 ├── notebooks          <- Jupyter notebooks. Naming convention is a number (for ordering),
 │                         the creator's initials, and a short `-` delimited description, e.g.
@@ -56,6 +49,61 @@ A short description of the project.
     │
     └── plots.py                <- Code to create visualizations
 ```
+
+## Role Matrix
+
+| Role                   | Dashboard | Feedback | Reports | Users | Companies | Domains | Settings |
+|------------------------|-----------|----------|---------|-------|-----------|---------|----------|
+| **Manager**            | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **CSS**                | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| **WebSiteConfigrator** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+---
+
+## Environment Setup
+
+### Frontend
+```bash
+cd frontend
+npm install
+cp .env.example .env
+# Edit .env with backend URL
+npm run dev
+```
+
+### Backend
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate  # or `venv\Scripts\activate` on Windows
+pip install -r requirements.txt
+# Create .env file with database URL and secrets
+uvicorn app.main:app --reload
+```
+
+---
+
+## Testing
+
+### Frontend
+- Manual: `npm run dev` + browser testing
+- E2E: Cypress/Playwright (optional)
+
+### Backend
+- Manual: POST requests via [tests/http_request.http](backend/tests/http_request.http)
+- Unit: pytest (optional)
+
+---
+
+## Deployment Notes
+
+**Frontend:**
+- Build: `npm run build` → outputs to `dist/`
+- Host on: Netlify, Vercel, Cloudflare Pages, or static hosting
+
+**Backend:**
+- Deploy: Docker container or direct server
+- ASGI server: Gunicorn + Uvicorn workers
+- Database: PostgreSQL (production)
 
 --------
 
