@@ -499,7 +499,7 @@ export function IntegrationSettings() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label>{isAr ? 'عدد التمريرات' : 'Scrolls count'}</Label>
+                        <Label>{isAr ? 'اقصي عدد تعليقات للمنشور' : 'Max comments/Post'}</Label>
                         <Input
                           type="number"
                           min={0}
