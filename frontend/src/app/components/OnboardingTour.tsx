@@ -12,9 +12,7 @@ export interface TourStep {
   position?: 'top' | 'bottom' | 'left' | 'right' | 'auto';
   route?: string;
   action?: () => void;
-  /** Override: don't auto-scroll to this element */
   noScroll?: boolean;
-  /** Fine-tune tooltip offset: { x: 0, y: 0 } */
   offset?: { x?: number; y?: number };
 }
 
@@ -35,7 +33,6 @@ export function OnboardingTour({ steps, onComplete, onSkip, isOpen }: Onboarding
 
   const currentStepData = steps[currentStep];
 
-  // ─── FIND ELEMENT & CALCULATE POSITION ─────────────────────────────
   const updateHighlight = useCallback(() => {
     if (!currentStepData) return;
 
@@ -49,26 +46,22 @@ export function OnboardingTour({ steps, onComplete, onSkip, isOpen }: Onboarding
       const rect = element.getBoundingClientRect();
       setHighlightRect(rect);
 
-      // Only scroll if element is mostly off-screen, and scroll minimally
       if (!currentStepData.noScroll) {
         const viewportHeight = window.innerHeight;
         const elementTop = rect.top;
         const elementBottom = rect.bottom;
+        const isAbove = elementBottom < 0;
+        const isBelow = elementTop > viewportHeight;
 
-        // Element is above viewport
-        if (elementTop < 100) {
-          window.scrollBy({ top: elementTop - 120, behavior: 'smooth' });
+        if (isAbove) {
+          window.scrollBy({ top: elementTop - 100, behavior: 'smooth' });
+        } else if (isBelow) {
+          window.scrollBy({ top: elementBottom - viewportHeight + 150, behavior: 'smooth' });
         }
-        // Element is below viewport
-        else if (elementBottom > viewportHeight - 100) {
-          window.scrollBy({ top: elementBottom - viewportHeight + 180, behavior: 'smooth' });
-        }
-        // Otherwise: element is visible, don't scroll at all
       }
     }, 400);
   }, [currentStepData]);
 
-  // ─── ROUTE CHANGE EFFECT ──────────────────────────────────────────
   useEffect(() => {
     if (!isOpen) return;
 
@@ -89,7 +82,6 @@ export function OnboardingTour({ steps, onComplete, onSkip, isOpen }: Onboarding
     runStep();
   }, [currentStep, isOpen, currentStepData, navigate, updateHighlight]);
 
-  // ─── RESIZE HANDLER ───────────────────────────────────────────────
   useEffect(() => {
     if (!isOpen) return;
     const handleResize = () => updateHighlight();
@@ -99,7 +91,6 @@ export function OnboardingTour({ steps, onComplete, onSkip, isOpen }: Onboarding
 
   if (!isOpen) return null;
 
-  // ─── NAVIGATION ────────────────────────────────────────────────────
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(prev => prev + 1);
@@ -114,14 +105,13 @@ export function OnboardingTour({ steps, onComplete, onSkip, isOpen }: Onboarding
     }
   };
 
-  // ─── SMART TOOLTIP POSITIONING ────────────────────────────────────
   const getTooltipPosition = () => {
     if (!highlightRect) {
       return { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' };
     }
 
     const TOOLTIP_WIDTH = 340;
-    const TOOLTIP_HEIGHT = 220; // approximate max height
+    const TOOLTIP_HEIGHT = 220;
     const GAP = 16;
     const offsetX = currentStepData?.offset?.x ?? 0;
     const offsetY = currentStepData?.offset?.y ?? 0;
@@ -129,64 +119,69 @@ export function OnboardingTour({ steps, onComplete, onSkip, isOpen }: Onboarding
     const vw = window.innerWidth;
     const vh = window.innerHeight;
 
-    // Try each position, pick the one that fits best
-    const positions = currentStepData?.position === 'auto' || !currentStepData?.position
-      ? ['bottom', 'top', 'right', 'left'] as const
-      : [currentStepData.position] as const;
+    const spaceTop = highlightRect.top;
+    const spaceBottom = vh - highlightRect.bottom;
+    const spaceLeft = highlightRect.left;
+    const spaceRight = vw - highlightRect.right;
 
-    for (const pos of positions) {
-      let top = 0;
-      let left = 0;
+    let position = currentStepData?.position || 'auto';
 
-      switch (pos) {
-        case 'bottom':
-          top = highlightRect.bottom + GAP;
-          left = highlightRect.left + highlightRect.width / 2 - TOOLTIP_WIDTH / 2;
-          break;
-        case 'top':
-          top = highlightRect.top - TOOLTIP_HEIGHT - GAP;
-          left = highlightRect.left + highlightRect.width / 2 - TOOLTIP_WIDTH / 2;
-          break;
-        case 'right':
-          top = highlightRect.top + highlightRect.height / 2 - TOOLTIP_HEIGHT / 2;
-          left = highlightRect.right + GAP;
-          break;
-        case 'left':
-          top = highlightRect.top + highlightRect.height / 2 - TOOLTIP_HEIGHT / 2;
-          left = highlightRect.left - TOOLTIP_WIDTH - GAP;
-          break;
-      }
-
-      // Apply custom offset
-      top += offsetY;
-      left += offsetX;
-
-      // Check if this position fits in viewport
-      const fits = (
-        top >= 10 &&
-        left >= 10 &&
-        top + TOOLTIP_HEIGHT <= vh - 10 &&
-        left + TOOLTIP_WIDTH <= vw - 10
-      );
-
-      if (fits) {
-        return { top: `${top}px`, left: `${left}px`, transform: 'none' };
-      }
+    if (position === 'top' && spaceTop < TOOLTIP_HEIGHT + GAP) {
+      position = 'bottom';
+    } else if (position === 'bottom' && spaceBottom < TOOLTIP_HEIGHT + GAP) {
+      position = 'top';
+    } else if (position === 'left' && spaceLeft < TOOLTIP_WIDTH + GAP) {
+      position = 'right';
+    } else if (position === 'right' && spaceRight < TOOLTIP_WIDTH + GAP) {
+      position = 'left';
     }
 
-    // Fallback: center in viewport if nothing fits
-    return {
-      top: `${Math.max(10, Math.min(vh - TOOLTIP_HEIGHT - 10, highlightRect.top + highlightRect.height + GAP))}px`,
-      left: `${Math.max(10, Math.min(vw - TOOLTIP_WIDTH - 10, (vw - TOOLTIP_WIDTH) / 2))}px`,
-      transform: 'none',
-    };
+    if (position === 'auto') {
+      const spaces = [
+        { pos: 'bottom', space: spaceBottom },
+        { pos: 'top', space: spaceTop },
+        { pos: 'right', space: spaceRight },
+        { pos: 'left', space: spaceLeft },
+      ];
+      spaces.sort((a, b) => b.space - a.space);
+      position = spaces[0].pos as 'top' | 'bottom' | 'left' | 'right';
+    }
+
+    let top = 0;
+    let left = 0;
+
+    switch (position) {
+      case 'bottom':
+        top = highlightRect.bottom + GAP;
+        left = highlightRect.left + highlightRect.width / 2 - TOOLTIP_WIDTH / 2;
+        break;
+      case 'top':
+        top = highlightRect.top - TOOLTIP_HEIGHT - GAP;
+        left = highlightRect.left + highlightRect.width / 2 - TOOLTIP_WIDTH / 2;
+        break;
+      case 'right':
+        top = highlightRect.top + highlightRect.height / 2 - TOOLTIP_HEIGHT / 2;
+        left = highlightRect.right + GAP;
+        break;
+      case 'left':
+        top = highlightRect.top + highlightRect.height / 2 - TOOLTIP_HEIGHT / 2;
+        left = highlightRect.left - TOOLTIP_WIDTH - GAP;
+        break;
+    }
+
+    top += offsetY;
+    left += offsetX;
+
+    top = Math.max(10, Math.min(top, vh - TOOLTIP_HEIGHT - 10));
+    left = Math.max(10, Math.min(left, vw - TOOLTIP_WIDTH - 10));
+
+    return { top: `${top}px`, left: `${left}px`, transform: 'none' };
   };
 
   const tooltipPos = getTooltipPosition();
 
   return (
     <div className="fixed inset-0 z-[9999]" dir={isAr ? 'rtl' : 'ltr'}>
-      {/* SVG Mask Overlay */}
       <svg className="absolute inset-0 w-full h-full pointer-events-none">
         <defs>
           <mask id="highlight-mask">
@@ -212,7 +207,6 @@ export function OnboardingTour({ steps, onComplete, onSkip, isOpen }: Onboarding
         />
       </svg>
 
-      {/* Highlight Border */}
       {highlightRect && (
         <div
           className="absolute pointer-events-none border-2 border-blue-500 rounded-xl animate-pulse"
@@ -226,7 +220,6 @@ export function OnboardingTour({ steps, onComplete, onSkip, isOpen }: Onboarding
         />
       )}
 
-      {/* Tooltip */}
       <div
         className={cn(
           "absolute bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 p-5 w-[340px] transition-all duration-300",
@@ -234,7 +227,6 @@ export function OnboardingTour({ steps, onComplete, onSkip, isOpen }: Onboarding
         )}
         style={tooltipPos}
       >
-        {/* Progress */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex gap-1.5">
             {steps.map((_, idx) => (

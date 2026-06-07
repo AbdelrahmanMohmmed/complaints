@@ -14,9 +14,11 @@ import {
 } from '../components/ui/select';
 import {
   Plus, Plug, Mail, Phone, Globe, CheckCircle,
-  XCircle, Trash2, RefreshCw, Twitter, Facebook,
+  XCircle, Trash2, RefreshCw, Twitter, Facebook, BookOpen, HelpCircle, ChevronRight,
 } from 'lucide-react';
 import { cn } from '../components/ui/utils';
+import { IntegrationGuideModal } from '../components/IntegrationGuideModal';
+import { integrationGuides } from '../config/integrationGuides';
 
 interface BackendIntegration {
   api_id: number;
@@ -54,6 +56,10 @@ export function IntegrationSettings() {
   const [integrations, setIntegrations] = useState<BackendIntegration[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  // Guide modal state
+  const [guideModalOpen, setGuideModalOpen] = useState(false);
+  const [activeGuide, setActiveGuide] = useState<string | null>(null);
 
   // Add form state
   const [newChannelName, setNewChannelName] = useState('');
@@ -299,7 +305,7 @@ export function IntegrationSettings() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div data-tour="integration-header" className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
             {t('integrations.title')}
@@ -353,162 +359,193 @@ export function IntegrationSettings() {
               </Button>
             </DialogTrigger>
             <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{t('integrations.addIntegration')}</DialogTitle>
-              <DialogDescription>
-                {isAr ? 'اربط قناة جديدة لبدء جمع التعليقات' : 'Connect a new channel to start collecting feedback'}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label>{isAr ? 'القناة' : 'Channel'}</Label>
-                <Select value={newChannelName} onValueChange={setNewChannelName}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={isAr ? 'اختر قناة...' : 'Select channel...'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="facebook">{isAr ? 'فيسبوك' : 'Facebook'}</SelectItem>
-                    <SelectItem value="twitter">{isAr ? 'تويتر / X' : 'Twitter / X'}</SelectItem>
-                    <SelectItem value="gmail">Gmail</SelectItem>
-                    <SelectItem value="freshdesk">Freshdesk</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              {newChannelName === 'gmail' ? (
-                <>
-                  <div className="space-y-2">
-                    <Label>{isAr ? 'اسم مستخدم Gmail' : 'Gmail username'}</Label>
-                    <Input
-                      type="email"
-                      placeholder="your-account@gmail.com"
-                      value={newGmailUsername}
-                      onChange={(e) => setNewGmailUsername(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>{isAr ? 'كلمة مرور تطبيق Gmail' : 'Gmail app password'}</Label>
-                    <Input
-                      type="password"
-                      placeholder={isAr ? 'الصق كلمة مرور تطبيق Gmail (16 حرفا)' : 'Paste 16-character Gmail app password'}
-                      value={newGmailPassword}
-                      onChange={(e) => setNewGmailPassword(e.target.value)}
-                    />
-                    <p className="text-xs text-gray-400">
-                      {isAr ? 'استخدم كلمة مرور تطبيق Gmail (وليس كلمة مرور Gmail العادية).' : 'Use a Gmail App Password (not your regular Gmail password).'}
-                    </p>
-                  </div>
-                </>
-              ) : newChannelName === 'freshdesk' ? (
-                <>
-                  <div className="space-y-2">
-                    <Label>{isAr ? 'نطاق Freshdesk' : 'Freshdesk domain'}</Label>
-                    <Input
-                      type="text"
-                      placeholder="yourcompany.freshdesk.com"
-                      value={freshdeskDomain}
-                      onChange={(e) => setFreshdeskDomain(e.target.value)}
-                    />
-                    <p className="text-xs text-gray-400">
-                      {isAr ? 'يجب أن ينتهي النطاق بـ freshdesk.com' : 'Domain must end with freshdesk.com'}
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>{isAr ? 'مفتاح API لـ Freshdesk' : 'Freshdesk API key'}</Label>
-                    <Input
-                      type="password"
-                      placeholder={isAr ? 'الصق مفتاح API من Freshdesk' : 'Paste your Freshdesk API key'}
-                      value={freshdeskApiKey}
-                      onChange={(e) => setFreshdeskApiKey(e.target.value)}
-                    />
-                  </div>
-                </>
-              ) : (
+              <DialogHeader>
+                <DialogTitle>{t('integrations.addIntegration')}</DialogTitle>
+                <DialogDescription>
+                  {isAr ? 'اربط قناة جديدة لبدء جمع التعليقات' : 'Connect a new channel to start collecting feedback'}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <Label>{t('integrations.apiKey')}</Label>
-                  <Input
-                    type="password"
-                    placeholder={isAr ? 'الصق مفتاح API أو رمز Bearer...' : 'Paste your API key or Bearer token...'}
-                    value={newApiKey}
-                    onChange={(e) => setNewApiKey(e.target.value)}
-                  />
-                  <p className="text-xs text-gray-400">
-                    {newChannelName === 'facebook' && (isAr ? 'استخدم رمز وصول صفحة فيسبوك' : 'Use your Facebook Page Access Token')}
-                    {newChannelName === 'twitter' && (isAr ? 'استخدم رمز Bearer لتويتر (تطبيق فقط)' : 'Use your Twitter Bearer Token (app-only)')}
-                  </p>
+                  <Label>{isAr ? 'القناة' : 'Channel'}</Label>
+                  <Select value={newChannelName} onValueChange={(val) => {
+                    setNewChannelName(val);
+                    setAddError('');
+                  }}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={isAr ? 'اختر قناة...' : 'Select channel...'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="facebook">{isAr ? 'فيسبوك' : 'Facebook'}</SelectItem>
+                      <SelectItem value="twitter">{isAr ? 'تويتر / X' : 'Twitter / X'}</SelectItem>
+                      <SelectItem value="gmail">Gmail</SelectItem>
+                      <SelectItem value="freshdesk">Freshdesk</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-              )}
-              {newChannelName === 'twitter' && (
-                <div className="space-y-3">
-                  <Label className="text-sm text-gray-600 dark:text-gray-400">
-                    {isAr ? 'إعدادات السحب' : 'Scrape settings'}
-                  </Label>
+
+                {/* Guide Button — appears after selecting a channel */}
+                {newChannelName && integrationGuides[newChannelName] && (
+                  <button
+                    onClick={() => {
+                      setActiveGuide(newChannelName);
+                      setGuideModalOpen(true);
+                    }}
+                    className="w-full flex items-center gap-3 p-3 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors text-left"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                      <BookOpen className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">
+                        {isAr ? 'دليل الربط' : 'Setup Guide'}
+                      </p>
+                      <p className="text-xs text-blue-600 dark:text-blue-400">
+                        {isAr
+                          ? `خطوات الحصول على مفتاح API لـ ${integrationGuides[newChannelName].title}`
+                          : `How to get API key for ${integrationGuides[newChannelName].title}`
+                        }
+                      </p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-blue-400" />
+                  </button>
+                )}
+
+                {newChannelName === 'gmail' ? (
+                  <>
+                    <div className="space-y-2">
+                      <Label>{isAr ? 'اسم مستخدم Gmail' : 'Gmail username'}</Label>
+                      <Input
+                        type="email"
+                        placeholder="your-account@gmail.com"
+                        value={newGmailUsername}
+                        onChange={(e) => setNewGmailUsername(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{isAr ? 'كلمة مرور تطبيق Gmail' : 'Gmail app password'}</Label>
+                      <Input
+                        type="password"
+                        placeholder={isAr ? 'الصق كلمة مرور تطبيق Gmail (16 حرفا)' : 'Paste 16-character Gmail app password'}
+                        value={newGmailPassword}
+                        onChange={(e) => setNewGmailPassword(e.target.value)}
+                      />
+                      <p className="text-xs text-gray-400">
+                        {isAr ? 'استخدم كلمة مرور تطبيق Gmail (وليس كلمة مرور Gmail العادية).' : 'Use a Gmail App Password (not your regular Gmail password).'}
+                      </p>
+                    </div>
+                  </>
+                ) : newChannelName === 'freshdesk' ? (
+                  <>
+                    <div className="space-y-2">
+                      <Label>{isAr ? 'نطاق Freshdesk' : 'Freshdesk domain'}</Label>
+                      <Input
+                        type="text"
+                        placeholder="yourcompany.freshdesk.com"
+                        value={freshdeskDomain}
+                        onChange={(e) => setFreshdeskDomain(e.target.value)}
+                      />
+                      <p className="text-xs text-gray-400">
+                        {isAr ? 'يجب أن ينتهي النطاق بـ freshdesk.com' : 'Domain must end with freshdesk.com'}
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{isAr ? 'مفتاح API لـ Freshdesk' : 'Freshdesk API key'}</Label>
+                      <Input
+                        type="password"
+                        placeholder={isAr ? 'الصق مفتاح API من Freshdesk' : 'Paste your Freshdesk API key'}
+                        value={freshdeskApiKey}
+                        onChange={(e) => setFreshdeskApiKey(e.target.value)}
+                      />
+                    </div>
+                  </>
+                ) : (
                   <div className="space-y-2">
-                    <Label>{isAr ? 'الحساب' : 'Account'}</Label>
+                    <Label>{t('integrations.apiKey')}</Label>
                     <Input
-                      type="text"
-                      placeholder={isAr ? 'مثل: FoodHub' : 'e.g. FoodHub'}
-                      value={scrapeUsername}
-                      onChange={(e) => setScrapeUsername(e.target.value)}
+                      type="password"
+                      placeholder={isAr ? 'الصق مفتاح API أو رمز Bearer...' : 'Paste your API key or Bearer token...'}
+                      value={newApiKey}
+                      onChange={(e) => setNewApiKey(e.target.value)}
                     />
+                    <p className="text-xs text-gray-400">
+                      {newChannelName === 'facebook' && (isAr ? 'استخدم رمز وصول صفحة فيسبوك' : 'Use your Facebook Page Access Token')}
+                      {newChannelName === 'twitter' && (isAr ? 'استخدم رمز Bearer لتويتر (تطبيق فقط)' : 'Use your Twitter Bearer Token (app-only)')}
+                    </p>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                )}
+                {newChannelName === 'twitter' && (
+                  <div className="space-y-3">
+                    <Label className="text-sm text-gray-600 dark:text-gray-400">
+                      {isAr ? 'إعدادات السحب' : 'Scrape settings'}
+                    </Label>
                     <div className="space-y-2">
-                      <Label>{isAr ? 'عدد المنشورات' : 'Posts count'}</Label>
+                      <Label>{isAr ? 'الحساب' : 'Account'}</Label>
                       <Input
-                        type="number"
-                        min={1}
-                        value={scrapeMaxPosts}
-                        onChange={(e) => setScrapeMaxPosts(e.target.value)}
+                        type="text"
+                        placeholder={isAr ? 'مثل: FoodHub' : 'e.g. FoodHub'}
+                        value={scrapeUsername}
+                        onChange={(e) => setScrapeUsername(e.target.value)}
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label>{isAr ? 'عدد التمريرات' : 'Scrolls count'}</Label>
-                      <Input
-                        type="number"
-                        min={0}
-                        value={scrapeScrolls}
-                        onChange={(e) => setScrapeScrolls(e.target.value)}
-                      />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label>{isAr ? 'عدد المنشورات' : 'Posts count'}</Label>
+                        <Input
+                          type="number"
+                          min={1}
+                          value={scrapeMaxPosts}
+                          onChange={(e) => setScrapeMaxPosts(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>{isAr ? 'عدد التمريرات' : 'Scrolls count'}</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          value={scrapeScrolls}
+                          onChange={(e) => setScrapeScrolls(e.target.value)}
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
-              {addError && (
-                <p className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
-                  {addError}
-                </p>
-              )}
-              {scrapeMessage && (
-                <p className="text-sm text-green-600 bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
-                  {scrapeMessage}
-                </p>
-              )}
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                {t('common.cancel')}
-              </Button>
-              {newChannelName === 'facebook' && (
-                <Button variant="outline" onClick={handleAutoFacebook} disabled={autoLoading}>
-                  {autoLoading ? (isAr ? 'جارٍ الربط...' : 'Connecting...') : (isAr ? 'ربط تلقائي' : 'Auto connect')}
+                )}
+                {addError && (
+                  <p className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
+                    {addError}
+                  </p>
+                )}
+                {scrapeMessage && (
+                  <p className="text-sm text-green-600 bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
+                    {scrapeMessage}
+                  </p>
+                )}
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  {t('common.cancel')}
                 </Button>
-              )}
-              {newChannelName === 'twitter' && (
-                <Button variant="outline" onClick={handleScrapeTwitter} disabled={scrapeLoading}>
-                  {scrapeLoading ? (isAr ? 'جارٍ السحب...' : 'Scraping...') : (isAr ? 'سحب' : 'Scrape')}
+                {newChannelName === 'facebook' && (
+                  <Button variant="outline" onClick={handleAutoFacebook} disabled={autoLoading}>
+                    {autoLoading ? (isAr ? 'جارٍ الربط...' : 'Connecting...') : (isAr ? 'ربط تلقائي' : 'Auto connect')}
+                  </Button>
+                )}
+                {newChannelName === 'twitter' && (
+                  <Button variant="outline" onClick={handleScrapeTwitter} disabled={scrapeLoading}>
+                    {scrapeLoading ? (isAr ? 'جارٍ السحب...' : 'Scraping...') : (isAr ? 'سحب' : 'Scrape')}
+                  </Button>
+                )}
+                <Button onClick={handleAddIntegration} disabled={addLoading}>
+                  {addLoading ? (isAr ? 'جارٍ التحقق...' : 'Validating...') : (isAr ? 'اتصال' : 'Connect')}
                 </Button>
-              )}
-              <Button onClick={handleAddIntegration} disabled={addLoading}>
-                {addLoading ? (isAr ? 'جارٍ التحقق...' : 'Validating...') : (isAr ? 'اتصال' : 'Connect')}
-              </Button>
-            </div>
+              </div>
             </DialogContent>
           </Dialog>
         </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div data-tour="integration-stats" className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card className="p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -637,6 +674,16 @@ export function IntegrationSettings() {
           })}
         </div>
       )}
+
+      {/* Integration Guide Modal */}
+      <IntegrationGuideModal
+        guide={activeGuide ? integrationGuides[activeGuide] : null}
+        isOpen={guideModalOpen}
+        onClose={() => {
+          setGuideModalOpen(false);
+          setActiveGuide(null);
+        }}
+      />
     </div>
   );
 }

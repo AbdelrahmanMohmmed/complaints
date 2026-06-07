@@ -11,35 +11,46 @@ export const getTourSteps = (isAr: boolean): TourStep[] => [
     position: 'right',
     route: '/app/feedback',
   },
-  {
+ {
     target: '[data-tour="feedback-table"]',
     title: isAr ? 'قائمة التعليقات' : 'Feedback List',
     description: isAr
       ? 'تصفح التعليقات، رشّحها حسب المشاعر أو الأولوية أو الحالة، وانقر على أي تعليق لعرض التفاصيل الكاملة.'
       : 'Browse feedback, filter by sentiment, priority, or status, and click any item to view full details.',
-    position: 'top',
-    offset: { y: 10 },     // shift tooltip up by 20px
-    noScroll: false,
+    position: 'top',        // ← tooltip goes above the table
+    noScroll: true,         // ← table is already visible, don't scroll
     route: '/app/feedback',
   },
   {
-    target: '[data-tour="sidebar-integrations"]',
-    title: isAr ? 'التكاملات' : 'Integrations',
-    description: isAr
-      ? 'اربط قنواتك الخارجية هنا. أضف فيسبوك، تويتر، Gmail، Freshdesk، أو أنشئ نموذج ويب لجمع التعليقات مباشرة.'
-      : 'Connect your external channels here. Add Facebook, Twitter, Gmail, Freshdesk, or create a web form to collect feedback directly.',
-    position: 'right',
-    route: '/app/integrations',
-  },
-  {
-    target: '[data-tour="integration-cards"]',
-    title: isAr ? 'قنواتك المتصلة' : 'Your Connected Channels',
-    description: isAr
-      ? 'شاهد حالة كل قناة، فعّلها أو ألغِ تفعيلها، أو احذفها. انقر على "إضافة تكامل" لربط قناة جديدة.'
-      : 'See the status of each channel, activate/deactivate, or remove them. Click "Add Integration" to connect a new channel.',
-    position: 'top',
-    route: '/app/integrations',
-  },
+  target: '[data-tour="integration-stats"]',
+  title: isAr ? 'نظرة عامة على التكاملات' : 'Integrations Overview',
+  description: isAr
+    ? 'شاهد عدد التكاملات الإجمالي، المتصلة، والمنفصلة في لمحة سريعة.'
+    : 'See total, connected, and disconnected integrations at a glance.',
+  position: 'bottom',
+  noScroll: true,
+  route: '/app/integrations',
+},
+{
+  target: '[data-tour="integration-header"]',
+  title: isAr ? 'إضافة قنوات جديدة' : 'Add New Channels',
+  description: isAr
+    ? 'انقر على "إنشاء نموذج ويب" لإنشاء رابط استقبال تعليقات، أو "إضافة تكامل" لربط فيسبوك، تويتر، Gmail، Freshdesk، والمزيد.'
+    : 'Click "Create Web Form" to generate a feedback collection link, or "Add Integration" to connect Facebook, Twitter, Gmail, Freshdesk, and more.',
+  position: 'bottom',
+  noScroll: true,
+  route: '/app/integrations',
+},
+{
+  target: '[data-tour="integration-cards"]',
+  title: isAr ? 'قنواتك المتصلة' : 'Your Connected Channels',
+  description: isAr
+    ? 'شاهد حالة كل قناة، فعّلها أو ألغِ تفعيلها، أو احذفها. انقر على "إضافة تكامل" لربط قناة جديدة.'
+    : 'See the status of each channel, activate/deactivate, or remove them. Click "Add Integration" to connect a new channel.',
+  position: 'top',
+  noScroll: true,
+  route: '/app/integrations',
+},
   {
     target: '[data-tour="sidebar-reports"]',
     title: isAr ? 'التقارير والتحليلات' : 'Reports & Analytics',
