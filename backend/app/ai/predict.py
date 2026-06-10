@@ -31,7 +31,15 @@ from app.ai.priority import calculate_priority
 from app.preprocessing.router import route_pipeline
 
 logger = logging.getLogger(__name__)
+import re
 
+def sanitize_for_ml(text: str) -> str:
+    """Remove all newlines and normalize whitespace for ML models."""
+    if not text:
+        return ""
+    # Replace all whitespace chars with single space
+    text = re.sub(r'\s+', ' ', text)
+    return text.strip()
 
 def should_classify_problem_type(sentiment: str, emotion: str) -> bool:
     """
@@ -96,6 +104,7 @@ def run_ai_pipeline(text: str) -> dict:
         # Step 1: Detect language from cleaned_text
         # Note: franko text is already converted to Arabic by preprocessing,
         # so route_pipeline will correctly detect it as Arabic
+        text = sanitize_for_ml(text)
         language = route_pipeline(text)
         logger.debug(f"Detected language: {language}")
 

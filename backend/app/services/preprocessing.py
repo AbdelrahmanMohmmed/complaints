@@ -1,119 +1,82 @@
-"""Feedback preprocessing service for cleansing and normalizing text.
-
-Runs as a scheduled task after feedback ingestion via APScheduler.
-Transforms raw feedback text into cleaned, normalized format for ML analysis.
-"""
+"""Async preprocessing service."""
 
 import logging
-from typing import Optional
+import asyncio
+from sqlalchemy import select, update
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from sqlalchemy import and_
-from sqlalchemy.orm import Session
-
-from .. import database, models
+from .. import models
 from ..preprocessing.router import preprocess_feedback
 
 logger = logging.getLogger(__name__)
 
 
-# ============================================================================
-# Helper Functions
-# ============================================================================
+async def run_preprocessing_async(db: AsyncSession) -> int:
+    """Process feedback in small concurrent batches."""
+    processed = 0
+    batch_size = 5  # Small batches for responsiveness
 
-
-def _is_empty_content(content: str) -> bool:
-    """Check if feedback content is empty or whitespace-only."""
-    return not content or content.strip() == ""
-
-
-# ============================================================================
-# Main Preprocessing Job
-# ============================================================================
-
-
-def run_preprocessing_job(db: Session) -> int:
-    """Preprocess all unprocessed feedback records.
-
-    Transforms raw feedback_context into cleaned_text using text preprocessing.
-    Updates status from 'unprocessed' to 'preprocessed'.
-
-    Args:
-        db: Database session
-
-    Returns:
-        Number of successfully processed records
-    """
-    processed_count = 0
-    error_count = 0
-
-    try:
-        # Query all feedback with status = unprocessed
-        unprocessed_feedback = db.query(models.Feedback).filter(
-            models.Feedback.status == "unprocessed"
-        ).all()
-
-        logger.info(f"Starting preprocessing for {len(unprocessed_feedback)} feedback records")
-
-        # Process each feedback record
-        for feedback in unprocessed_feedback:
-            try:
-                # Handle feedback with empty content
-                if _is_empty_content(feedback.feedback_context):
-                    feedback.cleaned_text = ""
-                    feedback.status = "preprocessed"
-                    db.commit()
-                    logger.debug(f"Feedback {feedback.feedback_id}: empty content, marked as preprocessed")
-                    processed_count += 1
-                    continue
-
-                # Clean and normalize feedback text
-                cleaned_text = preprocess_feedback(feedback.feedback_context)
-
-                # Update feedback with cleaned text and status
-                feedback.cleaned_text = cleaned_text
-                feedback.status = "preprocessed"
-                db.commit()
-
-                processed_count += 1
-                logger.debug(f"Feedback {feedback.feedback_id}: preprocessing successful")
-
-            except Exception as e:
-                error_count += 1
-                logger.error(
-                    f"Error preprocessing feedback {feedback.feedback_id}: {str(e)}",
-                    exc_info=True,
-                )
-                db.rollback()
-                continue
-
-        # Log job completion
-        logger.info(
-            f"Preprocessing job completed: {processed_count} processed, {error_count} errors"
+    while True:
+        # Fetch batch
+        result = await db.execute(
+            select(models.Feedback)
+            .where(models.Feedback.status == "unprocessed")
+            .limit(batch_size)
         )
-        return processed_count
+        batch = result.scalars().all()
 
-    except Exception as e:
-        logger.error(f"Critical error in preprocessing job: {str(e)}", exc_info=True)
-        db.rollback()
-        return processed_count
+        if not batch:
+            break
+
+        # Process concurrently using thread pool for sync ML code
+        tasks = []
+        for feedback in batch:
+            task = preprocess_single(feedback.feedback_context or "")
+            tasks.append(task)
+
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        # Apply results
+        for feedback, result in zip(batch, results):
+            if isinstance(result, Exception):
+                logger.error(f"Preprocessing failed: {result}")
+                feedback.cleaned_text = feedback.feedback_context or ""
+            else:
+                feedback.cleaned_text = result
+                processed += 1
+
+            feedback.status = "preprocessed"
+
+        await db.commit()
+        logger.debug(f"Preprocessed batch: {processed} total")
+
+        # Yield control to event loop (critical for responsiveness!)
+        await asyncio.sleep(0.001)
+
+    return processed
 
 
-# ============================================================================
-# Service Wrapper
-# ============================================================================
+async def preprocess_single(text: str) -> str:
+    """Run preprocessing in thread pool."""
+    if not text or not text.strip():
+        return ""
 
+    # Basic cleaning first
+    cleaned = text.replace('\n', ' ').replace('\r', ' ')
+    cleaned = ' '.join(cleaned.split())
 
-def preprocess_feedback_service() -> None:
-    """Wrapper function for preprocessing job with database session management.
+    # Run ML preprocessing in thread pool (never block event loop!)
+    loop = asyncio.get_running_loop()
 
-    Called by APScheduler as a background scheduled task.
-    Handles database session creation, error handling, and cleanup.
-    """
-    db = database.SessionLocal()
     try:
-        processed = run_preprocessing_job(db)
-        logger.info(f"Preprocessing service completed: {processed} records processed")
+        result = await asyncio.wait_for(
+            loop.run_in_executor(None, preprocess_feedback, cleaned),
+            timeout=10.0
+        )
+        return await result or cleaned
+    except asyncio.TimeoutError:
+        logger.warning("Preprocessing timeout, returning basic clean")
+        return cleaned
     except Exception as e:
-        logger.error(f"Error in preprocessing service: {str(e)}", exc_info=True)
-    finally:
-        db.close()
+        logger.error(f"Preprocessing error: {e}")
+        return cleaned

@@ -1,428 +1,208 @@
-"""Feedback ingestion service for fetching feedback from external platforms.
-
-Runs as a scheduled task every hour via APScheduler.
-Supports Facebook and Freshdesk as feedback sources.
-Handles API credential validation, deduplication, and error recovery.
-"""
+"""Async feedback ingestion service — FIXED: one session per integration."""
 
 import logging
 import base64
-from datetime import datetime, timedelta
 import json
-import imaplib
-from typing import Optional
 import re
+import asyncio
+from datetime import datetime
+from typing import Optional, Dict
 
 import httpx
-from sqlalchemy import and_
+from sqlalchemy import and_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import SQLAlchemyError
+
 from .. import models, utils, database
 from .get_email_messages import fetch_gmail_messages
-from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 
-
-# ============================================================================
-# Configuration
-# ============================================================================
-
-# Platform API base URLs
-PLATFORM_URLS = {
+PLATFORM_URLS: Dict[str, str] = {
     "facebook": "https://graph.facebook.com",
     "twitter": "https://api.twitter.com/2",
     "gmail": "imap.gmail.com",
 }
 
-# API request timeout in seconds
-API_TIMEOUT = 10
-
-
-def _parse_gmail_credentials(decrypted_payload: str) -> tuple[str, str]:
-    """Extract Gmail username/password from encrypted payload."""
-    parsed = json.loads(decrypted_payload)
-    username = (parsed.get("username") or "").strip()
-    password = (parsed.get("password") or "").strip()
-    if not username or not password:
-        raise ValueError("Missing Gmail username or password")
-    return username, password
+API_TIMEOUT = 10.0
+MAX_RETRIES = 3
 
 
 # ============================================================================
-# Helper Functions
+# Helpers (unchanged)
 # ============================================================================
 
+def parse_datetime(date_str: Optional[str]) -> datetime:
+    if not date_str:
+        return datetime.utcnow()
+    try:
+        if date_str.endswith('Z'):
+            date_str = date_str.replace('Z', '+00:00')
+        elif '+' not in date_str and '-' not in date_str[10:]:
+            date_str = f"{date_str}+00:00"
+        return datetime.fromisoformat(date_str)
+    except (ValueError, AttributeError):
+        return datetime.utcnow()
 
-def add_feedback_safe(
-    db: Session,
+
+def strip_html_tags(html_text: str) -> str:
+    if not html_text:
+        return ""
+    clean_text = re.sub(r"<[^>]+>", "", html_text)
+    clean_text = clean_text.replace("&quot;", '"').replace("&amp;", "&")
+    clean_text = clean_text.replace("&lt;", "<").replace("&gt;", ">")
+    clean_text = clean_text.replace("&nbsp;", " ").replace("&#39;", "'").replace("&apos;", "'")
+    return " ".join(clean_text.split())
+
+
+def truncate_text(text: str, max_length: int = 10000) -> str:
+    if len(text) > max_length:
+        return text[:max_length - 3] + "..."
+    return text
+
+
+async def add_feedback_safe(
+    db: AsyncSession,
     company_id: int,
     api_id: int,
     feedback_text: str,
     created_at: datetime,
     customer_name: Optional[str] = None,
 ) -> bool:
-    """Safely add feedback to database with deduplication.
-
-    Checks if feedback with same api_id + feedback_context already exists
-    to prevent duplicates. Returns True if feedback was added, False if duplicate.
-
-    Args:
-        db: Database session
-        company_id: Company ID
-        api_id: Integration API ID
-        feedback_text: Raw feedback text
-        created_at: Feedback creation timestamp
-        customer_name: Customer name (optional)
-
-    Returns:
-        True if feedback added, False if duplicate
-
-    """
+    """Safely add feedback with deduplication."""
     try:
-        # Check for duplicate feedback (same API + same text)
-        existing = (
-            db.query(models.Feedback)
-            .filter(
-                and_(
-                    models.Feedback.api_id == api_id,
-                    models.Feedback.feedback_context == feedback_text,
-                )
+        feedback_text = truncate_text(feedback_text)
+        if customer_name and len(customer_name) > 500:
+            customer_name = customer_name[:497] + "..."
+
+        # FIX: Use fetchone() instead of scalar_one_or_none() for safety
+        stmt = select(models.Feedback).where(
+            and_(
+                models.Feedback.api_id == api_id,
+                models.Feedback.feedback_context == feedback_text,
             )
-            .first()
         )
+        result = await db.execute(stmt)
+        existing = result.fetchone()
 
         if existing:
-            logger.debug(f"Skipped duplicate feedback from integration {api_id}")
+            logger.debug(f"Duplicate feedback from integration {api_id}")
             return False
 
-        # Create new feedback record
         new_feedback = models.Feedback(
             company_id=company_id,
             api_id=api_id,
             feedback_context=feedback_text,
             status="unprocessed",
             created_at=created_at,
-            customer_name=customer_name,
+            customer_name=customer_name or "Anonymous",
         )
         db.add(new_feedback)
-        db.commit()
-        logger.debug(f"Added new feedback from integration {api_id}")
         return True
 
-    except Exception as e:
-        db.rollback()
-        logger.error(f"Error adding feedback: {str(e)}", exc_info=True)
+    except SQLAlchemyError as e:
+        logger.error(f"DB error in add_feedback_safe: {e}")
+        await db.rollback()
         return False
 
 
-def mark_integration_expired(db: Session, integration_id: int) -> None:
-    """Mark integration as expired due to authentication failure.
-
-    Args:
-        db: Database session
-        integration_id: API integration ID
-
-    """
+async def mark_integration_expired(db: AsyncSession, integration_id: int) -> None:
     try:
-        integration = (
-            db.query(models.Api).filter(models.Api.api_id == integration_id).first()
-        )
-        if integration:
+        stmt = select(models.Api).where(models.Api.api_id == integration_id)
+        result = await db.execute(stmt)
+        integration = result.scalar_one_or_none()
+
+        if integration and integration.status != 'expired':
             integration.status = "expired"
-            db.commit()
+            await db.commit()
             logger.warning(f"Integration {integration_id} marked as expired")
-    except Exception as e:
-        db.rollback()
-        logger.error(f"Error marking integration as expired: {str(e)}")
+
+    except SQLAlchemyError as e:
+        logger.error(f"Error marking integration expired: {e}")
+        await db.rollback()
 
 
-def strip_html_tags(html_text: str) -> str:
-    """Remove HTML tags and decode HTML entities to extract plain text.
-
-    Args:
-        html_text: HTML text with tags
-
-    Returns:
-        Plain text without HTML tags
-    """
-    # Remove HTML tags
-    clean_text = re.sub(r"<[^>]+>", "", html_text)
-    # Decode common HTML entities
-    clean_text = clean_text.replace("&quot;", '"')
-    clean_text = clean_text.replace("&amp;", "&")
-    clean_text = clean_text.replace("&lt;", "<")
-    clean_text = clean_text.replace("&gt;", ">")
-    clean_text = clean_text.replace("&nbsp;", " ")
-    # Remove extra whitespace
-    clean_text = " ".join(clean_text.split())
-    return clean_text
+def _parse_gmail_credentials(decrypted_payload: str) -> tuple[str, str]:
+    parsed = json.loads(decrypted_payload)
+    username = (parsed.get("username") or "").strip()
+    password = (parsed.get("password") or "").strip()
+    if not username or not password:
+        raise ValueError("Missing Gmail credentials")
+    return username, password
 
 
 # ============================================================================
-# Platform-Specific Fetch Functions
+# Platform Fetchers (each gets their own db session)
 # ============================================================================
-
 
 async def fetch_facebook_comments(
     api_key: str,
     api_base_url: str,
-    db: Session,
+    db: AsyncSession,
     integration_id: int,
     company_id: int,
-    platform_page_id: str = None,
+    platform_page_id: Optional[str] = None,
 ) -> int:
-    """
-    Fetch comments from Facebook page.
-    GET {api_base_url}/{page_id}/feed?fields=comments&access_token={api_key}
-
-    If platform_page_id is provided, fetches from that specific page.
-    Otherwise fetches from the authenticated user's feed (legacy behavior).
-    """
     comments_added = 0
-    commenter_cache: dict[str, str] = {}
-    try:
-        # Use platform_page_id if available, otherwise fall back to /me/feed (legacy)
-        if platform_page_id:
-            url = f"{api_base_url}/{platform_page_id}/feed"
-        else:
-            url = f"{api_base_url}/me/feed"
+    retry_count = 0
 
-        params = {
-            "fields": "comments.limit(100){message,created_time,from{name,id}}",
-            "access_token": api_key,
-        }
+    url = f"{api_base_url}/{platform_page_id or 'me'}/feed"
+    params = {
+        "fields": "comments.limit(100){message,created_time,from{name,id}}",
+        "access_token": api_key,
+        "limit": 50,
+    }
 
-        async with httpx.AsyncClient(timeout=API_TIMEOUT) as client:
-            response = await client.get(url, params=params)
+    async with httpx.AsyncClient(timeout=API_TIMEOUT) as client:
+        while retry_count < MAX_RETRIES:
+            try:
+                response = await client.get(url, params=params)
 
-            # Handle authentication failures
-            if response.status_code in [401, 403]:
-                logger.warning(
-                    f"Integration {integration_id} returned {response.status_code} - marking as expired"
-                )
-                mark_integration_expired(db, integration_id)
-                return 0
+                if response.status_code in (401, 403):
+                    await mark_integration_expired(db, integration_id)
+                    return 0
 
-            if response.status_code != 200:
-                logger.error(
-                    f"Facebook API returned {response.status_code} for integration {integration_id}"
-                )
-                return 0
-
-            data = response.json()
-            if "data" not in data:
-                return 0
-
-            # Extract comments from posts
-            for post in data.get("data", []):
-                if "comments" not in post:
+                if response.status_code != 200:
+                    retry_count += 1
+                    await asyncio.sleep(2 ** retry_count)
                     continue
 
-                for comment in post.get("comments", {}).get("data", []):
-                    feedback_text = comment.get("message", "").strip()
-                    if not feedback_text:  # Skip empty comments
-                        continue
+                data = response.json()
+                posts = data.get("data", [])
 
-                    # Parse the created_time from Facebook (ISO format)
-                    created_at_str = comment.get("created_time")
-                    if not created_at_str:
-                        continue
+                for post in posts:
+                    for comment in post.get("comments", {}).get("data", []):
+                        feedback_text = comment.get("message", "").strip()
+                        if not feedback_text:
+                            continue
 
-                    try:
-                        created_at = datetime.fromisoformat(
-                            created_at_str.replace("Z", "+00:00")
-                        )
-                    except (ValueError, AttributeError):
-                        created_at = datetime.utcnow()
+                        created_at = parse_datetime(comment.get("created_time"))
+                        from_data = comment.get("from", {}) or {}
+                        customer_name = from_data.get("name", "Facebook User")
+                        if len(customer_name) > 100:
+                            customer_name = customer_name[:97] + "..."
 
-                    # Deduplicate: check if feedback already exists
-                    existing = (
-                        db.query(models.Feedback)
-                        .filter(
-                            and_(
-                                models.Feedback.api_id == integration_id,
-                                models.Feedback.created_at == created_at,
-                                models.Feedback.feedback_context == feedback_text,
-                            )
-                        )
-                        .first()
-                    )
+                        if await add_feedback_safe(
+                            db, company_id, integration_id,
+                            feedback_text, created_at, customer_name
+                        ):
+                            comments_added += 1
 
-                    if existing:
-                        continue
+                if comments_added > 0:
+                    await db.commit()
 
-                    # Create new feedback record
-                    commenter = comment.get("from", {}) or {}
-                    commenter_id = commenter.get("id")
-                    customer_name = commenter.get("name")
+                logger.info(f"Facebook: +{comments_added} comments for integration {integration_id}")
+                break
 
-                    if not customer_name and commenter_id:
-                        if commenter_id in commenter_cache:
-                            customer_name = commenter_cache[commenter_id]
-                        else:
-                            profile_url = f"{api_base_url}/{commenter_id}"
-                            profile_params = {
-                                "fields": "name",
-                                "access_token": api_key,
-                            }
-                            async with httpx.AsyncClient(timeout=API_TIMEOUT) as client:
-                                profile_response = await client.get(
-                                    profile_url, params=profile_params
-                                )
-                            if profile_response.status_code == 200:
-                                profile_data = profile_response.json() or {}
-                                customer_name = profile_data.get("name")
-                                if customer_name:
-                                    commenter_cache[commenter_id] = customer_name
-
-                    if not customer_name:
-                        customer_name = "Facebook User"
-                    new_feedback = models.Feedback(
-                        company_id=company_id,
-                        api_id=integration_id,
-                        feedback_context=feedback_text,
-                        created_at=created_at,
-                        customer_name=customer_name,
-                    )
-                    db.add(new_feedback)
-                    comments_added += 1
-
-            db.commit()
-            logger.info(
-                f"Facebook: Added {comments_added} new comments for integration {integration_id}"
-            )
-
-    except httpx.TimeoutException:
-        logger.error(
-            f"Facebook API timeout for integration {integration_id} - will retry next hour"
-        )
-    except httpx.RequestError as e:
-        logger.error(
-            f"Facebook API request error for integration {integration_id}: {str(e)}"
-        )
-    except Exception as e:
-        logger.error(
-            f"Error processing Facebook comments for integration {integration_id}: {str(e)}"
-        )
-        db.rollback()
-
-    return comments_added
-
-
-async def fetch_twitter_comments(
-    api_key: str, api_base_url: str, db: Session, integration_id: int, company_id: int
-) -> int:
-    """
-    Fetch recent mentions/tweets from Twitter/X.
-    GET {api_base_url}/tweets/search/recent with Authorization: Bearer {api_key}
-    """
-    comments_added = 0
-    try:
-        # For Twitter, we fetch recent tweets/mentions
-        # Using a query to get mentions (you may need to adjust based on your integration setup)
-        url = f"{api_base_url}/tweets/search/recent"
-
-        # Fetch tweets from the last hour
-        start_time = (datetime.utcnow() - timedelta(hours=1)).isoformat() + "Z"
-
-        params = {
-            "query": "from:@yourcompany",  # Adjust this based on your use case
-            "start_time": start_time,
-            "max_results": 100,
-            "tweet.fields": "created_at,author_id",
-            "expansions": "author_id",
-            "user.fields": "username",
-        }
-        headers = {"Authorization": f"Bearer {api_key}"}
-
-        async with httpx.AsyncClient(timeout=API_TIMEOUT) as client:
-            response = await client.get(url, params=params, headers=headers)
-
-            # Handle authentication failures
-            if response.status_code in [401, 403]:
-                logger.warning(
-                    f"Integration {integration_id} returned {response.status_code} - marking as expired"
-                )
-                mark_integration_expired(db, integration_id)
-                return 0
-
-            if response.status_code != 200:
-                logger.error(
-                    f"Twitter API returned {response.status_code} for integration {integration_id}"
-                )
-                return 0
-
-            data = response.json()
-
-            # Build a mapping of user IDs to usernames
-            user_map = {}
-            if "includes" in data and "users" in data["includes"]:
-                for user in data["includes"]["users"]:
-                    user_map[user["id"]] = user.get("username", "")
-
-            # Process tweets
-            for tweet in data.get("data", []):
-                feedback_text = tweet.get("text", "").strip()
-                if not feedback_text:
-                    continue
-
-                # Parse created_at from Twitter
-                created_at_str = tweet.get("created_at")
-                if not created_at_str:
-                    continue
-
-                try:
-                    created_at = datetime.fromisoformat(
-                        created_at_str.replace("Z", "+00:00")
-                    )
-                except (ValueError, AttributeError):
-                    created_at = datetime.utcnow()
-
-                # Deduplicate
-                existing = (
-                    db.query(models.Feedback)
-                    .filter(
-                        and_(
-                            models.Feedback.api_id == integration_id,
-                            models.Feedback.created_at == created_at,
-                            models.Feedback.feedback_context == feedback_text,
-                        )
-                    )
-                    .first()
-                )
-
-                if existing:
-                    continue
-
-                # Create new feedback record
-                author_name = user_map.get(tweet.get("author_id"), "")
-                if add_feedback_safe(
-                    db,
-                    company_id=company_id,
-                    api_id=integration_id,
-                    feedback_text=feedback_text,
-                    created_at=created_at,
-                    customer_name=author_name,
-                ):
-                    comments_added += 1
-
-            db.commit()
-            logger.info(
-                f"Twitter: Added {comments_added} new mentions for integration {integration_id}"
-            )
-
-    except httpx.TimeoutException:
-        logger.error(
-            f"Twitter API timeout for integration {integration_id} - will retry next hour"
-        )
-    except httpx.RequestError as e:
-        logger.error(
-            f"Twitter API request error for integration {integration_id}: {str(e)}"
-        )
-    except Exception as e:
-        logger.error(
-            f"Error processing Twitter mentions for integration {integration_id}: {str(e)}"
-        )
-        db.rollback()
+            except httpx.TimeoutException:
+                retry_count += 1
+                if retry_count >= MAX_RETRIES:
+                    break
+                await asyncio.sleep(2 ** retry_count)
+            except Exception as e:
+                logger.error(f"Facebook error: {e}")
+                await db.rollback()
+                break
 
     return comments_added
 
@@ -430,296 +210,230 @@ async def fetch_twitter_comments(
 async def fetch_freshdesk_tickets(
     api_key: str,
     api_base_url: str,
-    db: Session,
+    db: AsyncSession,
     integration_id: int,
     company_id: int,
 ) -> int:
-    """Fetch Freshdesk tickets and store them as feedback."""
     tickets_added = 0
-    try:
-        auth_value = base64.b64encode(f"{api_key}:X".encode()).decode()
-        headers = {"Authorization": f"Basic {auth_value}"}
-        url = f"{api_base_url}/api/v2/tickets"
-        params = {"per_page": 100, "include": "description,requester"}
+    retry_count = 0
 
-        async with httpx.AsyncClient(timeout=API_TIMEOUT) as client:
-            response = await client.get(url, params=params, headers=headers)
+    auth_value = base64.b64encode(f"{api_key}:X".encode()).decode()
+    headers = {"Authorization": f"Basic {auth_value}"}
+    url = f"{api_base_url}/api/v2/tickets"
+    params = {"per_page": 100, "include": "description,requester"}
 
-            if response.status_code in [401, 403]:
-                logger.warning(
-                    "Integration %s returned %s - marking as expired",
-                    integration_id,
-                    response.status_code,
-                )
-                mark_integration_expired(db, integration_id)
-                return 0
+    async with httpx.AsyncClient(timeout=API_TIMEOUT) as client:
+        while retry_count < MAX_RETRIES:
+            try:
+                response = await client.get(url, params=params, headers=headers)
 
-            if response.status_code != 200:
-                logger.error(
-                    "Freshdesk API returned %s for integration %s",
-                    response.status_code,
-                    integration_id,
-                )
-                return 0
+                if response.status_code in (401, 403):
+                    await mark_integration_expired(db, integration_id)
+                    return 0
 
-            tickets = response.json() or []
-
-            for ticket in tickets:
-                description = ticket.get("description_text") or ticket.get(
-                    "description"
-                )
-                feedback_text = strip_html_tags(description or "").strip()
-                if not feedback_text:
-                    subject = (ticket.get("subject") or "").strip()
-                    feedback_text = subject
-
-                if not feedback_text:
+                if response.status_code != 200:
+                    retry_count += 1
+                    await asyncio.sleep(2 ** retry_count)
                     continue
 
-                created_at_str = ticket.get("created_at")
-                if created_at_str:
-                    try:
-                        created_at = datetime.fromisoformat(
-                            created_at_str.replace("Z", "+00:00")
-                        )
-                    except (ValueError, AttributeError):
-                        created_at = datetime.utcnow()
-                else:
-                    created_at = datetime.utcnow()
+                tickets = response.json() or []
 
-                requester = ticket.get("requester") or {}
-                requester_name = (
-                    requester.get("name")
-                    or requester.get("email")
-                    or "Freshdesk Requester"
-                )
-                if add_feedback_safe(
-                    db=db,
-                    company_id=company_id,
-                    api_id=integration_id,
-                    feedback_text=feedback_text,
-                    created_at=created_at,
-                    customer_name=requester_name,
-                ):
-                    tickets_added += 1
+                for ticket in tickets:
+                    description = ticket.get("description_text") or ticket.get("description", "")
+                    feedback_text = strip_html_tags(description).strip()
+                    if not feedback_text:
+                        feedback_text = (ticket.get("subject") or "").strip()
+                    if not feedback_text:
+                        continue
 
-        logger.info(
-            "Freshdesk: Added %s new tickets for integration %s",
-            tickets_added,
-            integration_id,
-        )
+                    created_at = parse_datetime(ticket.get("created_at"))
+                    requester = ticket.get("requester") or {}
+                    requester_name = (
+                        requester.get("name") or
+                        requester.get("email") or
+                        "Freshdesk Requester"
+                    )
 
-    except httpx.TimeoutException:
-        logger.error(
-            "Freshdesk API timeout for integration %s - will retry next hour",
-            integration_id,
-        )
-    except httpx.RequestError as e:
-        logger.error(
-            "Freshdesk API request error for integration %s: %s",
-            integration_id,
-            str(e),
-        )
-    except Exception as e:
-        logger.error(
-            "Error processing Freshdesk tickets for integration %s: %s",
-            integration_id,
-            str(e),
-        )
-        db.rollback()
+                    if await add_feedback_safe(
+                        db, company_id, integration_id,
+                        feedback_text, created_at, requester_name
+                    ):
+                        tickets_added += 1
+
+                if tickets_added > 0:
+                    await db.commit()
+
+                logger.info(f"Freshdesk: +{tickets_added} tickets for integration {integration_id}")
+                break
+
+            except httpx.TimeoutException:
+                retry_count += 1
+                if retry_count >= MAX_RETRIES:
+                    break
+                await asyncio.sleep(2 ** retry_count)
+            except Exception as e:
+                logger.error(f"Freshdesk error: {e}")
+                await db.rollback()
+                break
 
     return tickets_added
 
 
-def fetch_gmail_feedback(
-    gmail_username: str,
-    gmail_password: str,
-    db: Session,
+async def fetch_gmail_feedback(
+    decrypted_key: str,
+    db: AsyncSession,
     integration_id: int,
     company_id: int,
 ) -> int:
-    """Fetch plain-text email messages from Gmail and save as feedback."""
-    comments_added = 0
+    messages_added = 0
+
     try:
-        messages = fetch_gmail_messages(
-            username=gmail_username,
-            password=gmail_password,
-            mailbox="INBOX",
-            max_messages=50,
+        username, password = _parse_gmail_credentials(decrypted_key)
+
+        # IMAP is blocking — run in thread pool
+        loop = asyncio.get_running_loop()
+        messages = await loop.run_in_executor(
+            None,
+            fetch_gmail_messages,
+            username, password, "INBOX", 50
         )
 
         for message in messages:
-            feedback_text = (message.get("body") or "").strip()
+            feedback_text = strip_html_tags(message.get("body", "").strip())
             if not feedback_text:
                 continue
 
             created_at = message.get("created_at") or datetime.utcnow()
-
-            existing = (
-                db.query(models.Feedback)
-                .filter(
-                    and_(
-                        models.Feedback.api_id == integration_id,
-                        models.Feedback.created_at == created_at,
-                        models.Feedback.feedback_context == feedback_text,
-                    )
-                )
-                .first()
-            )
-            if existing:
-                continue
-
             sender_name = (
-                message.get("from_name")
-                or message.get("from_email")
-                or "Unknown Sender"
+                message.get("from_name") or
+                message.get("from_email") or
+                "Unknown Sender"
             )
 
-            new_feedback = models.Feedback(
-                company_id=company_id,
-                api_id=integration_id,
-                feedback_context=feedback_text,
-                status="unprocessed",
-                created_at=created_at,
-                customer_name=sender_name,
+            if await add_feedback_safe(
+                db, company_id, integration_id,
+                feedback_text, created_at, sender_name
+            ):
+                messages_added += 1
+
+        if messages_added > 0:
+            await db.commit()
+
+        logger.info(f"Gmail: +{messages_added} messages for integration {integration_id}")
+
+    except ValueError:
+        await mark_integration_expired(db, integration_id)
+    except Exception as e:
+        logger.error(f"Gmail error: {e}")
+        await db.rollback()
+
+    return messages_added
+
+
+# ============================================================================
+# FIXED: Each integration gets its own DB session
+# ============================================================================
+
+async def process_single_integration(integration: models.Api) -> int:
+    """Process one integration with its own isolated database session."""
+    # NEW SESSION per integration — no concurrency conflicts
+    async with database.AsyncSessionLocal() as db:
+        try:
+            decrypted_key = utils.decrypt_api_key(integration.api_key)
+        except Exception as e:
+            logger.error(f"Failed to decrypt API key for integration {integration.api_id}: {e}")
+            return 0
+
+        channel_name = integration.channel_name.lower()
+        api_base_url = integration.api_base_url or PLATFORM_URLS.get(channel_name)
+
+        if not api_base_url:
+            logger.warning(f"No base URL for channel {channel_name}")
+            return 0
+
+        logger.info(f"Processing integration {integration.api_id} ({channel_name})")
+
+        comments_added = 0
+
+        if channel_name == "facebook":
+            comments_added = await fetch_facebook_comments(
+                decrypted_key, api_base_url, db,
+                integration.api_id, integration.company_id,
+                integration.platform_page_id,
             )
-            db.add(new_feedback)
-            comments_added += 1
+        elif channel_name == "freshdesk":
+            comments_added = await fetch_freshdesk_tickets(
+                decrypted_key, api_base_url, db,
+                integration.api_id, integration.company_id,
+            )
+        elif channel_name == "gmail":
+            comments_added = await fetch_gmail_feedback(
+                decrypted_key, db,
+                integration.api_id, integration.company_id,
+            )
+        elif channel_name == "twitter":
+            logger.warning(f"Twitter not implemented for integration {integration.api_id}")
+            comments_added = 0
+        else:
+            logger.warning(f"Unknown channel: {channel_name}")
+            comments_added = 0
 
-        db.commit()
-        logger.info(
-            "Gmail: Added %s new messages for integration %s",
-            comments_added,
-            integration_id,
-        )
-    except imaplib.IMAP4.error:
-        logger.warning(
-            "Gmail auth failed for integration %s - marking as expired",
-            integration_id,
-        )
-        mark_integration_expired(db, integration_id)
-        return 0
-    except Exception as e:
-        logger.error(
-            "Error processing Gmail messages for integration %s: %s",
-            integration_id,
-            str(e),
-        )
-        db.rollback()
-
-    return comments_added
+        # Session commits/rollbacks happen inside fetchers, but ensure close
+        return comments_added
 
 
-def mark_integration_expired(db: Session, integration_id: int):
-    """Mark an integration as expired due to authentication failure."""
-    try:
-        integration = (
-            db.query(models.Api).filter(models.Api.api_id == integration_id).first()
-        )
-        if integration:
-            integration.status = "expired"
-            db.commit()
-            logger.info(f"Integration {integration_id} marked as expired")
-    except Exception as e:
-        logger.error(f"Error marking integration {integration_id} as expired: {str(e)}")
-        db.rollback()
+async def ingest_feedback_async() -> int:
+    """Main entry point — fetches integrations list, then processes each with own session."""
+    total_comments = 0
+    processed = 0
+    failed = 0
 
+    # Get integrations list with a temporary session
+    async with database.AsyncSessionLocal() as db:
+        try:
+            stmt = select(models.Api).where(models.Api.status == "active")
+            result = await db.execute(stmt)
+            active_integrations = result.scalars().all()
+            # Detach from session so objects can be used after session closes
+            integrations = list(active_integrations)
+        except Exception as e:
+            logger.error(f"Failed to fetch integrations: {e}")
+            return 0
+
+    logger.info(f"Found {len(integrations)} active integrations")
+
+    # Process with semaphore to limit HTTP concurrency (not DB concurrency)
+    semaphore = asyncio.Semaphore(3)  # Max 3 concurrent HTTP requests
+
+    async def bounded_process(integration):
+        nonlocal total_comments, processed, failed
+        async with semaphore:
+            try:
+                count = await process_single_integration(integration)
+                total_comments += count
+                processed += 1
+            except Exception as e:
+                logger.error(f"Integration {integration.api_id} failed: {e}")
+                failed += 1
+
+    tasks = [bounded_process(i) for i in integrations]
+    await asyncio.gather(*tasks, return_exceptions=True)
+
+    logger.info(
+        f"Ingestion complete — Total: {total_comments}, "
+        f"Processed: {processed}, Failed: {failed}"
+    )
+    return total_comments
+
+
+# ============================================================================
+# APScheduler Wrapper
+# ============================================================================
 
 async def ingest_feedback() -> None:
-    """Main feedback ingestion job for all active integrations.
-
-    Fetches feedback from Facebook and Freshdesk APIs.
-    Processes each active integration and stores feedback with deduplication.
-    Marks integrations as expired on authentication failure.
-
-    Runs every hour via APScheduler.
-    """
-    logger.info("Starting feedback ingestion job...")
-    db = database.SessionLocal()
-    total_comments = 0
-
+    """Wrapper for APScheduler — no session argument needed."""
     try:
-        # Get all active integrations
-        active_integrations = (
-            db.query(models.Api).filter(models.Api.status == "active").all()
-        )
-
-        logger.info(f"Found {len(active_integrations)} active integrations")
-
-        for integration in active_integrations:
-            try:
-                # Decrypt API key
-                try:
-                    decrypted_key = utils.decrypt_api_key(integration.api_key)
-                except Exception as e:
-                    logger.error(
-                        f"Failed to decrypt API key for integration {integration.api_id}: {str(e)}"
-                    )
-                    continue
-
-                channel_name = integration.channel_name.lower()
-                api_base_url = integration.api_base_url or PLATFORM_URLS.get(
-                    channel_name
-                )
-
-                if not api_base_url:
-                    logger.warning(f"No base URL for channel {channel_name}")
-                    continue
-
-                logger.info(
-                    f"Processing integration {integration.api_id} ({channel_name}) for company {integration.company_id}"
-                )
-
-                # Call the appropriate platform API
-                comments_added = 0
-                if channel_name == "facebook":
-                    comments_added = await fetch_facebook_comments(
-                        decrypted_key,
-                        api_base_url,
-                        db,
-                        integration.api_id,
-                        integration.company_id,
-                        integration.platform_page_id,
-                    )
-                elif channel_name == "freshdesk":
-                    comments_added = await fetch_freshdesk_tickets(
-                        decrypted_key,
-                        api_base_url,
-                        db,
-                        integration.api_id,
-                        integration.company_id,
-                    )
-                elif channel_name == "gmail":
-                    gmail_username, gmail_password = _parse_gmail_credentials(
-                        decrypted_key
-                    )
-                    comments_added = fetch_gmail_feedback(
-                        gmail_username,
-                        gmail_password,
-                        db,
-                        integration.api_id,
-                        integration.company_id,
-                    )
-                else:
-                    logger.warning(
-                        f"Unknown channel name: {channel_name} for integration {integration.api_id}"
-                    )
-                    continue
-
-                total_comments += comments_added
-
-            except Exception as e:
-                logger.error(
-                    f"Error processing integration {integration.api_id}: {str(e)}",
-                    exc_info=True,
-                )
-                continue
-
-        logger.info(
-            f"Feedback ingestion job completed. Total comments added: {total_comments}"
-        )
-
+        total = await ingest_feedback_async()
+        logger.info(f"Ingestion service completed: {total} items")
     except Exception as e:
-        logger.error(f"Fatal error in feedback ingestion job: {str(e)}", exc_info=True)
-    finally:
-        db.close()
+        logger.error(f"Fatal error in ingestion service: {e}", exc_info=True)

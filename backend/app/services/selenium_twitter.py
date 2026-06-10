@@ -1,6 +1,10 @@
-import asyncio
 import json
-from playwright.async_api import async_playwright
+import time
+from seleniumbase import Driver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
 # ─── CONFIG ───────────────────────────────────────────────────────────
 TARGET_USERNAME = "F0ODHub"
@@ -11,8 +15,11 @@ SCROLL_DELAY_S = 2
 MAX_POSTS = 2
 GOTO_TIMEOUT_MS = 15000
 
+
 # ──────────────────────────────────────────────────────────────────────
-async def fetch_replies(
+
+
+def fetch_replies(
         target_username: str = TARGET_USERNAME,
         auth_token: str = AUTH_TOKEN,
         ct0: str = CT0,
@@ -27,60 +34,70 @@ async def fetch_replies(
     if not auth_token or not ct0:
         raise ValueError("Twitter auth cookies are required")
 
+    tweet_urls = []
     all_replies = []
 
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-        context = await browser.new_context()
+    # Initialize SeleniumBase driver
+    driver = Driver(uc=True, headless=False)  # uc=True for undetected mode
 
-        # Add cookies
-        await context.add_cookies([
-            {
-                "name": "auth_token",
-                "value": auth_token,
-                "domain": ".x.com",
-                "path": "/",
-            },
-            {
-                "name": "ct0",
-                "value": ct0,
-                "domain": ".x.com",
-                "path": "/",
-            }
-        ])
+    try:
+        # Set cookies
+        driver.get("https://x.com")
+        time.sleep(2)
 
-        page = await context.new_page()
+        # Add authentication cookies
+        driver.add_cookie({
+            "name": "auth_token",
+            "value": auth_token,
+            "domain": ".x.com",
+            "path": "/",
+        })
+        driver.add_cookie({
+            "name": "ct0",
+            "value": ct0,
+            "domain": ".x.com",
+            "path": "/",
+        })
 
-        async def scroll_until_max_comments(max_comments: int) -> list:
+        # Refresh to apply cookies
+        driver.refresh()
+        time.sleep(3)
+
+        def scroll_until_max_comments(max_comments: int) -> list:
             """Scroll and collect replies until max_comments or no new content."""
             collected_replies = []
             seen_texts = set()  # Track unique comments to avoid duplicates
             no_new_content_count = 0
-            max_no_new_content = 2  # Stop after 3 scrolls with no new content
+            max_no_new_content = 3  # Stop after 3 scrolls with no new content
 
             while len(collected_replies) < max_comments:
                 # Extract current visible replies
-                replies = await page.evaluate("""
-                                              () => {
-                                                  const rows = [];
+                replies = driver.execute_script("""
+                const rows = [];
 
-                                                  document.querySelectorAll('article').forEach(article => {
-                                                      const textEl = article.querySelector('[data-testid="tweetText"]');
-                                                      const userEl = article.querySelector('[data-testid="User-Name"] a[href^="/"]');
-                                                      const timeEl = article.querySelector('time');
+                document.querySelectorAll('article').forEach(article => {
 
-                                                      if (!textEl || !userEl) return;
+                    const textEl =
+                        article.querySelector('[data-testid="tweetText"]');
 
-                                                      rows.push({
-                                                          from_user: userEl.href.split('/').pop(),
-                                                          reply_text: textEl.innerText,
-                                                          date: timeEl ? timeEl.getAttribute('datetime') : ''
-                                                      });
-                                                  });
+                    const userEl =
+                        article.querySelector('[data-testid="User-Name"] a[href^="/"]');
 
-                                                  return rows;
-                                              }
-                                              """)
+                    const timeEl =
+                        article.querySelector('time');
+
+                    if (!textEl || !userEl)
+                        return;
+
+                    rows.push({
+                        from_user: userEl.href.split('/').pop(),
+                        reply_text: textEl.innerText,
+                        date: timeEl ? timeEl.getAttribute('datetime') : ''
+                    });
+                });
+
+                return rows;
+                """)
 
                 new_found = False
 
@@ -106,59 +123,87 @@ async def fetch_replies(
                     no_new_content_count = 0  # Reset counter when new content found
 
                 # Scroll down to load more
-                await page.mouse.wheel(0, 1600)
-                await asyncio.sleep(scroll_delay_s)
+                driver.execute_script("window.scrollBy(0, 1600)")
+                time.sleep(scroll_delay_s)
 
             return collected_replies[:max_comments]
 
         # Step 1: Load your profile
         print(f"\n📄 Loading profile: @{target_username} ...")
-        await page.goto(
-            f"https://x.com/{target_username}",
-            wait_until="domcontentloaded",
-            timeout=goto_timeout_ms
-        )
+        driver.get(f"https://x.com/{target_username}")
 
         # Wait for articles to load
-        await page.wait_for_selector("article", timeout=goto_timeout_ms)
+        wait = WebDriverWait(driver, goto_timeout_ms / 1000)
+        wait.until(EC.presence_of_element_located((By.TAG_NAME, "article")))
 
+        # Step 2: Scroll to load posts
+        driver.execute_script("window.scrollBy(0, 1600)")
+        time.sleep(scroll_delay_s)
+        driver.execute_script("window.scrollBy(0, 1600)")
+        time.sleep(scroll_delay_s)
 
         # Step 3: Collect post URLs on the profile page
         print("\n🔎 Looking for tweets...")
 
         # Give React/X time to hydrate the timeline
-        await asyncio.sleep(5)
+        time.sleep(5)
 
         # Scroll a few times to load more tweets
-        while True:
-            await page.mouse.wheel(0, 2000)
-            await asyncio.sleep(2)
-            status_links = await page.query_selector_all('a[href*="/status/"]')
-            if len(status_links) >= max_posts:
-                break
+        for _ in range(3):
+            driver.execute_script("window.scrollBy(0, 2000)")
+            time.sleep(2)
 
+        # Debug info
+        articles = driver.find_elements(By.TAG_NAME, "article")
+        print(f"Articles found: {len(articles)}")
 
-        tweet_urls = await page.evaluate("""
-                                         () => {
-                                             const urls = [];
+        status_links = driver.find_elements(By.CSS_SELECTOR, 'a[href*="/status/"]')
+        print(f"Status links found: {len(status_links)}")
 
-                                             document.querySelectorAll('time').forEach(timeEl => {
-                                                 const link = timeEl.closest('a[href*="/status/"]');
+        tweet_urls = driver.execute_script("""
+            const urls = [];
 
-                                                 if (
-                                                     link &&
-                                                     link.href &&
-                                                     link.href.includes('/status/') &&
-                                                     !link.href.includes('/analytics')
-                                                 ) {
-                                                     urls.push(link.href);
-                                                 }
-                                             });
+            document.querySelectorAll('time').forEach(timeEl => {
+                const link = timeEl.closest('a[href*="/status/"]');
 
-                                             return [...new Set(urls)];
-                                         }
-                                         """)
+                if (
+                    link &&
+                    link.href &&
+                    link.href.includes('/status/') &&
+                    !link.href.includes('/analytics')
+                ) {
+                    urls.push(link.href);
+                }
+            });
 
+            return [...new Set(urls)];
+        """)
+
+        print("\nTweet URLs:")
+        for url in tweet_urls:
+            print(url)
+
+        # Fallback method if first method fails
+        if not tweet_urls:
+            print("⚠️ Timestamp method found nothing. Trying fallback...")
+
+            tweet_urls = driver.execute_script("""
+                const urls = [];
+
+                document.querySelectorAll('a[href*="/status/"]').forEach(a => {
+                    if (
+                        a.href &&
+                        a.href.includes('/status/') &&
+                        !a.href.includes('/analytics')
+                    ) {
+                        urls.push(a.href);
+                    }
+                });
+
+                return [...new Set(urls)];
+            """)
+
+            print(f"Fallback found {len(tweet_urls)} URLs")
 
         if max_posts:
             tweet_urls = tweet_urls[:max_posts]
@@ -167,37 +212,30 @@ async def fetch_replies(
 
         if not tweet_urls:
             print("\n❌ No tweets found.")
-            print("Current URL:", page.url)
-            print("Page title:", await page.title())
+            print("Current URL:", driver.current_url)
+            print("Page title:", driver.title)
 
-            html_preview = await page.content()
+            html_preview = driver.page_source[:3000]
             print("\nHTML Preview:")
-            print(html_preview[:3000])
+            print(html_preview)
 
-            await browser.close()
             return
-
         # Step 4: Visit each post and scrape replies
         print("\n🔍 Fetching replies...\n")
         for idx, post_url in enumerate(tweet_urls, start=1):
             print(f"\n{'─' * 60}")
             print(f"[{idx}/{len(tweet_urls)}] {post_url}")
-
-            await page.goto(
-                post_url,
-                wait_until="domcontentloaded",
-                timeout=goto_timeout_ms
-            )
+            driver.get(post_url)
 
             # Wait for replies to load
             try:
-                await page.wait_for_selector("article", timeout=goto_timeout_ms)
-            except Exception as e:
+                wait.until(EC.presence_of_element_located((By.TAG_NAME, "article")))
+            except TimeoutException:
                 print(f"    ⚠️ Timeout waiting for replies on {post_url}")
                 continue
 
             # Scroll until max comments or end of comments
-            replies = await scroll_until_max_comments(max_comments_per_post)
+            replies = scroll_until_max_comments(max_comments_per_post)
 
             for reply in replies:
                 all_replies.append(
@@ -213,9 +251,7 @@ async def fetch_replies(
                 )
 
             print(f"    📊 Collected {len(replies)} comment(s) for this post.")
-            await asyncio.sleep(1)
-
-        await browser.close()
+            time.sleep(1)
 
         # Save results
         if save_to_file and all_replies:
@@ -225,8 +261,11 @@ async def fetch_replies(
         elif save_to_file:
             print("\n📭 No replies found.")
 
+    finally:
+        driver.quit()
+
     return all_replies
 
 
 if __name__ == "__main__":
-    asyncio.run(fetch_replies(save_to_file=True))
+    fetch_replies(save_to_file=True)
