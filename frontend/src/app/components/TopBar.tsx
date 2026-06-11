@@ -124,7 +124,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
         {/* User Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="gap-2 px-2 h-10">
+            <Button data-tour="topbar-user" variant="ghost" className="gap-2 px-2 h-10">
               <div className={cn('w-8 h-8 rounded-full bg-gradient-to-br flex items-center justify-center flex-shrink-0', gradientClass)}>
                 <span className="text-white text-xs font-bold">
                   {initials}

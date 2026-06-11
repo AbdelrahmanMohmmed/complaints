@@ -1,6 +1,3 @@
-// NOTE: This page currently reads feedback and user data from MOCK sources (`mockData.ts`).
-// TODO: Replace `mockFeedback` and `mockUsers` with real `/api/v1/complaints` and `/api/v1/users` API calls.
-
 import React, { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -11,6 +8,7 @@ import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
+import { Eye, Search, Download, UserCheck, AlertTriangle } from 'lucide-react';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '../components/ui/table';
@@ -20,14 +18,16 @@ import {
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
 } from '../components/ui/dialog';
-import { Search, Download, UserCheck, AlertTriangle } from 'lucide-react';
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle,
+} from '../components/ui/sheet';
 import { cn } from '../components/ui/utils';
+
 interface BackendFeedback {
   feedback_id: number;
   company_id: number;
   api_id: number | null;
   channel_name?: string | null;
-  category_name?: string | null;
   customer_name: string | null;
   feedback_context: string | null;
   status: string;
@@ -40,6 +40,7 @@ interface BackendFeedback {
   priority: string | null;
   created_at: string;
 }
+
 const sentimentColors: Record<string, string> = {
   positive: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border border-green-200 dark:border-green-800',
   neutral: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700',
@@ -93,7 +94,7 @@ const HUMAN_LABELS: Record<string, string> = {
 const toTitleCase = (value: string) =>
   value
     .replace(/[_-]+/g, ' ')
-    .replace(/\w/g, (match) => match.toUpperCase());
+    .replace(/\b\w/g, (match) => match.toUpperCase());
 
 const displayLabel = (labelKey: string, fallbackValue: string) => {
   if (labelKey === fallbackValue) return fallbackValue;
@@ -170,14 +171,14 @@ export function FeedbackList() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const isAr = language === 'ar';
-
+  const [selectedMobileFeedback, setSelectedMobileFeedback] = useState<BackendFeedback | null>(null);
+  const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [sentimentFilter, setSentimentFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [emotionFilter, setEmotionFilter] = useState('all');
-  // const [companFilter, setCompanyFilter] = useState('all');
   const [feedbackList, setFeedbackList] = useState<BackendFeedback[]>([]);
   const [feedbackStatuses, setFeedbackStatuses] = useState<Record<number, string>>({});
   const [feedbackPriorities, setFeedbackPriorities] = useState<Record<number, string>>({});
@@ -188,7 +189,6 @@ export function FeedbackList() {
   const [selectedFeedback, setSelectedFeedback] = useState<BackendFeedback | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
-
   const [selectedAgentId, setSelectedAgentId] = useState('');
 
   // Agents are redirected to their own page
@@ -203,7 +203,6 @@ export function FeedbackList() {
     const fetchFeedback = async () => {
       try {
         const data = await request<BackendFeedback[]>('/feedback/');
-        console.log('Fetched feedback:', data); // ← add this temporarily
         setFeedbackList(data);
         setFeedbackStatuses(Object.fromEntries(data.map(fb => [fb.feedback_id, fb.status || 'open'])));
         setFeedbackPriorities(Object.fromEntries(data.map(fb => [fb.feedback_id, fb.priority || 'low'])));
@@ -216,6 +215,7 @@ export function FeedbackList() {
     };
     fetchFeedback();
   }, []);
+
   const filteredFeedback = feedbackList.filter((fb) => {
     const matchesSearch =
       (fb.customer_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -228,10 +228,19 @@ export function FeedbackList() {
     const sentimentKey = getSentimentKey(fb.sentiment_id, fb.sentiment);
     const matchesSentiment = sentimentFilter === 'all' || sentimentKey === sentimentFilter;
     const matchesPriority = priorityFilter === 'all' || currentPriority === priorityFilter;
-    const matchesCategory = categoryFilter === 'all' || (fb.category_name || '—') === categoryFilter;
+    const matchesCategory = categoryFilter === 'all' || (fb.problem_type || '—') === categoryFilter;
     const matchesEmotion = emotionFilter === 'all' || String(fb.emotion_id ?? 'none') === emotionFilter;
     return matchesSearch && matchesStatus && matchesSentiment && matchesPriority && matchesCategory && matchesEmotion;
   });
+
+  const handleRowClick = (fb: BackendFeedback) => {
+    if (window.innerWidth < 640) {
+      setSelectedMobileFeedback(fb);
+      setMobileDetailOpen(true);
+    } else {
+      navigate(`/app/feedback/${fb.feedback_id}`);
+    }
+  };
 
   const totalPages = Math.max(1, Math.ceil(filteredFeedback.length / pageSize));
   const paginatedFeedback = filteredFeedback.slice(
@@ -250,8 +259,9 @@ export function FeedbackList() {
   }, [currentPage, totalPages]);
 
   const categoryOptions = Array.from(
-    new Set(feedbackList.map(fb => fb.category_name || '—'))
+    new Set(feedbackList.map(fb => fb.problem_type || '—'))
   ).filter(name => name && name !== '—');
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString(isAr ? 'ar-SA' : 'en-US', {
       year: 'numeric', month: 'short', day: 'numeric',
@@ -305,6 +315,14 @@ export function FeedbackList() {
 
   const handlePriorityChange = async (feedbackId: number, newPriority: string) => {
     setFeedbackPriorities(prev => ({ ...prev, [feedbackId]: newPriority }));
+    try {
+      await request(`/feedback/${feedbackId}/priority`, {
+        method: 'PATCH',
+        body: JSON.stringify({ priority: newPriority }),
+      });
+    } catch (err) {
+      console.error('Failed to update priority', err);
+    }
   };
 
   const handleProblemTypeChange = async (feedbackId: number, newProblemTypeId: number | null) => {
@@ -344,7 +362,6 @@ export function FeedbackList() {
   };
 
   const pageTitle = t('feedback.title');
-
   const pageSubtitle = isManagerOrSupervisor
     ? (isAr ? 'عرض وإدارة التعليقات' : 'View and manage feedback')
     : (isAr ? 'عرض تعليقاتك' : 'View your feedback');
@@ -369,15 +386,11 @@ export function FeedbackList() {
         </div>
       </div>
 
-   
-
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
-
+      {/* Filters - Scrollable on mobile */}
+      <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
         {/* Search */}
-        <div className="relative flex-1 max-w-[420px]">
+        <div className="relative flex-1 min-w-[200px] max-w-[420px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-
           <Input
             type="search"
             placeholder={t('feedback.searchPlaceholder')}
@@ -387,276 +400,319 @@ export function FeedbackList() {
           />
         </div>
 
-        {/* Filters - Category */}
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="w-[150px] h-11">
-            <SelectValue placeholder="Category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{isAr ? 'جميع التصنيفات' : 'All Categories'}</SelectItem>
-            {categoryOptions.map(category => (
-              <SelectItem key={category} value={category}>{getCategoryDisplayLabel(category, isAr)}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {/* Filters - scrollable container for mobile */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="w-[140px] sm:w-[150px] h-11 shrink-0">
+              <SelectValue placeholder="Category" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{isAr ? 'جميع التصنيفات' : 'All Categories'}</SelectItem>
+              {categoryOptions.map(category => (
+                <SelectItem key={category} value={category}>{getCategoryDisplayLabel(category, isAr)}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-        {/* Filters - Sentiment */}
-        <Select value={sentimentFilter} onValueChange={setSentimentFilter}>
-          <SelectTrigger className="w-[150px] h-11">
-            <SelectValue placeholder="Sentiment" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{isAr ? 'جميع المشاعر' : 'All Sentiment'}</SelectItem>
-            <SelectItem value="positive">{isAr ? 'إيجابي' : 'Positive'}</SelectItem>
-            <SelectItem value="negative">{isAr ? 'سلبي' : 'Negative'}</SelectItem>
-            <SelectItem value="neutral">{isAr ? 'محايد' : 'Neutral'}</SelectItem>
-          </SelectContent>
-        </Select>
+          <Select value={sentimentFilter} onValueChange={setSentimentFilter}>
+            <SelectTrigger className="w-[140px] sm:w-[150px] h-11 shrink-0">
+              <SelectValue placeholder="Sentiment" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{isAr ? 'جميع المشاعر' : 'All Sentiment'}</SelectItem>
+              <SelectItem value="positive">{isAr ? 'إيجابي' : 'Positive'}</SelectItem>
+              <SelectItem value="negative">{isAr ? 'سلبي' : 'Negative'}</SelectItem>
+              <SelectItem value="neutral">{isAr ? 'محايد' : 'Neutral'}</SelectItem>
+            </SelectContent>
+          </Select>
 
-        {/* Filters - Emotion */}
-        <Select value={emotionFilter} onValueChange={setEmotionFilter}>
-          <SelectTrigger className="w-[150px] h-11">
-            <SelectValue placeholder="Emotion" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{isAr ? ' جميع الانفعالات' : 'All Emotions'}</SelectItem>
-            <SelectItem value="satisfied">{isAr ? 'راضي' : 'Satisfied'}</SelectItem>
-            <SelectItem value="frustrated">{isAr ? 'محبط' : 'Frustrated'}</SelectItem>
-            <SelectItem value="neutral">{isAr ? 'محايد' : 'Neutral'}</SelectItem>
-            <SelectItem value="disgusted">{isAr ? 'مشمئز' : 'Disgusted'}</SelectItem>
-          </SelectContent>
-        </Select>
+          <Select value={emotionFilter} onValueChange={setEmotionFilter}>
+            <SelectTrigger className="w-[140px] sm:w-[150px] h-11 shrink-0">
+              <SelectValue placeholder="Emotion" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{isAr ? ' جميع الانفعالات' : 'All Emotions'}</SelectItem>
+              <SelectItem value="satisfied">{isAr ? 'راضي' : 'Satisfied'}</SelectItem>
+              <SelectItem value="frustrated">{isAr ? 'محبط' : 'Frustrated'}</SelectItem>
+              <SelectItem value="neutral">{isAr ? 'محايد' : 'Neutral'}</SelectItem>
+              <SelectItem value="disgusted">{isAr ? 'مشمئز' : 'Disgusted'}</SelectItem>
+            </SelectContent>
+          </Select>
 
-        {/* Filters - Priority */}
-        <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-          <SelectTrigger className="w-[150px] h-11">
-            <SelectValue placeholder="Priority" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{isAr ? 'جميع الأولويات' : 'All Priorities'}</SelectItem>
-            <SelectItem value="low">{isAr ? 'منخفضة' : 'Low'}</SelectItem>
-            <SelectItem value="medium">{isAr ? 'متوسطة' : 'Medium'}</SelectItem>
-            <SelectItem value="high">{isAr ? 'عالية' : 'High'}</SelectItem>
-            <SelectItem value="critical">{isAr ? 'حرجة' : 'Critical'}</SelectItem>
-          </SelectContent>
-        </Select>
+          <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+            <SelectTrigger className="w-[140px] sm:w-[150px] h-11 shrink-0">
+              <SelectValue placeholder="Priority" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{isAr ? 'جميع الأولويات' : 'All Priorities'}</SelectItem>
+              <SelectItem value="low">{isAr ? 'منخفضة' : 'Low'}</SelectItem>
+              <SelectItem value="medium">{isAr ? 'متوسطة' : 'Medium'}</SelectItem>
+              <SelectItem value="high">{isAr ? 'عالية' : 'High'}</SelectItem>
+              <SelectItem value="critical">{isAr ? 'حرجة' : 'Critical'}</SelectItem>
+            </SelectContent>
+          </Select>
 
-        {/* Filters - Status */}
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[150px] h-11">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{isAr ? 'جميع الحالات' : 'All Status'}</SelectItem>
-            <SelectItem value="open">{isAr ? 'مفتوح' : 'Open'}</SelectItem>
-            <SelectItem value="inprogress">{isAr ? 'قيد المعالجة' : 'In Progress'}</SelectItem>
-            <SelectItem value="resolved">{isAr ? 'تم الحل' : 'Resolved'}</SelectItem>
-            <SelectItem value="closed">{isAr ? 'مغلق' : 'Closed'}</SelectItem>
-            <SelectItem value="analyzed">{isAr ? 'محلل' : 'Analyzed'}</SelectItem>
-          </SelectContent>
-        </Select>
-
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[140px] sm:w-[150px] h-11 shrink-0">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{isAr ? 'جميع الحالات' : 'All Status'}</SelectItem>
+              <SelectItem value="open">{isAr ? 'مفتوح' : 'Open'}</SelectItem>
+              <SelectItem value="inprogress">{isAr ? 'قيد المعالجة' : 'In Progress'}</SelectItem>
+              <SelectItem value="resolved">{isAr ? 'تم الحل' : 'Resolved'}</SelectItem>
+              <SelectItem value="closed">{isAr ? 'مغلق' : 'Closed'}</SelectItem>
+              <SelectItem value="analyzed">{isAr ? 'محلل' : 'Analyzed'}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
-      {/* Feedback Table */}
-      <Card>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-gray-50/50 dark:bg-gray-800/30">
-                <TableHead className="font-semibold hidden sm:table-cell text-xs">{isAr ? 'الرقم' : 'ID'}</TableHead>
-                <TableHead className="font-semibold">{t('feedback.customer')}</TableHead>
-                <TableHead className="hidden md:table-cell font-semibold">{t('feedback.content')}</TableHead>
-                <TableHead className="hidden xl:table-cell font-semibold">{t('feedback.problemType')}</TableHead>
-                <TableHead className="font-semibold">{t('feedback.sentiment')}</TableHead>
-                <TableHead className="hidden lg:table-cell font-semibold">{t('feedback.emotion')}</TableHead>
-                <TableHead className="hidden lg:table-cell font-semibold">{t('feedback.priority')}</TableHead>
-                <TableHead className="hidden lg:table-cell font-semibold">{isAr ? 'الحالة' : 'Status'}</TableHead>
-                <TableHead className="hidden xl:table-cell font-semibold">{t('feedback.channel')}</TableHead>
-                <TableHead className="hidden sm:table-cell font-semibold">{t('common.date')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedFeedback.map((fb) => {
-                const currentStatus = normalizeStatus(feedbackStatuses[fb.feedback_id] || fb.status);
-                const currentPriority = normalizePriority(
-                  feedbackPriorities[fb.feedback_id] || fb.priority || 'low'
-                );
-                const currentSentimentKey = getSentimentKey(
-                  feedbackSentiments[fb.feedback_id] ?? fb.sentiment_id,
-                  fb.sentiment
-                );
-                const currentEmotionKey = EMOTION_ID_TO_KEY[
-                  (feedbackEmotions[fb.feedback_id] ?? fb.emotion_id ?? 2) as number
-                ] || 'neutral';
-                return (
-                  <TableRow
-                    key={fb.feedback_id}
-                    className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors"
-                    onClick={() => navigate(`/app/feedback/${fb.feedback_id}`)}
-                  >
-                    {/* ID */}
-                    <TableCell className="hidden sm:table-cell">
-                      <span className="text-xs font-mono text-gray-400">{fb.feedback_id}</span>
-                    </TableCell>
-                    
-                    {/* Customer */}
-                    <TableCell>
-                      <div className="font-semibold text-gray-900 dark:text-white text-sm">{fb.customer_name || 'Unknown'}</div>
-                    </TableCell>
-                    
-                    {/* Content */}
-                    <TableCell className="hidden md:table-cell max-w-xs">
-                      <div className="truncate text-sm text-gray-600 dark:text-gray-400">{fb.feedback_context || '—'}</div>
-                    </TableCell>
-                    
-                    {/* Problem Type */}
-                    <TableCell className="hidden xl:table-cell">
-                      {isManagerOrSupervisor ? (
-                        <div onClick={(e) => e.stopPropagation()}>
-                          <Select
-                            value={String(feedbackProblemTypes[fb.feedback_id] ?? -1)}
-                            onValueChange={(val) => handleProblemTypeChange(fb.feedback_id, val === '-1' ? null : Number(val))}
-                          >
-                            <SelectTrigger className="h-7 w-[140px] text-xs"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="0" className="text-xs">{t('problemType.0')}</SelectItem>
-                              <SelectItem value="1" className="text-xs">{t('problemType.1')}</SelectItem>
-                              <SelectItem value="2" className="text-xs">{t('problemType.2')}</SelectItem>
-                              <SelectItem value="3" className="text-xs">{t('problemType.3')}</SelectItem>
-                              <SelectItem value="4" className="text-xs">{t('problemType.4')}</SelectItem>
-                              <SelectItem value="5" className="text-xs">{t('problemType.5')}</SelectItem>
-                              <SelectItem value="6" className="text-xs">{t('problemType.6')}</SelectItem>
-                              <SelectItem value="7" className="text-xs">{t('problemType.7')}</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      ) : (
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
-                          {getProblemTypeLabel(t, feedbackProblemTypes[fb.feedback_id] ?? fb.problem_type_id, fb.problem_type)}
-                        </span>
-                      )}
-                    </TableCell>
-                    
-                    {/* Sentiment */}
-                    <TableCell>
-                      {isManagerOrSupervisor ? (
-                        <div onClick={(e) => e.stopPropagation()}>
-                          <Select
-                            value={String(feedbackSentiments[fb.feedback_id] ?? -1)}
-                            onValueChange={(val) => handleSentimentChange(fb.feedback_id, val === '-1' ? null : Number(val))}
-                          >
-                            <SelectTrigger className={cn('h-7 w-[100px] text-xs transition-colors duration-200', sentimentColors[currentSentimentKey])}><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="0" className="text-xs">{t('sentiment.negative')}</SelectItem>
-                              <SelectItem value="1" className="text-xs">{t('sentiment.neutral')}</SelectItem>
-                              <SelectItem value="2" className="text-xs">{t('sentiment.positive')}</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      ) : (
-                        <Badge className={cn(classificationBadgeClass, sentimentColors[currentSentimentKey])}>
-                          {t(`sentiment.${currentSentimentKey}`)}
-                        </Badge>
-                      )}
-                    </TableCell>
-                    
-                    {/* Emotion */}
-                    <TableCell className="hidden lg:table-cell">
-                      {isManagerOrSupervisor ? (
-                        <div onClick={(e) => e.stopPropagation()}>
-                          <Select
-                            value={String(feedbackEmotions[fb.feedback_id] ?? -1)}
-                            onValueChange={(val) => handleEmotionChange(fb.feedback_id, val === '-1' ? null : Number(val))}
-                          >
-                            <SelectTrigger className={cn('h-7 w-[110px] text-xs transition-colors duration-200', emotionColors[currentEmotionKey] || emotionColors.neutral)}><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="0" className="text-xs">{t('emotion.0')}</SelectItem>
-                              <SelectItem value="1" className="text-xs">{t('emotion.1')}</SelectItem>
-                              <SelectItem value="2" className="text-xs">{t('emotion.2')}</SelectItem>
-                              <SelectItem value="3" className="text-xs">{t('emotion.3')}</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      ) : (
-                        <Badge className={cn(classificationBadgeClass, emotionColors[currentEmotionKey] || emotionColors.neutral)}>
-                          {getEmotionLabel(t, feedbackEmotions[fb.feedback_id] ?? fb.emotion_id, fb.emotion)}
-                        </Badge>
-                      )}
-                    </TableCell>
-                    
-                    {/* Priority */}
-                    <TableCell className="hidden lg:table-cell">
-                      {isManagerOrSupervisor ? (
-                        <div onClick={(e) => e.stopPropagation()}>
-                          <Select
-                            value={currentPriority}
-                            onValueChange={(val) => handlePriorityChange(fb.feedback_id, val)}
-                          >
-                            <SelectTrigger className={cn('h-7 w-[100px] text-xs transition-colors duration-200', priorityColors[currentPriority])}><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="low" className="text-xs">{t('priority.low')}</SelectItem>
-                              <SelectItem value="medium" className="text-xs">{t('priority.medium')}</SelectItem>
-                              <SelectItem value="high" className="text-xs">{t('priority.high')}</SelectItem>
-                              <SelectItem value="critical" className="text-xs">{t('priority.critical')}</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      ) : (
-                        <Badge className={cn(classificationBadgeClass, priorityColors[currentPriority])}>
-                          {displayLabel(t(`priority.${currentPriority}`), currentPriority)}
-                        </Badge>
-                      )}
-                    </TableCell>
-                    
-                    {/* Status */}
-                    <TableCell className="hidden lg:table-cell">
-                      {isManagerOrSupervisor ? (
-                        <div onClick={(e) => e.stopPropagation()}>
-                          <Select
-                            value={currentStatus}
-                            onValueChange={(val) => handleStatusChange(fb.feedback_id, val)}
-                          >
-                            <SelectTrigger className="h-7 w-[110px] text-xs"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="open" className="text-xs">{t('status.open')}</SelectItem>
-                              <SelectItem value="inProgress" className="text-xs">{t('status.inProgress')}</SelectItem>
-                              <SelectItem value="resolved" className="text-xs">{t('status.resolved')}</SelectItem>
-                              <SelectItem value="closed" className="text-xs">{t('status.closed')}</SelectItem>
-                              <SelectItem value="analyzed" className="text-xs">{t('status.analyzed')}</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-gray-600 dark:text-gray-400 capitalize">
-                          {displayLabel(t(`status.${currentStatus}`), currentStatus)}
-                        </span>
-                      )}
-                    </TableCell>
-                    
-                    {/* Channel */}
-                    <TableCell className="hidden xl:table-cell">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">{fb.channel_name || '—'}</span>
-                    </TableCell>
-                    
-                    {/* Date */}
-                    <TableCell className="hidden sm:table-cell">
-                      <span className="text-xs text-gray-500 dark:text-gray-400">{formatDate(fb.created_at)}</span>
+
+      {/* Desktop Table - hidden on mobile */}
+      <div className="hidden sm:block">
+        <Card data-tour="feedback-table">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-gray-50/50 dark:bg-gray-800/30">
+                  <TableHead className="font-semibold hidden sm:table-cell text-xs">{isAr ? 'الرقم' : 'ID'}</TableHead>
+                  <TableHead className="font-semibold">{t('feedback.customer')}</TableHead>
+                  <TableHead className="hidden md:table-cell font-semibold">{t('feedback.content')}</TableHead>
+                  <TableHead className="hidden xl:table-cell font-semibold">{t('feedback.problemType')}</TableHead>
+                  <TableHead className="font-semibold">{t('feedback.sentiment')}</TableHead>
+                  <TableHead className="hidden lg:table-cell font-semibold">{t('feedback.emotion')}</TableHead>
+                  <TableHead className="hidden lg:table-cell font-semibold">{t('feedback.priority')}</TableHead>
+                  <TableHead className="hidden lg:table-cell font-semibold">{isAr ? 'الحالة' : 'Status'}</TableHead>
+                  <TableHead className="hidden xl:table-cell font-semibold">{t('feedback.channel')}</TableHead>
+                  <TableHead className="hidden sm:table-cell font-semibold">{t('common.date')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedFeedback.map((fb) => {
+                  const currentStatus = normalizeStatus(feedbackStatuses[fb.feedback_id] || fb.status);
+                  const currentPriority = normalizePriority(
+                    feedbackPriorities[fb.feedback_id] || fb.priority || 'low'
+                  );
+                  const currentSentimentKey = getSentimentKey(
+                    feedbackSentiments[fb.feedback_id] ?? fb.sentiment_id,
+                    fb.sentiment
+                  );
+                  const currentEmotionKey = EMOTION_ID_TO_KEY[
+                    (feedbackEmotions[fb.feedback_id] ?? fb.emotion_id ?? 2) as number
+                  ] || 'neutral';
+                  return (
+                    <TableRow
+                      key={fb.feedback_id}
+                      className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors"
+                      onClick={() => navigate(`/app/feedback/${fb.feedback_id}`)}
+                    >
+                      <TableCell className="hidden sm:table-cell">
+                        <span className="text-xs font-mono text-gray-400">{fb.feedback_id}</span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-semibold text-gray-900 dark:text-white text-sm">{fb.customer_name || 'Unknown'}</div>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell max-w-xs">
+                        <div className="truncate text-sm text-gray-600 dark:text-gray-400">{fb.feedback_context || '—'}</div>
+                      </TableCell>
+                      <TableCell className="hidden xl:table-cell">
+                        {isManagerOrSupervisor ? (
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <Select
+                              value={String(feedbackProblemTypes[fb.feedback_id] ?? -1)}
+                              onValueChange={(val) => handleProblemTypeChange(fb.feedback_id, val === '-1' ? null : Number(val))}
+                            >
+                              <SelectTrigger className="h-7 w-[140px] text-xs"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="0" className="text-xs">{t('problemType.0')}</SelectItem>
+                                <SelectItem value="1" className="text-xs">{t('problemType.1')}</SelectItem>
+                                <SelectItem value="2" className="text-xs">{t('problemType.2')}</SelectItem>
+                                <SelectItem value="3" className="text-xs">{t('problemType.3')}</SelectItem>
+                                <SelectItem value="4" className="text-xs">{t('problemType.4')}</SelectItem>
+                                <SelectItem value="5" className="text-xs">{t('problemType.5')}</SelectItem>
+                                <SelectItem value="6" className="text-xs">{t('problemType.6')}</SelectItem>
+                                <SelectItem value="7" className="text-xs">{t('problemType.7')}</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-gray-600 dark:text-gray-400">
+                            {getProblemTypeLabel(t, feedbackProblemTypes[fb.feedback_id] ?? fb.problem_type_id, fb.problem_type)}
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {isManagerOrSupervisor ? (
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <Select
+                              value={String(feedbackSentiments[fb.feedback_id] ?? -1)}
+                              onValueChange={(val) => handleSentimentChange(fb.feedback_id, val === '-1' ? null : Number(val))}
+                            >
+                              <SelectTrigger className={cn('h-7 w-[100px] text-xs transition-colors duration-200', sentimentColors[currentSentimentKey])}>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="0" className="text-xs">{t('sentiment.negative')}</SelectItem>
+                                <SelectItem value="1" className="text-xs">{t('sentiment.neutral')}</SelectItem>
+                                <SelectItem value="2" className="text-xs">{t('sentiment.positive')}</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        ) : (
+                          <Badge className={cn(classificationBadgeClass, sentimentColors[currentSentimentKey])}>
+                            {t(`sentiment.${currentSentimentKey}`)}
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="hidden lg:table-cell">
+                        {isManagerOrSupervisor ? (
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <Select
+                              value={String(feedbackEmotions[fb.feedback_id] ?? -1)}
+                              onValueChange={(val) => handleEmotionChange(fb.feedback_id, val === '-1' ? null : Number(val))}
+                            >
+                              <SelectTrigger className={cn('h-7 w-[110px] text-xs transition-colors duration-200', emotionColors[currentEmotionKey] || emotionColors.neutral)}>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="0" className="text-xs">{t('emotion.0')}</SelectItem>
+                                <SelectItem value="1" className="text-xs">{t('emotion.1')}</SelectItem>
+                                <SelectItem value="2" className="text-xs">{t('emotion.2')}</SelectItem>
+                                <SelectItem value="3" className="text-xs">{t('emotion.3')}</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        ) : (
+                          <Badge className={cn(classificationBadgeClass, emotionColors[currentEmotionKey] || emotionColors.neutral)}>
+                            {getEmotionLabel(t, feedbackEmotions[fb.feedback_id] ?? fb.emotion_id, fb.emotion)}
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="hidden lg:table-cell">
+                        {isManagerOrSupervisor ? (
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <Select
+                              value={currentPriority}
+                              onValueChange={(val) => handlePriorityChange(fb.feedback_id, val)}
+                            >
+                              <SelectTrigger className={cn('h-7 w-[100px] text-xs transition-colors duration-200', priorityColors[currentPriority])}>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="low" className="text-xs">{t('priority.low')}</SelectItem>
+                                <SelectItem value="medium" className="text-xs">{t('priority.medium')}</SelectItem>
+                                <SelectItem value="high" className="text-xs">{t('priority.high')}</SelectItem>
+                                <SelectItem value="critical" className="text-xs">{t('priority.critical')}</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        ) : (
+                          <Badge className={cn(classificationBadgeClass, priorityColors[currentPriority])}>
+                            {displayLabel(t(`priority.${currentPriority}`), currentPriority)}
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="hidden lg:table-cell">
+                        {isManagerOrSupervisor ? (
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <Select
+                              value={currentStatus}
+                              onValueChange={(val) => handleStatusChange(fb.feedback_id, val)}
+                            >
+                              <SelectTrigger className="h-7 w-[110px] text-xs"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="open" className="text-xs">{t('status.open')}</SelectItem>
+                                <SelectItem value="inProgress" className="text-xs">{t('status.inProgress')}</SelectItem>
+                                <SelectItem value="resolved" className="text-xs">{t('status.resolved')}</SelectItem>
+                                <SelectItem value="closed" className="text-xs">{t('status.closed')}</SelectItem>
+                                <SelectItem value="analyzed" className="text-xs">{t('status.analyzed')}</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-gray-600 dark:text-gray-400 capitalize">
+                            {displayLabel(t(`status.${currentStatus}`), currentStatus)}
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell className="hidden xl:table-cell">
+                        <span className="text-sm text-gray-600 dark:text-gray-400">{fb.channel_name || '—'}</span>
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell">
+                        <span className="text-xs text-gray-500 dark:text-gray-400">{formatDate(fb.created_at)}</span>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                {paginatedFeedback.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={10} className="text-center py-12 text-gray-400">
+                      <AlertTriangle className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                      <p>{isAr ? 'لا توجد تعليقات مطابقة' : 'No feedback items match your filters'}</p>
                     </TableCell>
                   </TableRow>
-                );
-              })}
-              {paginatedFeedback.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={9} className="text-center py-12 text-gray-400">
-                    <AlertTriangle className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                    <p>{isAr ? 'لا توجد تعليقات مطابقة' : 'No feedback items match your filters'}</p>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </Card>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </Card>
+      </div>
+
+      {/* Mobile Cards - visible only on mobile */}
+      <div className="sm:hidden space-y-3">
+        {paginatedFeedback.map((fb) => {
+          const currentStatus = normalizeStatus(feedbackStatuses[fb.feedback_id] || fb.status);
+          const currentPriority = normalizePriority(feedbackPriorities[fb.feedback_id] || fb.priority || 'low');
+          const currentSentimentKey = getSentimentKey(
+            feedbackSentiments[fb.feedback_id] ?? fb.sentiment_id,
+            fb.sentiment
+          );
+
+          return (
+            <Card
+              key={fb.feedback_id}
+              className="p-4 cursor-pointer active:scale-[0.98] transition-transform"
+              onClick={() => handleRowClick(fb)}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-semibold text-sm text-gray-900 dark:text-white truncate">
+                      {fb.customer_name || 'Unknown'}
+                    </span>
+                    <Badge className={cn('text-[10px] px-1.5 py-0', sentimentColors[currentSentimentKey])}>
+                      {t(`sentiment.${currentSentimentKey}`)}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mb-2">
+                    {fb.feedback_context || '—'}
+                  </p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge className={cn('text-[10px] px-1.5 py-0', priorityColors[currentPriority])}>
+                      {currentPriority}
+                    </Badge>
+                    <span className="text-[10px] text-gray-400">
+                      {formatDate(fb.created_at)}
+                    </span>
+                    {fb.channel_name && (
+                      <span className="text-[10px] text-gray-400">
+                        {fb.channel_name}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <Eye className="w-4 h-4 text-gray-400 flex-shrink-0 mt-1" />
+              </div>
+            </Card>
+          );
+        })}
+        {paginatedFeedback.length === 0 && (
+          <div className="text-center py-12 text-gray-400">
+            <AlertTriangle className="w-8 h-8 mx-auto mb-2 opacity-40" />
+            <p>{isAr ? 'لا توجد تعليقات مطابقة' : 'No feedback items match your filters'}</p>
+          </div>
+        )}
+      </div>
 
       {/* Results Count */}
       <div className="text-xs text-gray-500 dark:text-gray-400">
@@ -666,12 +722,12 @@ export function FeedbackList() {
         }
       </div>
 
-      {/* Pagination Controls */}
+      {/* Pagination Controls - Mobile friendly */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-500 dark:text-gray-400">{isAr ? 'عدد العناصر في الصفحة' : 'Rows per page'}</span>
+          <span className="text-sm text-gray-500 dark:text-gray-400">{isAr ? 'عدد العناصر' : 'Rows per page'}</span>
           <Select value={String(pageSize)} onValueChange={(value) => setPageSize(Number(value))}>
-            <SelectTrigger className="w-[110px]">
+            <SelectTrigger className="w-[100px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -682,18 +738,200 @@ export function FeedbackList() {
           </Select>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => setCurrentPage((page) => Math.max(1, page - 1))} disabled={currentPage <= 1}>
-            {isAr ? 'السابق' : 'Previous'}
+        <div className="flex items-center justify-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+            disabled={currentPage <= 1}
+          >
+            {isAr ? 'السابق' : 'Prev'}
           </Button>
-          <span className="text-sm text-gray-500 dark:text-gray-400">
-            {isAr ? `الصفحة ${currentPage} من ${totalPages}` : `Page ${currentPage} of ${totalPages}`}
+          <span className="text-sm text-gray-500 dark:text-gray-400 px-2">
+            {currentPage} / {totalPages}
           </span>
-          <Button variant="outline" onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))} disabled={currentPage >= totalPages}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+            disabled={currentPage >= totalPages}
+          >
             {isAr ? 'التالي' : 'Next'}
           </Button>
         </div>
       </div>
+
+      {/* Mobile Detail Drawer */}
+      {selectedMobileFeedback && (
+        <Sheet open={mobileDetailOpen} onOpenChange={setMobileDetailOpen}>
+          <SheetContent side={isAr ? 'right' : 'left'} className="w-full sm:max-w-md overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle>{isAr ? 'تفاصيل التعليق' : 'Feedback Details'}</SheetTitle>
+            </SheetHeader>
+            <div className="space-y-4 py-4">
+              {/* Customer */}
+              <div>
+                <label className="text-xs text-gray-500 dark:text-gray-400 uppercase">{isAr ? 'العميل' : 'Customer'}</label>
+                <p className="font-semibold text-gray-900 dark:text-white">{selectedMobileFeedback.customer_name || 'Unknown'}</p>
+              </div>
+
+              {/* Content */}
+              <div>
+                <label className="text-xs text-gray-500 dark:text-gray-400 uppercase">{isAr ? 'المحتوى' : 'Content'}</label>
+                <p className="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                  {selectedMobileFeedback.feedback_context || '—'}
+                </p>
+              </div>
+
+              {/* Sentiment */}
+              <div>
+                <label className="text-xs text-gray-500 dark:text-gray-400 uppercase">{isAr ? 'المشاعر' : 'Sentiment'}</label>
+                <div className="mt-1">
+                  {isManagerOrSupervisor ? (
+                    <Select
+                      value={String(feedbackSentiments[selectedMobileFeedback.feedback_id] ?? -1)}
+                      onValueChange={(val) => handleSentimentChange(selectedMobileFeedback.feedback_id, val === '-1' ? null : Number(val))}
+                    >
+                      <SelectTrigger className={cn('h-8 w-full text-xs', sentimentColors[getSentimentKey(feedbackSentiments[selectedMobileFeedback.feedback_id] ?? selectedMobileFeedback.sentiment_id, selectedMobileFeedback.sentiment)])}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">{t('sentiment.negative')}</SelectItem>
+                        <SelectItem value="1">{t('sentiment.neutral')}</SelectItem>
+                        <SelectItem value="2">{t('sentiment.positive')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Badge className={cn(classificationBadgeClass, sentimentColors[getSentimentKey(selectedMobileFeedback.sentiment_id, selectedMobileFeedback.sentiment)])}>
+                      {t(`sentiment.${getSentimentKey(selectedMobileFeedback.sentiment_id, selectedMobileFeedback.sentiment)}`)}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+
+              {/* Emotion */}
+              <div>
+                <label className="text-xs text-gray-500 dark:text-gray-400 uppercase">{isAr ? 'الانفعال' : 'Emotion'}</label>
+                <div className="mt-1">
+                  {isManagerOrSupervisor ? (
+                    <Select
+                      value={String(feedbackEmotions[selectedMobileFeedback.feedback_id] ?? -1)}
+                      onValueChange={(val) => handleEmotionChange(selectedMobileFeedback.feedback_id, val === '-1' ? null : Number(val))}
+                    >
+                      <SelectTrigger className="h-8 w-full text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">{t('emotion.0')}</SelectItem>
+                        <SelectItem value="1">{t('emotion.1')}</SelectItem>
+                        <SelectItem value="2">{t('emotion.2')}</SelectItem>
+                        <SelectItem value="3">{t('emotion.3')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Badge className={cn(classificationBadgeClass, emotionColors[EMOTION_ID_TO_KEY[(feedbackEmotions[selectedMobileFeedback.feedback_id] ?? selectedMobileFeedback.emotion_id ?? 2) as number] || 'neutral'])}>
+                      {getEmotionLabel(t, feedbackEmotions[selectedMobileFeedback.feedback_id] ?? selectedMobileFeedback.emotion_id, selectedMobileFeedback.emotion)}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+
+              {/* Priority */}
+              <div>
+                <label className="text-xs text-gray-500 dark:text-gray-400 uppercase">{isAr ? 'الأولوية' : 'Priority'}</label>
+                <div className="mt-1">
+                  {isManagerOrSupervisor ? (
+                    <Select
+                      value={normalizePriority(feedbackPriorities[selectedMobileFeedback.feedback_id] || selectedMobileFeedback.priority || 'low')}
+                      onValueChange={(val) => handlePriorityChange(selectedMobileFeedback.feedback_id, val)}
+                    >
+                      <SelectTrigger className={cn('h-8 w-full text-xs', priorityColors[normalizePriority(feedbackPriorities[selectedMobileFeedback.feedback_id] || selectedMobileFeedback.priority || 'low')])}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">{t('priority.low')}</SelectItem>
+                        <SelectItem value="medium">{t('priority.medium')}</SelectItem>
+                        <SelectItem value="high">{t('priority.high')}</SelectItem>
+                        <SelectItem value="critical">{t('priority.critical')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Badge className={cn(classificationBadgeClass, priorityColors[normalizePriority(selectedMobileFeedback.priority)])}>
+                      {displayLabel(t(`priority.${normalizePriority(selectedMobileFeedback.priority)}`), normalizePriority(selectedMobileFeedback.priority))}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+
+              {/* Status */}
+              <div>
+                <label className="text-xs text-gray-500 dark:text-gray-400 uppercase">{isAr ? 'الحالة' : 'Status'}</label>
+                <div className="mt-1">
+                  {isManagerOrSupervisor ? (
+                    <Select
+                      value={normalizeStatus(feedbackStatuses[selectedMobileFeedback.feedback_id] || selectedMobileFeedback.status)}
+                      onValueChange={(val) => handleStatusChange(selectedMobileFeedback.feedback_id, val)}
+                    >
+                      <SelectTrigger className="h-8 w-full text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="open">{t('status.open')}</SelectItem>
+                        <SelectItem value="inProgress">{t('status.inProgress')}</SelectItem>
+                        <SelectItem value="resolved">{t('status.resolved')}</SelectItem>
+                        <SelectItem value="closed">{t('status.closed')}</SelectItem>
+                        <SelectItem value="analyzed">{t('status.analyzed')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <span className="text-sm text-gray-600 dark:text-gray-400 capitalize">
+                      {displayLabel(t(`status.${normalizeStatus(selectedMobileFeedback.status)}`), normalizeStatus(selectedMobileFeedback.status))}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Channel */}
+              <div>
+                <label className="text-xs text-gray-500 dark:text-gray-400 uppercase">{isAr ? 'القناة' : 'Channel'}</label>
+                <p className="text-sm text-gray-700 dark:text-gray-300">{selectedMobileFeedback.channel_name || '—'}</p>
+              </div>
+
+              {/* Date */}
+              <div>
+                <label className="text-xs text-gray-500 dark:text-gray-400 uppercase">{isAr ? 'التاريخ' : 'Date'}</label>
+                <p className="text-sm text-gray-700 dark:text-gray-300">{formatDate(selectedMobileFeedback.created_at)}</p>
+              </div>
+
+              {/* Problem Type */}
+              <div>
+                <label className="text-xs text-gray-500 dark:text-gray-400 uppercase">{isAr ? 'نوع المشكلة' : 'Problem Type'}</label>
+                <div className="mt-1">
+                  {isManagerOrSupervisor ? (
+                    <Select
+                      value={String(feedbackProblemTypes[selectedMobileFeedback.feedback_id] ?? -1)}
+                      onValueChange={(val) => handleProblemTypeChange(selectedMobileFeedback.feedback_id, val === '-1' ? null : Number(val))}
+                    >
+                      <SelectTrigger className="h-8 w-full text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[0,1,2,3,4,5,6,7].map(id => (
+                          <SelectItem key={id} value={String(id)}>{t(`problemType.${id}`)}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      {getProblemTypeLabel(t, selectedMobileFeedback.problem_type_id, selectedMobileFeedback.problem_type)}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
+      )}
 
       {/* Assign Dialog (Manager only) */}
       <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
@@ -701,7 +939,8 @@ export function FeedbackList() {
           <DialogHeader>
             <DialogTitle>{isAr ? 'إسناد التعليق' : 'Assign Feedback'}</DialogTitle>
             <DialogDescription>
-              {isAr ? `اختر موظفاً لإسناد تعليق ${selectedFeedback?.customer_name}` : `Select an agent to handle ${selectedFeedback?.customer_name}'s feedback`}            </DialogDescription>
+              {isAr ? `اختر موظفاً لإسناد تعليق ${selectedFeedback?.customer_name}` : `Select an agent to handle ${selectedFeedback?.customer_name}'s feedback`}
+            </DialogDescription>
           </DialogHeader>
           {selectedFeedback && (
             <div className="space-y-4 py-2">
@@ -728,7 +967,8 @@ export function FeedbackList() {
                       <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0">
                         <span className="text-white text-xs font-bold">
                           {agent.name.split(' ').map((n: string) => n[0]).join('')}
-                        </span>                      </div>
+                        </span>
+                      </div>
                       <div>
                         <p className="text-sm font-medium">{agent.firstName} {agent.lastName}</p>
                         <p className="text-xs text-gray-400">{agent.email}</p>

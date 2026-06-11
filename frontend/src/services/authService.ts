@@ -13,10 +13,7 @@ import { UserRole } from '../app/contexts/AuthContext';
 import { BASE_URL, request } from './api';
 import {
   User,
-  LoginRequest,
   LoginResponse,
-  TokenRefreshRequest,
-  TokenRefreshResponse,
   SignupRequest,
   SignupResponse,
 } from '../types/api';
@@ -278,12 +275,6 @@ export async function refreshToken(): Promise<LoginResponse> {
     throw new Error('No refresh token available');
   }
 
-  // TODO: Replace with actual API call:
-  // const response = await request<TokenRefreshResponse>('/auth/refresh', {
-  //   method: 'POST',
-  //   body: JSON.stringify({ refresh_token: refreshTokenValue }),
-  //   skipAuth: true, // Refresh endpoint doesn't need access_token
-  // });
 
   // Mock response
   await new Promise((resolve) => setTimeout(resolve, 500));

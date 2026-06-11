@@ -10,18 +10,13 @@ import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { Dashboard } from './pages/Dashboard';
 import { FeedbackList } from './pages/FeedbackList';
 import { FeedbackDetails } from './pages/FeedbackDetails';
-import { DomainManagement } from './pages/DomainManagement';
-import { CompanyManagement } from './pages/CompanyManagement';
 import { UserManagement } from './pages/UserManagement';
 import { IntegrationSettings } from './pages/IntegrationSettings';
-import { CategoryManagement } from './pages/CategoryManagement';
 import { Settings } from './pages/Settings';
 import { Reports } from './pages/Reports';
-import { MyFeedback } from './pages/MyFeedback';
 // import { SystemLogs } from './pages/SystemLogs';
 // import { SystemAnalytics } from './pages/SystemAnalytics';
 // import { TeamPerformance } from './pages/TeamPerformance';
-import { AgentProfile } from './pages/AgentProfile';
 import { NotFound } from './pages/NotFound';
 import { UserRole } from './contexts/AuthContext';
 
@@ -107,12 +102,6 @@ const routes = [
         path: 'users',
         name: 'إدارة المستخدمين',
         Component: UserManagement,
-        allowedRoles: ['manager'],
-      },
-      {
-        path: 'categories',
-        name: 'إدارة التصنيفات',
-        Component: CategoryManagement,
         allowedRoles: ['manager'],
       },
       {
