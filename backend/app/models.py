@@ -191,6 +191,7 @@ class Feedback(Base):
     feedback_context = Column(Text)
 
     # Processing Pipeline
+    language = Column(String(20), nullable=True)
     cleaned_text = Column(Text, nullable=True)  # Preprocessed text
     status = Column(
         String(20), default="unprocessed"

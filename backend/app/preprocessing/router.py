@@ -136,6 +136,16 @@ def route_pipeline(text: str) -> Literal["arabic", "english", "franko"]:
         return "english"
 
 
+def detect_language(text: str) -> Literal["ar", "en", "franko"]:
+    """Detect stored feedback language bucket."""
+    pipeline = route_pipeline(text)
+    if pipeline == "arabic":
+        return "ar"
+    if pipeline == "franko":
+        return "franko"
+    return "en"
+
+
 def preprocess_feedback(text: str) -> str:
     """
     Preprocess feedback text by routing to appropriate pipeline.

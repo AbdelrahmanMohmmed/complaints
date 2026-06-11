@@ -11,8 +11,9 @@ from sqlalchemy.orm import Session
 
 from .. import database, models, oauth2
 from ..schemas import feedback
-from app.ai.predict import run_ai_pipeline
-from app.preprocessing.router import preprocess_feedback
+from app.ai.arabic_predictor import load_arabic_models, predict_arabic
+from app.ai.english_predictor import load_english_models, predict_english
+from app.preprocessing.router import detect_language, preprocess_feedback
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -65,6 +66,7 @@ def serialize_feedback(row: tuple[models.Feedback, str | None, str | None]) -> d
         "category_name": category_name,
         "customer_name": fb.customer_name,
         "feedback_context": fb.feedback_context,
+        "language": fb.language,
         "status": fb.status,
         "sentiment": fb.sentiment,
         "sentiment_id": fb.sentiment_id,
@@ -426,6 +428,7 @@ async def submit_form(
             f"Running preprocessing for feedback_id={new_feedback.feedback_id}"
         )
         try:
+            new_feedback.language = detect_language(feedback_context)
             cleaned_text = preprocess_feedback(feedback_context)
             new_feedback.cleaned_text = cleaned_text
             new_feedback.status = "preprocessed"
@@ -443,7 +446,14 @@ async def submit_form(
 
         # Step 2: Run AI pipeline synchronously for immediate feedback to frontend
         try:
-            ai_result = run_ai_pipeline(cleaned_text)
+            language = new_feedback.language or detect_language(cleaned_text)
+            if language in ("ar", "franko"):
+                ai_models = load_arabic_models()
+                ai_result = predict_arabic(cleaned_text, ai_models)
+            else:
+                ai_models = load_english_models()
+                ai_result = predict_english(cleaned_text, ai_models)
+
             # Update feedback record with AI results
             new_feedback.sentiment = ai_result.get("sentiment")
             new_feedback.sentiment_id = ai_result.get("sentiment_id")

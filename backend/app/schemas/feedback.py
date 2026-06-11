@@ -38,6 +38,7 @@ class FeedbackOut(BaseModel):
     category_name: str | None = None
     customer_name: str | None = None
     feedback_context: str | None = None
+    language: str | None = None
     status: str
     sentiment: str | None = None
     sentiment_id: int | None = None

@@ -1,6 +1,7 @@
 """Arabic text preprocessing pipeline."""
 import re
 import logging
+from functools import lru_cache
 from pathlib import Path
 
 try:
@@ -49,6 +50,18 @@ def _load_stopwords() -> set:
     return stop_words
 
 
+@lru_cache(maxsize=1)
+def _load_camel_disambiguator():
+    """Load camel disambiguator once, or return None if resources missing."""
+    if not CAMEL_AVAILABLE:
+        return None
+    try:
+        return MLEDisambiguator.pretrained("calima-egy-r13")
+    except Exception as e:
+        logger.debug(f"Camel tools resource unavailable: {e}")
+        return None
+
+
 def arabic_pipeline(text: str) -> str:
     """
     Process Arabic text through cleaning, tokenization, and lemmatization.
@@ -89,7 +102,9 @@ def arabic_pipeline(text: str) -> str:
         return text
     
     try:
-        text_tokens = nltk.word_tokenize(text)
+        from nltk.tokenize import wordpunct_tokenize
+
+        text_tokens = wordpunct_tokenize(text)
     except Exception as e:
         logger.debug(f"NLTK tokenization failed: {e}, using split()")
         text_tokens = text.split()
@@ -106,9 +121,14 @@ def arabic_pipeline(text: str) -> str:
     # Lemmatization with camel_tools if available
     if CAMEL_AVAILABLE:
         try:
-            EGY_mle = MLEDisambiguator.pretrained("calima-egy-r13")
-            EGY_disambig = EGY_mle.disambiguate(filtered)
-            lemmas = [d.analyses[0].analysis["lex"] for d in EGY_disambig if d.analyses]
+            EGY_mle = _load_camel_disambiguator()
+            if EGY_mle is None:
+                lemmas = filtered
+            else:
+                EGY_disambig = EGY_mle.disambiguate(filtered)
+                lemmas = [
+                    d.analyses[0].analysis["lex"] for d in EGY_disambig if d.analyses
+                ]
         except Exception as e:
             logger.debug(f"Camel tools lemmatization failed: {e}, using original tokens")
             lemmas = filtered

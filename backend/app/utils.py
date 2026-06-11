@@ -94,9 +94,18 @@ def _send_code_email(
     msg.attach(MIMEText(html, "html"))
 
     context = ssl.create_default_context()
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as server:
-        server.login(gmail_user, gmail_password)
-        server.sendmail(gmail_user, to_email, msg.as_string())
+    logger.info("Sending %s email to %s via Gmail SMTP", subject, to_email)
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as server:
+            server.login(gmail_user, gmail_password)
+            server.sendmail(gmail_user, to_email, msg.as_string())
+        logger.info("Email sent to %s", to_email)
+    except smtplib.SMTPAuthenticationError as e:
+        logger.error("Gmail auth failed for %s: %s", gmail_user, str(e), exc_info=True)
+        raise
+    except Exception as e:
+        logger.error("SMTP send failed to %s: %s", to_email, str(e), exc_info=True)
+        raise
 
 
 def send_verification_email(to_email: str, code: str, name: str):

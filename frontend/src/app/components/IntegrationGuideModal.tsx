@@ -1,12 +1,12 @@
 // src/components/IntegrationGuideModal.tsx
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '../components/ui/dialog';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
-import { BookOpen, ChevronRight, ChevronLeft, Clock, AlertCircle, CheckCircle2, Copy, X } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Clock, AlertCircle, CheckCircle2, Copy, X } from 'lucide-react';
 import { cn } from '../components/ui/utils';
 import { IntegrationGuide } from '../config/integrationGuides';
 

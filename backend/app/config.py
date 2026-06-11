@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from pydantic_settings import BaseSettings
 
 
@@ -105,7 +107,10 @@ class Settings(BaseSettings):
     )
     MULTILINGUAL_EMOTION_THRESHOLD: float = 0.5
 
-    model_config = {"env_file": ".env", "case_sensitive": False}
+    model_config = {
+        "env_file": Path(__file__).resolve().parents[1] / ".env",
+        "case_sensitive": False,
+    }
 
 
 settings = Settings()

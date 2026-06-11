@@ -8,25 +8,16 @@ Processes preprocessed feedback records through ML models to generate:
 - Priority (high/medium/low)
 """
 
+import gc
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
 
 from .. import database, models
-from ..ai.labels import (
-    EMOTION_DEFAULT_ID,
-    EMOTION_DEFAULT_LABEL,
-    EMOTION_LABEL2ID,
-    PROBLEM_TYPE_DEFAULT_ID,
-    PROBLEM_TYPE_DEFAULT_LABEL,
-    PROBLEM_TYPE_LABEL2ID,
-    SENTIMENT_DEFAULT_ID,
-    SENTIMENT_DEFAULT_LABEL,
-    SENTIMENT_LABEL2ID,
-)
-from ..ai.predict import run_ai_pipeline
+from ..ai.arabic_predictor import load_arabic_models, predict_arabic
+from ..ai.english_predictor import load_english_models, predict_english
 
 logger = logging.getLogger(__name__)
 
@@ -36,88 +27,28 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 
 
-def _is_empty_text(text: str) -> bool:
-    """Check if feedback text is empty or whitespace-only."""
-    return not text or text.strip() == ""
+def _get_unprocessed_feedback(db: Session) -> List[models.Feedback]:
+    """Fetch all feedback records with status 'preprocessed'."""
+    return db.query(models.Feedback).filter(models.Feedback.status == "preprocessed").all()
 
 
-def _handle_empty_feedback(feedback: models.Feedback, db: Session) -> None:
-    """Mark feedback with empty text as analyzed with neutral defaults."""
-    feedback.status = "analyzed"
-    feedback.sentiment = SENTIMENT_DEFAULT_LABEL
-    feedback.sentiment_id = SENTIMENT_DEFAULT_ID
-    feedback.emotion = EMOTION_DEFAULT_LABEL
-    feedback.emotion_id = EMOTION_DEFAULT_ID
-    feedback.problem_type = PROBLEM_TYPE_DEFAULT_LABEL
-    feedback.problem_type_id = PROBLEM_TYPE_DEFAULT_ID
-    feedback.ml_processed_at = func.now()
-    db.commit()
-    logger.debug(f"Feedback {feedback.feedback_id}: marked as analyzed (empty content)")
+def _batch_iterator(data: list, batch_size: int):
+    """Yield successive n-sized chunks from a list."""
+    for i in range(0, len(data), batch_size):
+        yield data[i : i + batch_size]
 
 
-def _resolve_category_id(
-    db: Session, company_id: int, category_name: str
-) -> int | None:
-    """Resolve feedback_categories.category_id by company domain + category name."""
-    if not category_name:
-        return None
-
-    domain_id = (
-        db.query(models.Company.domain_id)
-        .filter(models.Company.company_id == company_id)
-        .scalar()
-    )
-    if not domain_id:
-        return None
-
-    category = (
-        db.query(models.FeedbackCategory)
-        .filter(
-            models.FeedbackCategory.domain_id == domain_id,
-            models.FeedbackCategory.category_name == category_name,
-        )
-        .first()
-    )
-
-    return category.category_id if category else None
-
-
-def _update_feedback_with_results(
-    feedback: models.Feedback, results: Dict[str, Any], db: Session
-) -> None:
-    """Update feedback record with AI analysis results and timestamp."""
-    feedback.sentiment = results["sentiment"]
-    feedback.sentiment_id = results.get("sentiment_id") or SENTIMENT_LABEL2ID.get(
-        results.get("sentiment", ""), SENTIMENT_DEFAULT_ID
-    )
-    feedback.emotion = results["emotion"]
-    feedback.emotion_id = results.get("emotion_id") or EMOTION_LABEL2ID.get(
-        results.get("emotion", ""), EMOTION_DEFAULT_ID
-    )
-    feedback.problem_type = results["problem_type"]
-    feedback.problem_type_id = results.get(
-        "problem_type_id"
-    ) or PROBLEM_TYPE_LABEL2ID.get(
-        results.get("problem_type", ""), PROBLEM_TYPE_DEFAULT_ID
-    )
-    feedback.priority = results["priority"]
-    feedback.category_id = _resolve_category_id(
-        db, feedback.company_id, results.get("problem_type")
-    )
+def _update_feedback_record(
+    db: Session, feedback: models.Feedback, predictions: Dict[str, Any]
+):
+    """Update a feedback record with AI predictions."""
+    feedback.sentiment = predictions["sentiment"]
+    feedback.emotion = predictions["emotion"]
+    feedback.problem_type = predictions["problem_type"]
+    # Priority is not calculated in this version.
+    # feedback.priority = predictions["priority"]
     feedback.status = "analyzed"
     feedback.ml_processed_at = func.now()
-    db.commit()
-
-
-def _log_analysis_success(feedback_id: int, results: Dict[str, Any]) -> None:
-    """Log successful AI analysis for a feedback record."""
-    logger.debug(
-        f"Feedback {feedback_id}: AI analysis successful | "
-        f"sentiment={results['sentiment']}, "
-        f"emotion={results['emotion']}, "
-        f"problem_type={results['problem_type']}, "
-        f"priority={results['priority']}"
-    )
 
 
 # ============================================================================
@@ -125,71 +56,86 @@ def _log_analysis_success(feedback_id: int, results: Dict[str, Any]) -> None:
 # ============================================================================
 
 
-def run_ai_job(db: Session) -> int:
-    """Run AI predictions and priority scoring on preprocessed feedback records.
-
-    Processes all feedback with status='preprocessed', runs sentiment/emotion/
-    problem_type/priority analysis, and updates database with results.
+def run_ai_job(db: Session, batch_size: int = 10) -> int:
+    """Run AI predictions on preprocessed feedback, batched by language.
 
     Args:
-        db: SQLAlchemy database session
+        db: SQLAlchemy database session.
+        batch_size: Number of records to process per batch.
 
     Returns:
-        Number of successfully processed feedback records
+        Number of successfully processed feedback records.
     """
     processed_count = 0
-    error_count = 0
+    feedback_items = _get_unprocessed_feedback(db)
+    if not feedback_items:
+        logger.info("No preprocessed feedback to analyze.")
+        return 0
 
-    try:
-        # Fetch all preprocessed feedback from database
-        preprocessed_feedback = (
-            db.query(models.Feedback)
-            .filter(models.Feedback.status == "preprocessed")
-            .all()
-        )
+    logger.info(f"Starting AI analysis for {len(feedback_items)} feedback records.")
 
-        logger.info(
-            f"Starting AI analysis for {len(preprocessed_feedback)} feedback records"
-        )
+    # 2. Split by language
+    arabic_feedback = [f for f in feedback_items if f.language in ("ar", "franko")]
+    english_feedback = [f for f in feedback_items if f.language == "en" or not f.language]
 
-        # Process each feedback record
-        for feedback in preprocessed_feedback:
-            try:
-                # Handle feedback with empty or whitespace-only text
-                if _is_empty_text(feedback.cleaned_text):
-                    _handle_empty_feedback(feedback, db)
-                    processed_count += 1
-                    continue
+    # 3. Process Arabic feedback
+    if arabic_feedback:
+        logger.info(f"Processing {len(arabic_feedback)} Arabic feedback records.")
+        arabic_models = None
+        try:
+            arabic_models = load_arabic_models()
+            for batch in _batch_iterator(arabic_feedback, batch_size):
+                for feedback in batch:
+                    try:
+                        if not feedback.cleaned_text:
+                            continue
+                        predictions = predict_arabic(feedback.cleaned_text, arabic_models)
+                        _update_feedback_record(db, feedback, predictions)
+                        processed_count += 1
+                    except Exception as e:
+                        logger.error(
+                            f"Error analyzing Arabic feedback {feedback.feedback_id}: {e}",
+                            exc_info=True,
+                        )
+                        db.rollback()
+                        continue
+                db.commit()
+        finally:
+            if arabic_models:
+                del arabic_models
+                gc.collect()
+                logger.info("Unloaded Arabic models and triggered garbage collection.")
 
-                # Run AI pipeline on cleaned text
-                results = run_ai_pipeline(feedback.cleaned_text)
+    # 4. Process English feedback
+    if english_feedback:
+        logger.info(f"Processing {len(english_feedback)} English feedback records.")
+        english_models = None
+        try:
+            english_models = load_english_models()
+            for batch in _batch_iterator(english_feedback, batch_size):
+                for feedback in batch:
+                    try:
+                        if not feedback.cleaned_text:
+                            continue
+                        predictions = predict_english(feedback.cleaned_text, english_models)
+                        _update_feedback_record(db, feedback, predictions)
+                        processed_count += 1
+                    except Exception as e:
+                        logger.error(
+                            f"Error analyzing English feedback {feedback.feedback_id}: {e}",
+                            exc_info=True,
+                        )
+                        db.rollback()
+                        continue
+                db.commit()
+        finally:
+            if english_models:
+                del english_models
+                gc.collect()
+                logger.info("Unloaded English models and triggered garbage collection.")
 
-                # Update feedback record with analysis results
-                _update_feedback_with_results(feedback, results, db)
-                _log_analysis_success(feedback.feedback_id, results)
-
-                processed_count += 1
-
-            except Exception as e:
-                error_count += 1
-                logger.error(
-                    f"Error analyzing feedback {feedback.feedback_id}: {str(e)}",
-                    exc_info=True,
-                )
-                db.rollback()
-                # Continue processing remaining records despite error
-                continue
-
-        # Log job completion summary
-        logger.info(
-            f"AI analysis job completed: {processed_count} processed, {error_count} errors"
-        )
-        return processed_count
-
-    except Exception as e:
-        logger.error(f"Critical error in AI analysis job: {str(e)}", exc_info=True)
-        db.rollback()
-        return processed_count
+    logger.info(f"AI analysis job completed: {processed_count} records processed.")
+    return processed_count
 
 
 # ============================================================================

@@ -11,7 +11,7 @@ from sqlalchemy import and_
 from sqlalchemy.orm import Session
 
 from .. import database, models
-from ..preprocessing.router import preprocess_feedback
+from ..preprocessing.router import detect_language, preprocess_feedback
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +59,7 @@ def run_preprocessing_job(db: Session) -> int:
             try:
                 # Handle feedback with empty content
                 if _is_empty_content(feedback.feedback_context):
+                    feedback.language = "en"
                     feedback.cleaned_text = ""
                     feedback.status = "preprocessed"
                     db.commit()
@@ -67,6 +68,7 @@ def run_preprocessing_job(db: Session) -> int:
                     continue
 
                 # Clean and normalize feedback text
+                feedback.language = detect_language(feedback.feedback_context)
                 cleaned_text = preprocess_feedback(feedback.feedback_context)
 
                 # Update feedback with cleaned text and status

@@ -21,9 +21,10 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .ai import load_models
 from .config import settings
-from .services.ai_analysis import ai_analysis_service
+from .services.ai_analysis import run_ai_job
 from .services.feedback_ingestion import ingest_feedback
 from .services.preprocessing import preprocess_feedback_service
+from fastapi.responses import HTMLResponse
 
 # ============================================================================
 # Logging Configuration
@@ -81,71 +82,65 @@ app.include_router(dashboard.router, prefix="/api/v1")
 # ============================================================================
 
 
-def scheduled_feedback_ingestion() -> None:
-    """Wrapper to run async feedback ingestion job synchronously."""
+def run_sequential_pipeline():
+    """
+    Run the full feedback processing pipeline sequentially.
+    1. Ingest feedback from all integrated sources.
+    2. Preprocess newly ingested feedback.
+    3. Run AI analysis on preprocessed feedback.
+    """
+    db = None
     try:
+        logger.info("Starting sequential feedback pipeline...")
+
+        # Step 1: Ingestion
+        logger.info("Pipeline Step 1: Running feedback ingestion...")
         asyncio.run(ingest_feedback())
+        logger.info("Pipeline Step 1: Feedback ingestion completed.")
+
+        # Step 2: Preprocessing
+        logger.info("Pipeline Step 2: Running feedback preprocessing...")
+        preprocess_feedback_service()
+        logger.info("Pipeline Step 2: Feedback preprocessing completed.")
+
+        # Step 3: AI Analysis
+        logger.info("Pipeline Step 3: Running AI analysis...")
+        db = database.SessionLocal()
+        run_ai_job(db)
+        logger.info("Pipeline Step 3: AI analysis completed.")
+
+        logger.info("Sequential feedback pipeline finished successfully.")
+
     except Exception as e:
-        logger.error(f"Error in scheduled feedback ingestion: {str(e)}", exc_info=True)
+        logger.error(f"Error in sequential feedback pipeline: {e}", exc_info=True)
+    finally:
+        if db:
+            db.close()
 
 
 @app.on_event("startup")
 async def startup_event() -> None:
-    """Initialize and start background schedulers on application startup.
-
-    Tasks:
-    - AI models are loaded eagerly when representation.py and ml_dl_predict.py are imported
-    - Initialize APScheduler for feedback pipeline
-    - Schedule three periodic jobs: ingestion, preprocessing, AI analysis
-    """
+    """Initialize and start background scheduler on application startup."""
     global scheduler
-
     try:
-        # Validate AI model configuration
-        logger.info("Validating AI model configuration...")
-        models_loaded = load_models()
-
-        if models_loaded:
-            logger.info("AI model configuration validated successfully")
-        else:
-            logger.warning("Some AI models are not configured. Check .env paths.")
-
-        logger.info("=" * 80)
-        logger.info("✓ AI MODELS LOADED SUCCESSFULLY AT STARTUP")
-        logger.info("=" * 80)
-
-        # Initialize scheduler
+        logger.info("Initializing background scheduler...")
         scheduler = BackgroundScheduler()
-
-        # Schedule feedback ingestion (fetch from APIs)
         scheduler.add_job(
-            scheduled_feedback_ingestion,
+            run_sequential_pipeline,
             trigger=IntervalTrigger(minutes=1),
-            id="feedback_ingestion_job",
-            name="Feedback Ingestion Job",
+            id="sequential_feedback_pipeline_job",
+            name="Sequential Feedback Pipeline (Ingest -> Preprocess -> Analyze)",
             replace_existing=True,
         )
-
-        # Schedule text preprocessing
-        scheduler.add_job(
-            preprocess_feedback_service,
-            trigger=IntervalTrigger(minutes=1),
-            id="feedback_preprocessing_job",
-            name="Feedback Preprocessing Job",
-            replace_existing=True,
-        )
-
-        # Schedule ML analysis (sentiment, emotion, priority scoring)
-        scheduler.add_job(
-            ai_analysis_service,
-            trigger=IntervalTrigger(minutes=1),
-            id="feedback_ai_job",
-            name="Feedback AI Analysis Job",
-            replace_existing=True,
-        )
-
         scheduler.start()
-        logger.info("All background schedulers started successfully")
+        logger.info(
+            "✓ Background scheduler started. Pipeline will run every hour."
+        )
+    except Exception as e:
+        logger.critical(
+            f"Failed to start background scheduler: {e}", exc_info=True
+        )
+
 
     except Exception as e:
         logger.error(f"Failed to start scheduler: {str(e)}", exc_info=True)
@@ -184,3 +179,44 @@ def health_status() -> dict:
         "service": "complaints-api",
         "version": "1.0.0",
     }
+
+
+@app.get("/privacy", include_in_schema=False)
+def privacy_policy():
+    return HTMLResponse("""
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Privacy Policy — FMS</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 60px auto; padding: 0 20px; color: #333; }
+        h1   { color: #1a1a1a; }
+        h2   { margin-top: 30px; }
+    </style>
+</head>
+<body>
+    <h1>Privacy Policy</h1>
+    <p><strong>Last updated:</strong> June 2025</p>
+
+    <h2>What We Collect</h2>
+    <p>FMS collects Facebook Page access tokens when you connect your Facebook account.
+    These tokens are used solely to read comments from your Facebook Pages for feedback analysis.</p>
+
+    <h2>How We Use It</h2>
+    <p>Collected data is used only to analyze customer feedback within your organization.
+    We do not sell, share, or transfer your data to any third party.</p>
+
+    <h2>How We Store It</h2>
+    <p>All tokens are encrypted at rest using industry-standard encryption (Fernet/AES-128).
+    They are stored securely in our database and never exposed in plain text.</p>
+
+    <h2>Your Rights</h2>
+    <p>You can disconnect your Facebook Page at any time through the FMS dashboard,
+    which will permanently delete your access token from our system.</p>
+
+    <h2>Contact</h2>
+    <p>For any privacy concerns, contact us at: <strong>aa3020942@gmail.com</strong></p>
+</body>
+</html>
+    """)
