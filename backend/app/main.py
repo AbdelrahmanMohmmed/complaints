@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import sys
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from . import models, database
@@ -42,6 +43,9 @@ logging.getLogger("app.services").setLevel(logging.DEBUG)
 logging.getLogger("app.preprocessing").setLevel(logging.DEBUG)
 
 logger = logging.getLogger(__name__)
+
+if sys.platform == "win32" and hasattr(asyncio, "WindowsProactorEventLoopPolicy"):
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
 
 # ============================================================================

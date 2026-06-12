@@ -4,6 +4,7 @@ Handles connections to external feedback sources (Facebook and Freshdesk).
 Includes credential validation, encryption, and role-based access control.
 """
 
+import asyncio
 import httpx
 import imaplib
 import json
@@ -21,7 +22,7 @@ from sqlalchemy.orm import Session
 
 from .. import database, models, oauth2, utils
 from ..services.feedback_ingestion import add_feedback_safe
-from ..services.scrap_twitter import fetch_replies
+from ..services.scrap_twitter import fetch_replies_sync
 from ..schemas import integration, feedback
 from ..config import settings
 
@@ -375,7 +376,8 @@ async def scrape_twitter_replies(
         )
 
     try:
-        replies = await fetch_replies(
+        replies = await asyncio.to_thread(
+            fetch_replies_sync,
             target_username=payload.username,
             auth_token=auth_token,
             ct0=ct0,
