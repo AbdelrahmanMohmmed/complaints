@@ -45,8 +45,8 @@ def _update_feedback_record(
     feedback.sentiment = predictions["sentiment"]
     feedback.emotion = predictions["emotion"]
     feedback.problem_type = predictions["problem_type"]
-    # Priority is not calculated in this version.
-    # feedback.priority = predictions["priority"]
+    priority = predictions.get("priority")
+    feedback.priority = priority.lower() if isinstance(priority, str) else priority
     feedback.status = "analyzed"
     feedback.ml_processed_at = func.now()
 

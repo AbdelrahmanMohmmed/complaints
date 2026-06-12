@@ -519,10 +519,12 @@ export function FeedbackList() {
                         {isManagerOrSupervisor ? (
                           <div onClick={(e) => e.stopPropagation()}>
                             <Select
-                              value={String(feedbackProblemTypes[fb.feedback_id] ?? -1)}
+                              value={String(feedbackProblemTypes[fb.feedback_id] ?? fb.problem_type_id ?? '')}
                               onValueChange={(val) => handleProblemTypeChange(fb.feedback_id, val === '-1' ? null : Number(val))}
                             >
-                              <SelectTrigger className="h-7 w-[140px] text-xs"><SelectValue /></SelectTrigger>
+                              <SelectTrigger className="h-7 w-[140px] text-xs text-gray-900 dark:text-white">
+                                <SelectValue placeholder={getProblemTypeLabel(t, fb.problem_type_id, fb.problem_type)} />
+                              </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="0" className="text-xs">{t('problemType.0')}</SelectItem>
                                 <SelectItem value="1" className="text-xs">{t('problemType.1')}</SelectItem>
@@ -545,11 +547,11 @@ export function FeedbackList() {
                         {isManagerOrSupervisor ? (
                           <div onClick={(e) => e.stopPropagation()}>
                             <Select
-                              value={String(feedbackSentiments[fb.feedback_id] ?? -1)}
+                              value={String(feedbackSentiments[fb.feedback_id] ?? fb.sentiment_id ?? '')}
                               onValueChange={(val) => handleSentimentChange(fb.feedback_id, val === '-1' ? null : Number(val))}
                             >
-                              <SelectTrigger className={cn('h-7 w-[100px] text-xs transition-colors duration-200', sentimentColors[currentSentimentKey])}>
-                                <SelectValue />
+                              <SelectTrigger className={cn('h-7 w-[100px] text-xs transition-colors duration-200 text-gray-900 dark:text-white', sentimentColors[currentSentimentKey])}>
+                                <SelectValue placeholder={t(`sentiment.${currentSentimentKey}`)} />
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="0" className="text-xs">{t('sentiment.negative')}</SelectItem>
@@ -568,11 +570,11 @@ export function FeedbackList() {
                         {isManagerOrSupervisor ? (
                           <div onClick={(e) => e.stopPropagation()}>
                             <Select
-                              value={String(feedbackEmotions[fb.feedback_id] ?? -1)}
+                              value={String(feedbackEmotions[fb.feedback_id] ?? fb.emotion_id ?? '')}
                               onValueChange={(val) => handleEmotionChange(fb.feedback_id, val === '-1' ? null : Number(val))}
                             >
-                              <SelectTrigger className={cn('h-7 w-[110px] text-xs transition-colors duration-200', emotionColors[currentEmotionKey] || emotionColors.neutral)}>
-                                <SelectValue />
+                              <SelectTrigger className={cn('h-7 w-[110px] text-xs transition-colors duration-200 text-gray-900 dark:text-white', emotionColors[currentEmotionKey] || emotionColors.neutral)}>
+                                <SelectValue placeholder={getEmotionLabel(t, fb.emotion_id, fb.emotion)} />
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="0" className="text-xs">{t('emotion.0')}</SelectItem>
@@ -592,11 +594,11 @@ export function FeedbackList() {
                         {isManagerOrSupervisor ? (
                           <div onClick={(e) => e.stopPropagation()}>
                             <Select
-                              value={currentPriority}
+                              value={normalizePriority(feedbackPriorities[fb.feedback_id] || fb.priority || 'low')}
                               onValueChange={(val) => handlePriorityChange(fb.feedback_id, val)}
                             >
-                              <SelectTrigger className={cn('h-7 w-[100px] text-xs transition-colors duration-200', priorityColors[currentPriority])}>
-                                <SelectValue />
+                              <SelectTrigger className={cn('h-7 w-[100px] text-xs transition-colors duration-200 text-gray-900 dark:text-white', priorityColors[currentPriority])}>
+                                <SelectValue placeholder={displayLabel(t(`priority.${currentPriority}`), currentPriority)} />
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="low" className="text-xs">{t('priority.low')}</SelectItem>
@@ -667,6 +669,8 @@ export function FeedbackList() {
             feedbackSentiments[fb.feedback_id] ?? fb.sentiment_id,
             fb.sentiment
           );
+          const currentEmotionKey =
+            EMOTION_ID_TO_KEY[(feedbackEmotions[fb.feedback_id] ?? fb.emotion_id ?? 1) as number] || 'neutral';
 
           return (
             <Card
@@ -690,6 +694,12 @@ export function FeedbackList() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <Badge className={cn('text-[10px] px-1.5 py-0', priorityColors[currentPriority])}>
                       {currentPriority}
+                    </Badge>
+                    <Badge className={cn('text-[10px] px-1.5 py-0', emotionColors[currentEmotionKey])}>
+                      {getEmotionLabel(t, feedbackEmotions[fb.feedback_id] ?? fb.emotion_id, fb.emotion)}
+                    </Badge>
+                    <Badge className={cn('text-[10px] px-1.5 py-0', priorityColors[currentPriority])}>
+                      {getProblemTypeLabel(t, feedbackProblemTypes[fb.feedback_id] ?? fb.problem_type_id, fb.problem_type)}
                     </Badge>
                     <span className="text-[10px] text-gray-400">
                       {formatDate(fb.created_at)}

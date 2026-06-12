@@ -380,7 +380,7 @@ export function Reports() {
 
       {/* Sentiment Tab */}
       {activeTab === 'sentiment' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <Card className="lg:col-span-2">
             <CardHeader className="pb-2">
               <CardTitle className="text-base">{isAr ? 'اتجاه المشاعر الشهري' : 'Monthly Sentiment Trend'}</CardTitle>
@@ -515,12 +515,12 @@ export function Reports() {
               </div>
             </CardContent>
           </Card>
-        </div>
+      </div>
       )}
 
       {/* Category Tab */}
       {activeTab === 'category' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base">{isAr ? 'توزيع التعليقات بالتصنيف' : 'Feedback by Category'}</CardTitle>
@@ -618,12 +618,12 @@ export function Reports() {
     </ResponsiveContainer>
   </CardContent>
 </Card>
-        </div>
+      </div>
       )}
 
       {/* Channel Tab */}
       {activeTab === 'channel' && (
-        <div className="w-full">
+      <div className="w-full">
           <Card className="border border-border/50 bg-card/50 backdrop-blur-sm">
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-semibold">{isAr ? 'توزيع قنوات التلقي' : 'Feedback Channels Distribution'}</CardTitle>
@@ -701,12 +701,12 @@ export function Reports() {
               </div>
             </CardContent>
           </Card>
-        </div>
+      </div>
       )}
 
       {/* Emotion Tab */}
       {activeTab === 'emotion' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card className="border border-border/50 bg-card/50 backdrop-blur-sm">
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-semibold">{t('reports.emotionDistribution')}</CardTitle>
@@ -720,7 +720,7 @@ export function Reports() {
                     innerRadius={55}
                     outerRadius={80}
                     dataKey="value"
-                    // label={(props) => renderCustomLabel({ ...props, isAr })}
+                    label={(props) => renderCustomLabel({ ...props, isAr })}
                     labelLine={false}
                   >
                     {['#f59e0b', '#ef4444', '#6b7280', '#10b981'].map((color, i) => <Cell key={i} fill={color} />)}
@@ -802,12 +802,12 @@ export function Reports() {
               </ResponsiveContainer>
             </CardContent>
           </Card>
-        </div>
+      </div>
       )}
 
       {/* Priority Tab */}
       {activeTab === 'priority' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card className="border border-border/50 bg-card/50 backdrop-blur-sm">
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-semibold">{t('reports.priorityDistribution')}</CardTitle>
@@ -821,7 +821,7 @@ export function Reports() {
                     innerRadius={55}
                     outerRadius={80}
                     dataKey="value"
-                    // label={(props) => renderCustomLabel({ ...props, isAr })}
+                    label={(props) => renderCustomLabel({ ...props, isAr })}
                     labelLine={false}
                   >
                     {['#6b7280', '#f59e0b', '#ef4444', '#dc2626'].map((color, i) => <Cell key={i} fill={color} />)}
@@ -929,7 +929,7 @@ export function Reports() {
               </ResponsiveContainer>
             </CardContent>
           </Card>
-        </div>
+      </div>
       )}
 
       {/* Export CTA */}

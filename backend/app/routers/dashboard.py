@@ -3,9 +3,12 @@ from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from .. import models, database, oauth2
 from ..ai.labels import (
+    EMOTION_ID2AR_LABEL,
+    EMOTION_ID2LABEL,
     EMOTION_LABEL2ID,
-    PROBLEM_TYPE_DEFAULT_LABEL,
+    PROBLEM_TYPE_ID2AR_LABEL,
     PROBLEM_TYPE_ID2LABEL,
+    PROBLEM_TYPE_DEFAULT_LABEL,
     PROBLEM_TYPE_LABEL2ID,
 )
 from ..schemas import dashboard
@@ -14,20 +17,57 @@ from collections import defaultdict
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
 
+def _norm(value: str | None) -> str:
+    return (value or "").strip().lower()
+
+
+def _label_key(value: str | None) -> str:
+    return (value or "").strip()
+
+
+def _resolve_problem_type_id_by_label(label: str | None) -> int | None:
+    if not label:
+        return None
+    normalized = _norm(label)
+    for english_label, problem_type_id in PROBLEM_TYPE_LABEL2ID.items():
+        if _norm(english_label) == normalized:
+            return problem_type_id
+    for problem_type_id, ar_label in PROBLEM_TYPE_ID2AR_LABEL.items():
+        if _label_key(ar_label) == _label_key(label):
+            return problem_type_id
+    return None
+
+
+def _resolve_emotion_id_by_label(label: str | None) -> int | None:
+    if not label:
+        return None
+    normalized = _norm(label)
+    if normalized in EMOTION_LABEL2ID:
+        return EMOTION_LABEL2ID[normalized]
+    for emotion_id, ar_label in EMOTION_ID2AR_LABEL.items():
+        if _label_key(ar_label) == _label_key(label):
+            return emotion_id
+    return None
+
+
 def _resolve_problem_type_id(feedback: models.Feedback) -> int | None:
     if feedback.problem_type_id is not None:
         return feedback.problem_type_id
-    if feedback.problem_type:
-        return PROBLEM_TYPE_LABEL2ID.get(feedback.problem_type)
-    return None
+    return _resolve_problem_type_id_by_label(feedback.problem_type)
 
 
 def _resolve_emotion_id(feedback: models.Feedback) -> int | None:
     if feedback.emotion_id is not None:
         return feedback.emotion_id
-    if feedback.emotion:
-        return EMOTION_LABEL2ID.get(feedback.emotion)
-    return None
+    return _resolve_emotion_id_by_label(feedback.emotion)
+
+
+def _sentiment_key(feedback: models.Feedback) -> str:
+    return _norm(feedback.sentiment)
+
+
+def _status_key(feedback: models.Feedback) -> str:
+    return _norm(feedback.status).replace("_", "").replace(" ", "")
 
 
 @router.get("/stats", response_model=dashboard.DashboardStats)
@@ -46,14 +86,14 @@ def get_dashboard_stats(
     )
 
     total = len(feedback)
-    open_count = sum(1 for f in feedback if f.status == "open")
-    in_progress = sum(1 for f in feedback if f.status == "inProgress")
-    resolved = sum(1 for f in feedback if f.status == "resolved")
-    closed = sum(1 for f in feedback if f.status == "closed")
-    high_priority = sum(1 for f in feedback if f.priority == "high")
-    positive = sum(1 for f in feedback if f.sentiment == "positive")
-    negative = sum(1 for f in feedback if f.sentiment == "negative")
-    neutral = sum(1 for f in feedback if f.sentiment == "neutral")
+    open_count = sum(1 for f in feedback if _status_key(f) == "open")
+    in_progress = sum(1 for f in feedback if _status_key(f) == "inprogress")
+    resolved = sum(1 for f in feedback if _status_key(f) == "resolved")
+    closed = sum(1 for f in feedback if _status_key(f) == "closed")
+    high_priority = sum(1 for f in feedback if _norm(f.priority) == "high")
+    positive = sum(1 for f in feedback if _sentiment_key(f) == "positive")
+    negative = sum(1 for f in feedback if _sentiment_key(f) == "negative")
+    neutral = sum(1 for f in feedback if _sentiment_key(f) == "neutral")
     frustrated = sum(1 for f in feedback if _resolve_emotion_id(f) == 0)
     neutral_emotion = sum(1 for f in feedback if _resolve_emotion_id(f) == 1)
     disgusted = sum(1 for f in feedback if _resolve_emotion_id(f) == 2)
@@ -77,7 +117,9 @@ def get_dashboard_stats(
                 "month": month_start.strftime("%b"),
                 "complaints": len(month_feedback),
                 "resolved": sum(
-                    1 for f in month_feedback if f.status in ("resolved", "closed")
+                    1
+                    for f in month_feedback
+                    if _status_key(f) in ("resolved", "closed")
                 ),
             }
         )
@@ -161,8 +203,8 @@ def get_reports(
     total = len(filtered)
     prev_total = len(prev_filtered)
 
-    resolved = [f for f in filtered if f.status in ("resolved", "closed")]
-    prev_resolved = [f for f in prev_filtered if f.status in ("resolved", "closed")]
+    resolved = [f for f in filtered if _status_key(f) in ("resolved", "closed")]
+    prev_resolved = [f for f in prev_filtered if _status_key(f) in ("resolved", "closed")]
 
     resolution_rate = round((len(resolved) / total * 100), 1) if total else 0
     prev_resolution_rate = (
@@ -170,10 +212,10 @@ def get_reports(
     )
 
     # Sentiment counts
-    positive = sum(1 for f in filtered if f.sentiment == "positive")
-    negative = sum(1 for f in filtered if f.sentiment == "negative")
-    neutral = sum(1 for f in filtered if f.sentiment == "neutral")
-    prev_positive = sum(1 for f in prev_filtered if f.sentiment == "positive")
+    positive = sum(1 for f in filtered if _sentiment_key(f) == "positive")
+    negative = sum(1 for f in filtered if _sentiment_key(f) == "negative")
+    neutral = sum(1 for f in filtered if _sentiment_key(f) == "neutral")
+    prev_positive = sum(1 for f in prev_filtered if _sentiment_key(f) == "positive")
 
     sentiment_pct = round((positive / total * 100), 1) if total else 0
     prev_sentiment_pct = (
@@ -200,9 +242,9 @@ def get_reports(
         sentiment_trend.append(
             {
                 "month": m_start.strftime("%b"),
-                "positive": sum(1 for f in month_fb if f.sentiment == "positive"),
-                "negative": sum(1 for f in month_fb if f.sentiment == "negative"),
-                "neutral": sum(1 for f in month_fb if f.sentiment == "neutral"),
+                "positive": sum(1 for f in month_fb if _sentiment_key(f) == "positive"),
+                "negative": sum(1 for f in month_fb if _sentiment_key(f) == "negative"),
+                "neutral": sum(1 for f in month_fb if _sentiment_key(f) == "neutral"),
             }
         )
 
@@ -225,9 +267,9 @@ def get_reports(
         cat_map[problem_type_id]["problem_type_id"] = problem_type_id
         cat_map[problem_type_id]["name"] = name
         cat_map[problem_type_id]["total"] += 1
-        if f.sentiment == "positive":
+        if _sentiment_key(f) == "positive":
             cat_map[problem_type_id]["positive"] += 1
-        elif f.sentiment == "negative":
+        elif _sentiment_key(f) == "negative":
             cat_map[problem_type_id]["negative"] += 1
         else:
             cat_map[problem_type_id]["neutral"] += 1
@@ -271,9 +313,9 @@ def get_reports(
             continue
         emotion_map[emotion_id]["emotion_id"] = emotion_id
         emotion_map[emotion_id]["total"] += 1
-        if f.sentiment == "positive":
+        if _sentiment_key(f) == "positive":
             emotion_map[emotion_id]["positive"] += 1
-        elif f.sentiment == "negative":
+        elif _sentiment_key(f) == "negative":
             emotion_map[emotion_id]["negative"] += 1
         else:
             emotion_map[emotion_id]["neutral"] += 1
@@ -283,7 +325,7 @@ def get_reports(
     priority_levels = ["low", "medium", "high", "critical"]
     priority_counts = {level: 0 for level in priority_levels}
     for f in filtered:
-        level = (f.priority or "").lower().strip()
+        level = _norm(f.priority)
         if level in priority_counts:
             priority_counts[level] += 1
     priority_data = [
@@ -309,7 +351,7 @@ def get_reports(
         entry = priority_by_category_map[problem_type_id]
         entry["problem_type_id"] = problem_type_id
         entry["name"] = name
-        level = (f.priority or "").lower().strip()
+        level = _norm(f.priority)
         if level in priority_levels:
             entry[level] += 1
     priority_by_category = list(priority_by_category_map.values())
@@ -326,7 +368,7 @@ def get_reports(
         ]
         month_counts = {level: 0 for level in priority_levels}
         for f in month_fb:
-            level = (f.priority or "").lower().strip()
+            level = _norm(f.priority)
             if level in month_counts:
                 month_counts[level] += 1
         priority_trend.append(
@@ -373,7 +415,7 @@ def get_reports(
             {
                 "week": f"W{6-i}",
                 "resolved": sum(
-                    1 for f in week_fb if f.status in ("resolved", "closed")
+                    1 for f in week_fb if _status_key(f) in ("resolved", "closed")
                 ),
                 "avgTime": 0,
             }

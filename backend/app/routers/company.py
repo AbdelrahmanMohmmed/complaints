@@ -1,6 +1,6 @@
 import logging
 
-from fastapi import APIRouter, status, HTTPException, Depends, BackgroundTasks
+from fastapi import APIRouter, status, HTTPException, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timedelta, timezone
@@ -13,7 +13,6 @@ logger = logging.getLogger(__name__)
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=company.CompanyOut)
 def create_company(
     signup: company.CompanySignup,
-    background_tasks: BackgroundTasks,
     db: Session = Depends(database.get_db)
 ):
     domain = db.query(models.Domain).filter(models.Domain.domain_id == signup.domain_id).first()
@@ -68,9 +67,7 @@ def create_company(
         db.commit()
         db.refresh(new_company)
 
-        # Send email in background so signup doesn't wait
-        background_tasks.add_task(
-            utils.send_verification_email,
+        utils.send_verification_email(
             to_email=signup.email,
             code=code,
             name=signup.f_name,

@@ -4,7 +4,7 @@ import logging
 from datetime import datetime
 from collections import defaultdict
 
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Request, BackgroundTasks
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -53,6 +53,68 @@ def check_rate_limit(remote_address: str) -> bool:
     # Record this request
     ip_rate_limit[remote_address].append(now)
     return True
+
+
+def _process_webform_feedback_async(feedback_id: int) -> None:
+    """Process webform feedback in background after HTTP response."""
+    db = database.SessionLocal()
+    try:
+        feedback_row = db.query(models.Feedback).filter(models.Feedback.feedback_id == feedback_id).first()
+        if not feedback_row:
+            logger.warning("Background feedback job: feedback_id=%s not found", feedback_id)
+            return
+
+        feedback_text = feedback_row.feedback_context or ""
+
+        try:
+            feedback_row.language = detect_language(feedback_text)
+            feedback_row.cleaned_text = preprocess_feedback(feedback_text)
+            feedback_row.status = "preprocessed"
+            db.commit()
+            db.refresh(feedback_row)
+            logger.info("Background preprocessing complete for feedback_id=%s", feedback_id)
+        except Exception as e:
+            logger.error(
+                "Background preprocessing failed for feedback_id=%s: %s",
+                feedback_id,
+                str(e),
+                exc_info=True,
+            )
+            db.rollback()
+            return
+
+        try:
+            language = feedback_row.language or detect_language(feedback_row.cleaned_text or feedback_text)
+            cleaned_text = feedback_row.cleaned_text or feedback_text
+            if language in ("ar", "franko"):
+                ai_models = load_arabic_models()
+                ai_result = predict_arabic(cleaned_text, ai_models)
+            else:
+                ai_models = load_english_models()
+                ai_result = predict_english(cleaned_text, ai_models)
+
+            feedback_row.sentiment = ai_result.get("sentiment")
+            feedback_row.sentiment_id = ai_result.get("sentiment_id")
+            feedback_row.emotion = ai_result.get("emotion")
+            feedback_row.emotion_id = ai_result.get("emotion_id")
+            feedback_row.problem_type = ai_result.get("problem_type")
+            feedback_row.problem_type_id = ai_result.get("problem_type_id")
+            priority = ai_result.get("priority")
+            feedback_row.priority = priority.lower() if isinstance(priority, str) else priority
+            feedback_row.status = "analyzed"
+            db.commit()
+            db.refresh(feedback_row)
+            logger.info("Background AI analysis complete for feedback_id=%s", feedback_id)
+        except Exception as e:
+            logger.error(
+                "Background AI pipeline failed for feedback_id=%s: %s",
+                feedback_id,
+                str(e),
+                exc_info=True,
+            )
+            db.rollback()
+    finally:
+        db.close()
 
 
 def serialize_feedback(row: tuple[models.Feedback, str | None, str | None]) -> dict:
@@ -334,6 +396,7 @@ async def submit_form(
     token: str,
     submission: feedback.WebFormSubmission,
     request: Request,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(database.get_db),
 ) -> dict:
     """Handle web form feedback submission.
@@ -423,58 +486,8 @@ async def submit_form(
         db.commit()
         db.refresh(new_feedback)
 
-        # Step 1: Run preprocessing pipeline
-        logger.info(
-            f"Running preprocessing for feedback_id={new_feedback.feedback_id}"
-        )
-        try:
-            new_feedback.language = detect_language(feedback_context)
-            cleaned_text = preprocess_feedback(feedback_context)
-            new_feedback.cleaned_text = cleaned_text
-            new_feedback.status = "preprocessed"
-            db.commit()
-            db.refresh(new_feedback)
-            logger.info(
-                f"Preprocessing complete for feedback_id={new_feedback.feedback_id}"
-            )
-        except Exception as e:
-            logger.error(
-                f"Preprocessing failed for feedback_id={new_feedback.feedback_id}: {str(e)}",
-                exc_info=True,
-            )
-            cleaned_text = feedback_context  # Fallback to original text
-
-        # Step 2: Run AI pipeline synchronously for immediate feedback to frontend
-        try:
-            language = new_feedback.language or detect_language(cleaned_text)
-            if language in ("ar", "franko"):
-                ai_models = load_arabic_models()
-                ai_result = predict_arabic(cleaned_text, ai_models)
-            else:
-                ai_models = load_english_models()
-                ai_result = predict_english(cleaned_text, ai_models)
-
-            # Update feedback record with AI results
-            new_feedback.sentiment = ai_result.get("sentiment")
-            new_feedback.sentiment_id = ai_result.get("sentiment_id")
-            new_feedback.emotion = ai_result.get("emotion")
-            new_feedback.emotion_id = ai_result.get("emotion_id")
-            new_feedback.problem_type = ai_result.get("problem_type")
-            new_feedback.problem_type_id = ai_result.get("problem_type_id")
-            new_feedback.priority = ai_result.get("priority")
-            new_feedback.status = "analyzed"
-            db.commit()
-            db.refresh(new_feedback)
-            logger.info(
-                f"AI analysis complete for feedback_id={new_feedback.feedback_id}, status=analyzed"
-            )
-        except Exception as e:
-            logger.error(
-                "AI pipeline failed for feedback_id=%s: %s",
-                new_feedback.feedback_id,
-                str(e),
-                exc_info=True,
-            )
+        logger.info("Queueing background processing for feedback_id=%s", new_feedback.feedback_id)
+        background_tasks.add_task(_process_webform_feedback_async, new_feedback.feedback_id)
 
         logger.info(
             f"Web form feedback received from company_id={integration.company_id}, "
@@ -482,7 +495,7 @@ async def submit_form(
         )
 
         return {
-            "message": "Thank you for your feedback! Your complaint has been received and will be reviewed shortly."
+            "message": "Thank you for your feedback! Your complaint has been received."
         }
 
     except Exception as e:
