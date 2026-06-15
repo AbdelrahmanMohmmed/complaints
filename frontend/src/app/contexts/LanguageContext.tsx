@@ -119,6 +119,7 @@ const translations = {
     'status.inProgress': 'In Progress',
     'status.resolved': 'Resolved',
     'status.closed': 'Closed',
+    'status.analyzed': 'Analyzed',
     
     // Sentiment
     'sentiment.positive': 'Positive',
@@ -326,6 +327,7 @@ const translations = {
     'status.inProgress': 'قيد المعالجة',
     'status.resolved': 'تم الحل',
     'status.closed': 'مغلق',
+    'status.analyzed': 'تم تحليله',
     
     // Sentiment
     'sentiment.positive': 'إيجابي',
