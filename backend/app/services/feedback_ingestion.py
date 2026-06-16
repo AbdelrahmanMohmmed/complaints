@@ -13,6 +13,8 @@ from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
 
+from app.config import settings
+from .scrap_twitter import fetch_replies
 from .. import models, utils, database
 from .get_email_messages import fetch_gmail_messages
 
@@ -61,32 +63,110 @@ def truncate_text(text: str, max_length: int = 10000) -> str:
     return text
 
 
-async def add_feedback_safe(
-    db: AsyncSession,
+async def fetch_twitter_replies(
+        db: AsyncSession,
+        integration_id: int,
+        company_id: int,
+        target_username: Optional[str] = None,
+) -> int:
+    """Scrape Twitter/X replies using Playwright with .env credentials."""
+
+    comments_added = 0
+
+    try:
+        # Get credentials from .env via settings
+        auth_token = settings.TWITTER_AUTH_TOKEN
+        ct0 = settings.TWITTER_CT0
+
+        # Get target username from integration or use provided
+        if not target_username:
+            # Try to get from integration's platform_page_id
+            stmt = select(models.Api).where(models.Api.api_id == integration_id)
+            result = await db.execute(stmt)
+            integration = result.scalar_one_or_none()
+            if integration and integration.platform_page_id:
+                target_username = integration.platform_page_id.strip()
+
+        if not target_username:
+            logger.warning(f"No target username for Twitter integration {integration_id}")
+            return 0
+
+        if not auth_token or not ct0:
+            logger.warning(f"Missing Twitter auth cookies in .env for integration {integration_id}")
+            await mark_integration_expired(db, integration_id)
+            return 0
+
+        # Run Playwright scraper in thread pool
+        loop = asyncio.get_running_loop()
+        replies = await loop.run_in_executor(
+            None,
+            lambda: asyncio.run(fetch_replies(
+                target_username=target_username,
+                auth_token=auth_token,
+                ct0=ct0,
+                max_posts=2,
+                max_comments_per_post=50,
+                save_to_file=False,
+            ))
+        )
+
+        if not replies:
+            logger.info(f"Twitter: No replies found for @{target_username}")
+            return 0
+
+        for reply in replies:
+            feedback_text = reply.get("reply_text", "").strip()
+            if not feedback_text:
+                continue
+
+            date_str = reply.get("date", "")
+            created_at = parse_datetime(date_str) if date_str else datetime.utcnow()
+            from_user = reply.get("from_user", "Twitter User")
+
+            if await add_feedback_safe(
+                    db, company_id, integration_id,
+                    feedback_text, created_at, from_user
+            ):
+                comments_added += 1
+
+        if comments_added > 0:
+            await db.commit()
+
+        logger.info(f"Twitter: +{comments_added} replies from @{target_username}")
+        return comments_added
+
+    except Exception as e:
+        logger.error(f"Twitter scraping error for integration {integration_id}: {e}")
+        await db.rollback()
+        return 0
+
+# In feedback_ingestion.py, add a sync version:
+def add_feedback_safe(
+    db,  # sync Session
     company_id: int,
     api_id: int,
     feedback_text: str,
     created_at: datetime,
     customer_name: Optional[str] = None,
 ) -> bool:
-    """Safely add feedback with deduplication."""
+    """Sync version for sync endpoints."""
     try:
         feedback_text = truncate_text(feedback_text)
         if customer_name and len(customer_name) > 500:
             customer_name = customer_name[:497] + "..."
 
-        # FIX: Use fetchone() instead of scalar_one_or_none() for safety
-        stmt = select(models.Feedback).where(
-            and_(
-                models.Feedback.api_id == api_id,
-                models.Feedback.feedback_context == feedback_text,
+        existing = (
+            db.query(models.Feedback)
+            .filter(
+                and_(
+                    models.Feedback.api_id == api_id,
+                    models.Feedback.feedback_context == feedback_text,
+                )
             )
+            .first()
         )
-        result = await db.execute(stmt)
-        existing = result.fetchone()
 
         if existing:
-            logger.debug(f"Duplicate feedback from integration {api_id}")
             return False
 
         new_feedback = models.Feedback(
@@ -98,13 +178,13 @@ async def add_feedback_safe(
             customer_name=customer_name or "Anonymous",
         )
         db.add(new_feedback)
+        db.commit()
         return True
 
-    except SQLAlchemyError as e:
-        logger.error(f"DB error in add_feedback_safe: {e}")
-        await db.rollback()
+    except Exception as e:
+        logger.error(f"DB error: {e}")
+        db.rollback()
         return False
-
 
 async def mark_integration_expired(db: AsyncSession, integration_id: int) -> None:
     try:
@@ -372,8 +452,12 @@ async def process_single_integration(integration: models.Api) -> int:
                 integration.api_id, integration.company_id,
             )
         elif channel_name == "twitter":
-            logger.warning(f"Twitter not implemented for integration {integration.api_id}")
-            comments_added = 0
+            comments_added = await fetch_twitter_replies(
+                db,
+                integration.api_id,
+                integration.company_id,
+                target_username=integration.platform_page_id,
+            )
         else:
             logger.warning(f"Unknown channel: {channel_name}")
             comments_added = 0

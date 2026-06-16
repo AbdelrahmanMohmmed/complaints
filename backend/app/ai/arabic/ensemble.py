@@ -44,7 +44,7 @@ def predict_arabic_problem_type(text: str) -> str:
         pred2 = predict_arabic_ml(ar_problem_lr_f(), text, "P")  # LR-F
         pred3 = predict_arabic_dl(ar_problem_gru(), text, "P")  # GRU
 
-        preds = [ pred2, pred2]
+        preds = [ pred2, pred3]
         votes = Counter(preds)
         final_pred = votes.most_common(1)[0][0]
         

@@ -515,6 +515,7 @@ export function FeedbackList() {
                       <TableCell className="hidden md:table-cell max-w-xs">
                         <div className="truncate text-sm text-gray-600 dark:text-gray-400">{fb.feedback_context || '—'}</div>
                       </TableCell>
+                      {/* Problem Type Column - UPDATED with placeholder and none option */}
                       <TableCell className="hidden xl:table-cell">
                         {isManagerOrSupervisor ? (
                           <div onClick={(e) => e.stopPropagation()}>
@@ -522,8 +523,11 @@ export function FeedbackList() {
                               value={String(feedbackProblemTypes[fb.feedback_id] ?? -1)}
                               onValueChange={(val) => handleProblemTypeChange(fb.feedback_id, val === '-1' ? null : Number(val))}
                             >
-                              <SelectTrigger className="h-7 w-[140px] text-xs"><SelectValue /></SelectTrigger>
+                              <SelectTrigger className="h-7 w-[140px] text-xs">
+                                <SelectValue placeholder="—" />
+                              </SelectTrigger>
                               <SelectContent>
+                                <SelectItem value="-1" className="text-xs">—</SelectItem>
                                 <SelectItem value="0" className="text-xs">{t('problemType.0')}</SelectItem>
                                 <SelectItem value="1" className="text-xs">{t('problemType.1')}</SelectItem>
                                 <SelectItem value="2" className="text-xs">{t('problemType.2')}</SelectItem>
@@ -761,7 +765,7 @@ export function FeedbackList() {
         </div>
       </div>
 
-      {/* Mobile Detail Drawer */}
+      {/* Mobile Detail Drawer - UPDATED with placeholder and all problem type options */}
       {selectedMobileFeedback && (
         <Sheet open={mobileDetailOpen} onOpenChange={setMobileDetailOpen}>
           <SheetContent side={isAr ? 'right' : 'left'} className="w-full sm:max-w-md overflow-y-auto">
@@ -903,7 +907,7 @@ export function FeedbackList() {
                 <p className="text-sm text-gray-700 dark:text-gray-300">{formatDate(selectedMobileFeedback.created_at)}</p>
               </div>
 
-              {/* Problem Type */}
+              {/* Problem Type Section - UPDATED with placeholder and all options */}
               <div>
                 <label className="text-xs text-gray-500 dark:text-gray-400 uppercase">{isAr ? 'نوع المشكلة' : 'Problem Type'}</label>
                 <div className="mt-1">
@@ -913,10 +917,11 @@ export function FeedbackList() {
                       onValueChange={(val) => handleProblemTypeChange(selectedMobileFeedback.feedback_id, val === '-1' ? null : Number(val))}
                     >
                       <SelectTrigger className="h-8 w-full text-xs">
-                        <SelectValue />
+                        <SelectValue placeholder="—" />
                       </SelectTrigger>
                       <SelectContent>
-                        {[0,1,2,3,4,5,6,7].map(id => (
+                        <SelectItem value="-1">—</SelectItem>
+                        {[0, 1, 2, 3, 4, 5, 6, 7].map(id => (
                           <SelectItem key={id} value={String(id)}>{t(`problemType.${id}`)}</SelectItem>
                         ))}
                       </SelectContent>

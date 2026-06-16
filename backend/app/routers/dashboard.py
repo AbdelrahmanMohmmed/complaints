@@ -24,7 +24,7 @@ def _resolve_emotion_id(feedback: models.Feedback) -> int | None:
 def _resolve_sentiment_label(feedback: models.Feedback) -> str | None:
     if feedback.sentiment_id is None:
         return None
-    return SENTIMENT_ID2LABEL.get(feedback.sentiment_id)
+    return SENTIMENT_ID2LABEL.get(feedback.sentiment_id).lower()
 
 
 @router.get("/stats", response_model=dashboard.DashboardStats)
