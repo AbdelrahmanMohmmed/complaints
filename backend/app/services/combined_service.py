@@ -21,7 +21,7 @@ from ..ai.labels import (
 logger = logging.getLogger(__name__)
 
 
-def _get_unprocessed_feedback(db: Session, limit: int = 50) -> List[models.Feedback]:
+def _get_unprocessed_feedback(db: Session, limit: int = 10) -> List[models.Feedback]:
     """Fetch unprocessed feedback records."""
     return (
         db.query(models.Feedback)
@@ -52,7 +52,7 @@ def _update_feedback_record(
     feedback.ml_processed_at = func.now()
 
 
-def run_combined_job(db: Session, batch_size: int = 50) -> int:
+def run_combined_job(db: Session, batch_size: int = 10) -> int:
     """Run combined preprocess + AI on unprocessed feedback.
 
     Preprocessing uses CACHED spaCy/Camel models (loaded once at startup).

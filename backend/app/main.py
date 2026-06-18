@@ -122,7 +122,8 @@ async def startup_event() -> None:
             id="combined_job",
             name="Preprocess + AI Analysis",
             replace_existing=True,
-            max_instances=3,
+            max_instances=1,
+            coalesce=True,  # <--- Add this to merge skipped executions into a single run
         )
         logger.info("  ✓ Combined: every 2 min (preprocess + AI together)")
 

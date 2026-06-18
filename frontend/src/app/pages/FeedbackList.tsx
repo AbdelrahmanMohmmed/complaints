@@ -120,12 +120,23 @@ const displayLabel = (labelKey: string, fallbackValue: string) => {
 const getProblemTypeLabel = (
   t: (key: string) => string,
   problemTypeId?: number | null,
-  fallback?: string | null
-) => (
-  problemTypeId !== null && problemTypeId !== undefined
-    ? t(`problemType.${problemTypeId}`)
-    : (fallback || '—')
-);
+  fallback?: string | null,
+  isAr?: boolean
+) => {
+  if (problemTypeId !== null && problemTypeId !== undefined) {
+    const translated = t(`problemType.${problemTypeId}`);
+    // If translation key returns itself (missing translation), try CATEGORY_AR_LABELS
+    if (translated === `problemType.${problemTypeId}` && isAr) {
+      return CATEGORY_AR_LABELS[String(problemTypeId)] || (fallback || '—');
+    }
+    return translated;
+  }
+  if (fallback && isAr) {
+    const normalizedKey = normalizeCategoryKey(fallback);
+    return CATEGORY_AR_LABELS[normalizedKey] || fallback;
+  }
+  return fallback || '—';
+};
 
 const getEmotionLabel = (
   t: (key: string) => string,
@@ -268,7 +279,8 @@ export function FeedbackList() {
     const matchesSentiment = sentimentFilter === 'all' || sentimentKey === sentimentFilter;
     const matchesPriority = priorityFilter === 'all' || currentPriority === priorityFilter;
     const matchesCategory = categoryFilter === 'all' || (fb.problem_type || '—') === categoryFilter;
-    const matchesEmotion = emotionFilter === 'all' || String(fb.emotion_id ?? 'none') === emotionFilter;
+    const emotionKey = fb.emotion_id !== null && fb.emotion_id !== undefined ? EMOTION_ID_TO_KEY[fb.emotion_id] : (fb.emotion || 'none');
+    const matchesEmotion = emotionFilter === 'all' || emotionKey === emotionFilter;
     return matchesSearch && matchesStatus && matchesSentiment && matchesPriority && matchesCategory && matchesEmotion;
   });
 
@@ -313,7 +325,7 @@ export function FeedbackList() {
       fb.feedback_id,
       fb.customer_name || 'Unknown',
       `"${(fb.feedback_context || '').replace(/"/g, '""')}"`,
-      getProblemTypeLabel(t, fb.problem_type_id, fb.problem_type),
+      getProblemTypeLabel(t, fb.problem_type_id, fb.problem_type, isAr),
       t(`sentiment.${getSentimentKey(fb.sentiment_id, fb.sentiment)}`),
       getEmotionLabel(t, fb.emotion_id, fb.emotion),
       fb.priority || '—',
@@ -563,7 +575,7 @@ export function FeedbackList() {
                             >
                               <SelectTrigger className="h-7 w-[140px] text-xs">
                                 <SelectValue
-                                  placeholder={getProblemTypeLabel(t, fb.problem_type_id, fb.problem_type)}
+                                  placeholder={getProblemTypeLabel(t, fb.problem_type_id, fb.problem_type, isAr)}
                                 />
                               </SelectTrigger>
                               <SelectContent>
@@ -580,7 +592,7 @@ export function FeedbackList() {
                           </div>
                         ) : (
                           <span className="text-sm text-gray-600 dark:text-gray-400">
-                            {getProblemTypeLabel(t, feedbackProblemTypes[fb.feedback_id] ?? fb.problem_type_id, fb.problem_type)}
+                            {getProblemTypeLabel(t, feedbackProblemTypes[fb.feedback_id] ?? fb.problem_type_id, fb.problem_type, isAr)}
                           </span>
                         )}
                       </TableCell>
@@ -968,7 +980,7 @@ export function FeedbackList() {
                     </Select>
                   ) : (
                     <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {getProblemTypeLabel(t, selectedMobileFeedback.problem_type_id, selectedMobileFeedback.problem_type)}
+                      {getProblemTypeLabel(t, selectedMobileFeedback.problem_type_id, selectedMobileFeedback.problem_type, isAr)}
                     </span>
                   )}
                 </div>
