@@ -1,9 +1,7 @@
-"""Fixed preprocessing router with proper async handling."""
+"""Language detection and routing logic - MINIMAL VERSION (no heavy models)."""
 
 import re
 import logging
-import time
-import asyncio
 from typing import Literal
 
 try:
@@ -11,139 +9,86 @@ try:
     LANGDETECT_AVAILABLE = True
 except ImportError:
     LANGDETECT_AVAILABLE = False
-    detect = None
-
-from .arabic import arabic_pipeline
-from .english import english_pipeline
-from .franko import franko_pipeline
 
 logger = logging.getLogger(__name__)
 
-_lang_cache: dict[str, str] = {}
-_CACHE_MAX_SIZE = 1000
-
+# Arabizi (Franco-Arabic) patterns for detection
 ARABIZI_PATTERNS = [
-    "helw", "gamed", "tohfaa", "kwayes", "7elw", "7elwawi", "7elwgedn",
-    "sa7", "tamam", "mazboot", "7aga7elwa", "a7la", "mshhelw", "wa7esh",
-    # ... rest of patterns ...
+    "helw", "gamed", "tohfaa", "kwayes", "7elw", "sa7", "tamam", "mazboot",
+    "3ady", "7ar", "7ar2", "nashf", "tayeb", "mestawe", "m3aga", "sa5en",
+    "sa2e3", "ratb", "na3em", "saraha", "gdn", "awii", "shwaya", "keda",
+    "bas", "lakn", "y3ni", "ba2a",
 ]
-
-_ARABIC_REGEX = re.compile(r"[\u0600-\u06FF]")
-_ARABIZI_NUMBERS_REGEX = re.compile(r"[23457]")
 
 
 def contains_arabic_script(text: str) -> bool:
-    return bool(_ARABIC_REGEX.search(text))
+    """Return True when the text contains Arabic script characters."""
+    return bool(re.search(r"[\u0600-\u06FF]", text))
 
 
 def is_arabizi(text: str) -> bool:
+    """Detect if text is in Arabizi (Franco-Arabic) format."""
     if contains_arabic_script(text):
         return False
-
     text_lower = text.lower()
     words = text_lower.split()
     matches = sum(1 for word in words if word in ARABIZI_PATTERNS)
-
-    if matches == 0:
-        return False
-
-    has_numbers = bool(_ARABIZI_NUMBERS_REGEX.search(text_lower))
-    return matches >= 2 or (matches >= 1 and has_numbers)
+    has_arabic_numbers = bool(re.search(r"[23457]", text_lower))
+    return matches >= 2 or (matches >= 1 and has_arabic_numbers)
 
 
-def fast_detect_language(text: str) -> str:
-    cache_key = text[:100]
-    if cache_key in _lang_cache:
-        return _lang_cache[cache_key]
-
-    if contains_arabic_script(text):
-        _lang_cache[cache_key] = "ar"
-        return "ar"
-
-    if len(text) < 20:
-        english_words = {"the", "and", "is", "to", "of", "a", "in", "that", "have", "it"}
-        words = text.lower().split()
-        if any(w in english_words for w in words):
-            _lang_cache[cache_key] = "en"
-            return "en"
-
-    if not LANGDETECT_AVAILABLE:
-        _lang_cache[cache_key] = "en"
+def detect_language(text: str) -> Literal["ar", "en", "franko"]:
+    """Detect stored feedback language bucket - FAST, no heavy models."""
+    if not text or not text.strip():
         return "en"
-
-    try:
-        sample = text[:500]
-        start = time.time()
-        lang = detect(sample)
-        elapsed = time.time() - start
-
-        if elapsed > 2.0:
-            logger.warning(f"langdetect slow: {elapsed:.2f}s")
-
-        if len(_lang_cache) > _CACHE_MAX_SIZE:
-            _lang_cache.clear()
-        _lang_cache[cache_key] = lang
-
-        return lang
-    except Exception as e:
-        logger.debug(f"Detection failed: {e}")
-        return "en"
-
-
-def route_pipeline(text: str) -> Literal["arabic", "english", "franko"]:
     if is_arabizi(text):
         return "franko"
     if contains_arabic_script(text):
-        return "arabic"
+        return "ar"
+    if LANGDETECT_AVAILABLE:
+        try:
+            lang = detect(text)
+            if lang == "ar":
+                return "ar"
+        except Exception:
+            pass
+    return "en"
 
-    lang = fast_detect_language(text)
-    return "arabic" if lang == "ar" else "english"
+
+def _basic_clean(text: str) -> str:
+    """Basic text cleaning without any heavy NLP models."""
+    if not text:
+        return ""
+    # Remove extra whitespace
+    text = re.sub(r"\s+", " ", text)
+    # Remove URLs
+    text = re.sub(r"http\S+|www\.\S+", "", text)
+    # Remove email addresses
+    text = re.sub(r"\S+@\S+", "", text)
+    # Remove special chars but keep letters, numbers, Arabic, basic punctuation
+    text = re.sub(r"[^\w\s\u0600-\u06FF.,!?;:']", " ", text)
+    # Normalize whitespace
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
 
 
-# ============================================================================
-# FIXED: Proper async preprocessing with thread pool
-# ============================================================================
-
-async def preprocess_feedback(text: str) -> str:
+def preprocess_feedback(text: str) -> str:
     """
-    Async preprocessing with timeout and thread pool execution.
+    Minimal preprocessing - just basic cleaning, no spaCy/Camel loading.
     """
-    if not text or not text.strip():
-        return text
-
-    start_time = time.time()
-
     try:
-        pipeline = route_pipeline(text)
-
-        # Run sync pipelines in thread pool
-        loop = asyncio.get_running_loop()
-
-        if pipeline == "arabic":
-            result = await asyncio.wait_for(
-                loop.run_in_executor(None, arabic_pipeline, text),
-                timeout=8.0
-            )
-        elif pipeline == "franko":
-            result = await asyncio.wait_for(
-                loop.run_in_executor(None, franko_pipeline, text),
-                timeout=8.0
-            )
-        else:
-            result = await asyncio.wait_for(
-                loop.run_in_executor(None, english_pipeline, text),
-                timeout=8.0
-            )
-
-        total_time = time.time() - start_time
-        if total_time > 5.0:
-            logger.warning(f"Preprocessing slow: {total_time:.2f}s for {len(text)} chars")
-
-        return result or text
-
-    except asyncio.TimeoutError:
-        logger.warning(f"Preprocessing timeout for {len(text)} chars")
-        return text
+        return _basic_clean(text)
     except Exception as e:
-        logger.error(f"Preprocessing error: {e}")
+        logger.error(f"Error in minimal preprocessing: {e}")
         return text
+
+
+# Backward compatibility - route_pipeline is used by __init__.py
+def route_pipeline(text: str) -> Literal["arabic", "english", "franko"]:
+    """Route text to appropriate preprocessing pipeline."""
+    lang = detect_language(text)
+    if lang == "franko":
+        return "franko"
+    if lang == "ar":
+        return "arabic"
+    return "english"

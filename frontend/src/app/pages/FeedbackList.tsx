@@ -53,11 +53,24 @@ const SENTIMENT_ID_TO_KEY: Record<number, 'negative' | 'neutral' | 'positive'> =
   2: 'positive',
 };
 
+const SENTIMENT_KEY_TO_ID: Record<'negative' | 'neutral' | 'positive', number> = {
+  negative: 0,
+  neutral: 1,
+  positive: 2,
+};
+
 const EMOTION_ID_TO_KEY: Record<number, 'satisfied' | 'frustrated' | 'neutral' | 'disgusted'> = {
   0: 'frustrated',
   1: 'neutral',
   2: 'disgusted',
   3: 'satisfied',
+};
+
+const EMOTION_KEY_TO_ID: Record<'frustrated' | 'neutral' | 'disgusted' | 'satisfied', number> = {
+  frustrated: 0,
+  neutral: 1,
+  disgusted: 2,
+  satisfied: 3,
 };
 
 const priorityColors: Record<string, string> = {
@@ -107,12 +120,23 @@ const displayLabel = (labelKey: string, fallbackValue: string) => {
 const getProblemTypeLabel = (
   t: (key: string) => string,
   problemTypeId?: number | null,
-  fallback?: string | null
-) => (
-  problemTypeId !== null && problemTypeId !== undefined
-    ? t(`problemType.${problemTypeId}`)
-    : (fallback || '—')
-);
+  fallback?: string | null,
+  isAr?: boolean
+) => {
+  if (problemTypeId !== null && problemTypeId !== undefined) {
+    const translated = t(`problemType.${problemTypeId}`);
+    // If translation key returns itself (missing translation), try CATEGORY_AR_LABELS
+    if (translated === `problemType.${problemTypeId}` && isAr) {
+      return CATEGORY_AR_LABELS[String(problemTypeId)] || (fallback || '—');
+    }
+    return translated;
+  }
+  if (fallback && isAr) {
+    const normalizedKey = normalizeCategoryKey(fallback);
+    return CATEGORY_AR_LABELS[normalizedKey] || fallback;
+  }
+  return fallback || '—';
+};
 
 const getEmotionLabel = (
   t: (key: string) => string,
@@ -133,6 +157,32 @@ const getSentimentKey = (
   }
   if (sentiment) return sentiment.toLowerCase();
   return 'neutral';
+};
+
+const getSentimentSelectValue = (
+  sentimentId?: number | null,
+  sentiment?: string | null
+) => {
+  if (sentimentId !== null && sentimentId !== undefined) {
+    return String(sentimentId);
+  }
+  const normalized = sentiment?.toLowerCase() as keyof typeof SENTIMENT_KEY_TO_ID | undefined;
+  return normalized && SENTIMENT_KEY_TO_ID[normalized] !== undefined
+    ? String(SENTIMENT_KEY_TO_ID[normalized])
+    : '';
+};
+
+const getEmotionSelectValue = (
+  emotionId?: number | null,
+  emotion?: string | null
+) => {
+  if (emotionId !== null && emotionId !== undefined) {
+    return String(emotionId);
+  }
+  const normalized = emotion?.toLowerCase() as keyof typeof EMOTION_KEY_TO_ID | undefined;
+  return normalized && EMOTION_KEY_TO_ID[normalized] !== undefined
+    ? String(EMOTION_KEY_TO_ID[normalized])
+    : '';
 };
 
 const CATEGORY_AR_LABELS: Record<string, string> = {
@@ -229,7 +279,8 @@ export function FeedbackList() {
     const matchesSentiment = sentimentFilter === 'all' || sentimentKey === sentimentFilter;
     const matchesPriority = priorityFilter === 'all' || currentPriority === priorityFilter;
     const matchesCategory = categoryFilter === 'all' || (fb.problem_type || '—') === categoryFilter;
-    const matchesEmotion = emotionFilter === 'all' || String(fb.emotion_id ?? 'none') === emotionFilter;
+    const emotionKey = fb.emotion_id !== null && fb.emotion_id !== undefined ? EMOTION_ID_TO_KEY[fb.emotion_id] : (fb.emotion || 'none');
+    const matchesEmotion = emotionFilter === 'all' || emotionKey === emotionFilter;
     return matchesSearch && matchesStatus && matchesSentiment && matchesPriority && matchesCategory && matchesEmotion;
   });
 
@@ -274,7 +325,7 @@ export function FeedbackList() {
       fb.feedback_id,
       fb.customer_name || 'Unknown',
       `"${(fb.feedback_context || '').replace(/"/g, '""')}"`,
-      getProblemTypeLabel(t, fb.problem_type_id, fb.problem_type),
+      getProblemTypeLabel(t, fb.problem_type_id, fb.problem_type, isAr),
       t(`sentiment.${getSentimentKey(fb.sentiment_id, fb.sentiment)}`),
       getEmotionLabel(t, fb.emotion_id, fb.emotion),
       fb.priority || '—',
@@ -515,19 +566,19 @@ export function FeedbackList() {
                       <TableCell className="hidden md:table-cell max-w-xs">
                         <div className="truncate text-sm text-gray-600 dark:text-gray-400">{fb.feedback_context || '—'}</div>
                       </TableCell>
-                      {/* Problem Type Column - UPDATED with placeholder and none option */}
                       <TableCell className="hidden xl:table-cell">
                         {isManagerOrSupervisor ? (
                           <div onClick={(e) => e.stopPropagation()}>
                             <Select
-                              value={String(feedbackProblemTypes[fb.feedback_id] ?? -1)}
+                              value={feedbackProblemTypes[fb.feedback_id] != null ? String(feedbackProblemTypes[fb.feedback_id]) : ''}
                               onValueChange={(val) => handleProblemTypeChange(fb.feedback_id, val === '-1' ? null : Number(val))}
                             >
                               <SelectTrigger className="h-7 w-[140px] text-xs">
-                                <SelectValue placeholder="—" />
+                                <SelectValue
+                                  placeholder={getProblemTypeLabel(t, fb.problem_type_id, fb.problem_type, isAr)}
+                                />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="-1" className="text-xs">—</SelectItem>
                                 <SelectItem value="0" className="text-xs">{t('problemType.0')}</SelectItem>
                                 <SelectItem value="1" className="text-xs">{t('problemType.1')}</SelectItem>
                                 <SelectItem value="2" className="text-xs">{t('problemType.2')}</SelectItem>
@@ -541,7 +592,7 @@ export function FeedbackList() {
                           </div>
                         ) : (
                           <span className="text-sm text-gray-600 dark:text-gray-400">
-                            {getProblemTypeLabel(t, feedbackProblemTypes[fb.feedback_id] ?? fb.problem_type_id, fb.problem_type)}
+                            {getProblemTypeLabel(t, feedbackProblemTypes[fb.feedback_id] ?? fb.problem_type_id, fb.problem_type, isAr)}
                           </span>
                         )}
                       </TableCell>
@@ -549,11 +600,11 @@ export function FeedbackList() {
                         {isManagerOrSupervisor ? (
                           <div onClick={(e) => e.stopPropagation()}>
                             <Select
-                              value={String(feedbackSentiments[fb.feedback_id] ?? -1)}
+                              value={getSentimentSelectValue(feedbackSentiments[fb.feedback_id], fb.sentiment)}
                               onValueChange={(val) => handleSentimentChange(fb.feedback_id, val === '-1' ? null : Number(val))}
                             >
                               <SelectTrigger className={cn('h-7 w-[100px] text-xs transition-colors duration-200', sentimentColors[currentSentimentKey])}>
-                                <SelectValue />
+                                <SelectValue placeholder={t(`sentiment.${currentSentimentKey}`)} />
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="0" className="text-xs">{t('sentiment.negative')}</SelectItem>
@@ -572,11 +623,11 @@ export function FeedbackList() {
                         {isManagerOrSupervisor ? (
                           <div onClick={(e) => e.stopPropagation()}>
                             <Select
-                              value={String(feedbackEmotions[fb.feedback_id] ?? -1)}
+                              value={getEmotionSelectValue(feedbackEmotions[fb.feedback_id], fb.emotion)}
                               onValueChange={(val) => handleEmotionChange(fb.feedback_id, val === '-1' ? null : Number(val))}
                             >
                               <SelectTrigger className={cn('h-7 w-[110px] text-xs transition-colors duration-200', emotionColors[currentEmotionKey] || emotionColors.neutral)}>
-                                <SelectValue />
+                                <SelectValue placeholder={getEmotionLabel(t, fb.emotion_id, fb.emotion)} />
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="0" className="text-xs">{t('emotion.0')}</SelectItem>
@@ -600,7 +651,7 @@ export function FeedbackList() {
                               onValueChange={(val) => handlePriorityChange(fb.feedback_id, val)}
                             >
                               <SelectTrigger className={cn('h-7 w-[100px] text-xs transition-colors duration-200', priorityColors[currentPriority])}>
-                                <SelectValue />
+                                <SelectValue placeholder={displayLabel(t(`priority.${currentPriority}`), currentPriority)} />
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="low" className="text-xs">{t('priority.low')}</SelectItem>
@@ -623,7 +674,9 @@ export function FeedbackList() {
                               value={currentStatus}
                               onValueChange={(val) => handleStatusChange(fb.feedback_id, val)}
                             >
-                              <SelectTrigger className="h-7 w-[110px] text-xs"><SelectValue /></SelectTrigger>
+                              <SelectTrigger className="h-7 w-[110px] text-xs">
+                                <SelectValue placeholder={displayLabel(t(`status.${currentStatus}`), currentStatus)} />
+                              </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="open" className="text-xs">{t('status.open')}</SelectItem>
                                 <SelectItem value="inProgress" className="text-xs">{t('status.inProgress')}</SelectItem>
@@ -765,7 +818,7 @@ export function FeedbackList() {
         </div>
       </div>
 
-      {/* Mobile Detail Drawer - UPDATED with placeholder and all problem type options */}
+      {/* Mobile Detail Drawer */}
       {selectedMobileFeedback && (
         <Sheet open={mobileDetailOpen} onOpenChange={setMobileDetailOpen}>
           <SheetContent side={isAr ? 'right' : 'left'} className="w-full sm:max-w-md overflow-y-auto">
@@ -793,11 +846,11 @@ export function FeedbackList() {
                 <div className="mt-1">
                   {isManagerOrSupervisor ? (
                     <Select
-                      value={String(feedbackSentiments[selectedMobileFeedback.feedback_id] ?? -1)}
+                      value={getSentimentSelectValue(feedbackSentiments[selectedMobileFeedback.feedback_id], selectedMobileFeedback.sentiment)}
                       onValueChange={(val) => handleSentimentChange(selectedMobileFeedback.feedback_id, val === '-1' ? null : Number(val))}
                     >
                       <SelectTrigger className={cn('h-8 w-full text-xs', sentimentColors[getSentimentKey(feedbackSentiments[selectedMobileFeedback.feedback_id] ?? selectedMobileFeedback.sentiment_id, selectedMobileFeedback.sentiment)])}>
-                        <SelectValue />
+                        <SelectValue placeholder={t(`sentiment.${getSentimentKey(selectedMobileFeedback.sentiment_id, selectedMobileFeedback.sentiment)}`)} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="0">{t('sentiment.negative')}</SelectItem>
@@ -819,11 +872,11 @@ export function FeedbackList() {
                 <div className="mt-1">
                   {isManagerOrSupervisor ? (
                     <Select
-                      value={String(feedbackEmotions[selectedMobileFeedback.feedback_id] ?? -1)}
+                      value={getEmotionSelectValue(feedbackEmotions[selectedMobileFeedback.feedback_id], selectedMobileFeedback.emotion)}
                       onValueChange={(val) => handleEmotionChange(selectedMobileFeedback.feedback_id, val === '-1' ? null : Number(val))}
                     >
                       <SelectTrigger className="h-8 w-full text-xs">
-                        <SelectValue />
+                        <SelectValue placeholder={getEmotionLabel(t, selectedMobileFeedback.emotion_id, selectedMobileFeedback.emotion)} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="0">{t('emotion.0')}</SelectItem>
@@ -850,7 +903,7 @@ export function FeedbackList() {
                       onValueChange={(val) => handlePriorityChange(selectedMobileFeedback.feedback_id, val)}
                     >
                       <SelectTrigger className={cn('h-8 w-full text-xs', priorityColors[normalizePriority(feedbackPriorities[selectedMobileFeedback.feedback_id] || selectedMobileFeedback.priority || 'low')])}>
-                        <SelectValue />
+                        <SelectValue placeholder={displayLabel(t(`priority.${normalizePriority(selectedMobileFeedback.priority)}`), normalizePriority(selectedMobileFeedback.priority))} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="low">{t('priority.low')}</SelectItem>
@@ -877,7 +930,7 @@ export function FeedbackList() {
                       onValueChange={(val) => handleStatusChange(selectedMobileFeedback.feedback_id, val)}
                     >
                       <SelectTrigger className="h-8 w-full text-xs">
-                        <SelectValue />
+                        <SelectValue placeholder={displayLabel(t(`status.${normalizeStatus(selectedMobileFeedback.status)}`), normalizeStatus(selectedMobileFeedback.status))} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="open">{t('status.open')}</SelectItem>
@@ -907,7 +960,7 @@ export function FeedbackList() {
                 <p className="text-sm text-gray-700 dark:text-gray-300">{formatDate(selectedMobileFeedback.created_at)}</p>
               </div>
 
-              {/* Problem Type Section - UPDATED with placeholder and all options */}
+              {/* Problem Type */}
               <div>
                 <label className="text-xs text-gray-500 dark:text-gray-400 uppercase">{isAr ? 'نوع المشكلة' : 'Problem Type'}</label>
                 <div className="mt-1">
@@ -917,18 +970,17 @@ export function FeedbackList() {
                       onValueChange={(val) => handleProblemTypeChange(selectedMobileFeedback.feedback_id, val === '-1' ? null : Number(val))}
                     >
                       <SelectTrigger className="h-8 w-full text-xs">
-                        <SelectValue placeholder="—" />
+                        <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="-1">—</SelectItem>
-                        {[0, 1, 2, 3, 4, 5, 6, 7].map(id => (
+                        {[0,1,2,3,4,5,6,7].map(id => (
                           <SelectItem key={id} value={String(id)}>{t(`problemType.${id}`)}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   ) : (
                     <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {getProblemTypeLabel(t, selectedMobileFeedback.problem_type_id, selectedMobileFeedback.problem_type)}
+                      {getProblemTypeLabel(t, selectedMobileFeedback.problem_type_id, selectedMobileFeedback.problem_type, isAr)}
                     </span>
                   )}
                 </div>

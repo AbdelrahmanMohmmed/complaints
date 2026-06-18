@@ -1,141 +1,58 @@
-"""Main FastAPI application with async background processing."""
-import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
-os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
-os.environ['ABSL_MIN_LOG_LEVEL'] = '1'
+"""Main FastAPI application - SIMPLIFIED with single combined job."""
 
+import asyncio
 import logging
-
-logging.getLogger('absl').setLevel(logging.WARNING)
-
-from contextlib import asynccontextmanager
-
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
+import sys
+from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
+from . import models, database
+from .routers import (
+    auth, company, contact, dashboard, domain,
+    feedback, integration, categories, user,
+)
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from . import database, models
-from .routers import auth, company, contact, dashboard, domain, feedback, integration, user
-from .services.feedback_ingestion import ingest_feedback_async
-from .services.preprocessing import run_preprocessing_async
-from .services.ai_analysis import run_ai_analysis_async
+from .config import settings
+from .services.feedback_ingestion import ingest_feedback
+from .services.combined_service import combined_service
+from fastapi.responses import HTMLResponse
 
 # ============================================================================
-# Logging
+# Logging Configuration
 # ============================================================================
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.INFO,  # Changed to INFO to reduce noise
     format="%(asctime)s | %(levelname)-8s | %(name)s:%(funcName)s | %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 
-# Suppress noisy ML libraries
-logging.getLogger('tensorflow').setLevel(logging.ERROR)
-logging.getLogger('absl').setLevel(logging.WARNING)
-logging.getLogger('jax').setLevel(logging.WARNING)
+logging.getLogger("app.ai").setLevel(logging.INFO)
+logging.getLogger("app.services").setLevel(logging.INFO)
+logging.getLogger("app.preprocessing").setLevel(logging.INFO)
+logging.getLogger("httpcore").setLevel(logging.WARNING)  # Reduce HTTP noise
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
 
-# ============================================================================
-# Scheduler
-# ============================================================================
+if sys.platform == "win32" and hasattr(asyncio, "WindowsProactorEventLoopPolicy"):
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
-scheduler = AsyncIOScheduler()
 
 # ============================================================================
-# Background Jobs (Async)
+# Database & Application Setup
 # ============================================================================
 
-async def feedback_ingestion_job():
-    """No session passed — ingestion manages its own."""
-    try:
-        await ingest_feedback_async()  # No db argument!
-    except Exception as e:
-        logger.error(f"Ingestion failed: {e}", exc_info=True)
+models.Base.metadata.create_all(bind=database.engine)
+app = FastAPI(title="Complaints Management System", version="1.0.0")
 
-async def preprocessing_job():
-    """Clean and normalize text."""
-    async with database.AsyncSessionLocal() as db:
-        try:
-            count = await run_preprocessing_async(db)
-            if count > 0:
-                logger.info(f"Preprocessed {count} records")
-        except Exception as e:
-            logger.error(f"Preprocessing failed: {e}", exc_info=True)
+scheduler = None
 
-async def ai_analysis_job():
-    """Run ML predictions."""
-    async with database.AsyncSessionLocal() as db:
-        try:
-            count = await run_ai_analysis_async(db)
-            if count > 0:
-                logger.info(f"AI analyzed {count} records")
-        except Exception as e:
-            logger.error(f"AI analysis failed: {e}", exc_info=True)
 
 # ============================================================================
-# Lifespan
+# Middleware Configuration
 # ============================================================================
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Startup and shutdown events."""
-    # Startup
-    try:
-        # Create tables if not exists (sync, one-time)
-        models.Base.metadata.create_all(bind=database.engine)
-
-        scheduler.add_job(
-            feedback_ingestion_job,
-            trigger=IntervalTrigger(minutes=1),
-            id="ingestion",
-            replace_existing=True,
-            max_instances=1,
-            misfire_grace_time=30,
-        )
-        scheduler.add_job(
-            preprocessing_job,
-            trigger=IntervalTrigger(seconds=10),
-            id="preprocessing",
-            replace_existing=True,
-            max_instances=1,
-            misfire_grace_time=30,
-        )
-        scheduler.add_job(
-            ai_analysis_job,
-            trigger=IntervalTrigger(seconds=15),  # Slightly slower than preprocessing
-            id="ai_analysis",
-            replace_existing=True,
-            max_instances=1,
-            misfire_grace_time=30,
-        )
-
-        scheduler.start()
-        logger.info("Async scheduler started - API ready for concurrent users")
-
-    except Exception as e:
-        logger.error(f"Startup failed: {e}")
-        raise
-
-    yield
-
-    # Shutdown
-    if scheduler.running:
-        scheduler.shutdown(wait=True)
-        logger.info("Scheduler shut down")
-
-# ============================================================================
-# FastAPI App
-# ============================================================================
-
-app = FastAPI(
-    title="Complaints Management System",
-    version="2.0.0",
-    lifespan=lifespan,
-)
 
 app.add_middleware(
     CORSMiddleware,
@@ -144,75 +61,137 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-from fastapi.responses import HTMLResponse
-@app.get("/privacy", include_in_schema=False)
-def privacy_policy():
-    return HTMLResponse("""
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Privacy Policy — FMS</title>
-    <style>
-        body { font-family: Arial, sans-serif; max-width: 800px; margin: 60px auto; padding: 0 20px; color: #333; }
-        h1   { color: #1a1a1a; }
-        h2   { margin-top: 30px; }
-    </style>
-</head>
-<body>
-    <h1>Privacy Policy</h1>
-    <p><strong>Last updated:</strong> June 2025</p>
-
-    <h2>What We Collect</h2>
-    <p>FMS collects Facebook Page access tokens when you connect your Facebook account.
-    These tokens are used solely to read comments from your Facebook Pages for feedback analysis.</p>
-
-    <h2>How We Use It</h2>
-    <p>Collected data is used only to analyze customer feedback within your organization.
-    We do not sell, share, or transfer your data to any third party.</p>
-
-    <h2>How We Store It</h2>
-    <p>All tokens are encrypted at rest using industry-standard encryption (Fernet/AES-128).
-    They are stored securely in our database and never exposed in plain text.</p>
-
-    <h2>Your Rights</h2>
-    <p>You can disconnect your Facebook Page at any time through the FMS dashboard,
-    which will permanently delete your access token from our system.</p>
-
-    <h2>Contact</h2>
-    <p>For any privacy concerns, contact us at: <strong>wovidoe23@gmail.com</strong></p>
-</body>
-</html>
-    """)
-# Routers
 app.include_router(user.router, prefix="/api/v1")
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(company.router, prefix="/api/v1")
 app.include_router(integration.router, prefix="/api/v1")
 app.include_router(feedback.router, prefix="/api/v1")
+app.include_router(categories.router, prefix="/api/v1")
 app.include_router(domain.router, prefix="/api/v1")
 app.include_router(contact.router, prefix="/api/v1")
 app.include_router(dashboard.router, prefix="/api/v1")
 
+
 # ============================================================================
-# Health Checks (Always Fast!)
+# Background Jobs - SIMPLIFIED
+# ============================================================================
+
+
+def run_ingestion_job():
+    """Ingest feedback from all integrated sources."""
+    try:
+        logger.info("[Ingestion] Starting...")
+        asyncio.run(ingest_feedback())
+        logger.info("[Ingestion] Done.")
+    except Exception as e:
+        logger.error(f"[Ingestion] Error: {e}")
+
+
+def run_combined_job():
+    """Combined preprocess + AI analysis on unprocessed feedback."""
+    try:
+        logger.info("[Combined] Starting preprocess + AI...")
+        combined_service()
+        logger.info("[Combined] Done.")
+    except Exception as e:
+        logger.error(f"[Combined] Error: {e}", exc_info=True)
+
+
+@app.on_event("startup")
+async def startup_event() -> None:
+    global scheduler
+    try:
+        logger.info("Starting scheduler with 2 jobs...")
+        scheduler = BackgroundScheduler()
+
+        # Ingestion every 5 minutes
+        scheduler.add_job(
+            run_ingestion_job,
+            trigger=IntervalTrigger(minutes=5),
+            id="ingestion_job",
+            name="Feedback Ingestion",
+            replace_existing=True,
+            max_instances=2,
+        )
+        logger.info("  ✓ Ingestion: every 5 min")
+
+        # Combined preprocess + AI every 2 minutes
+        scheduler.add_job(
+            run_combined_job,
+            trigger=IntervalTrigger(minutes=2),
+            id="combined_job",
+            name="Preprocess + AI Analysis",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,  # <--- Add this to merge skipped executions into a single run
+        )
+        logger.info("  ✓ Combined: every 2 min (preprocess + AI together)")
+
+        scheduler.start()
+        logger.info("✓ Scheduler started.")
+
+    except Exception as e:
+        logger.critical(f"Failed to start scheduler: {e}", exc_info=True)
+
+
+@app.on_event("shutdown")
+async def shutdown_event() -> None:
+    global scheduler
+    if scheduler and scheduler.running:
+        try:
+            scheduler.shutdown(wait=True)
+            logger.info("Scheduler shut down")
+        except Exception as e:
+            logger.error(f"Error shutting down: {e}")
+
+
+# ============================================================================
+# Endpoints
 # ============================================================================
 
 @app.get("/", tags=["Health"])
-async def root():
-    return {
-        "status": "healthy",
-        "service": "complaints-api",
-        "version": "2.0.0",
-        "scheduler": "running" if scheduler.running else "stopped",
-    }
+def health_check() -> dict:
+    return {"status": "healthy", "message": "Complaints Management System API"}
+
 
 @app.get("/health", tags=["Health"])
-async def health():
-    jobs = scheduler.get_jobs()
-    return {
-        "status": "healthy",
-        "scheduler_running": scheduler.running,
-        "active_jobs": len(jobs),
-        "job_names": [j.name for j in jobs],
-    }
+def health_status() -> dict:
+    return {"status": "healthy", "service": "complaints-api", "version": "1.0.0"}
+
+
+@app.get("/pipeline-status", tags=["Health"])
+def pipeline_status() -> dict:
+    db = database.SessionLocal()
+    try:
+        unprocessed = db.query(models.Feedback).filter(models.Feedback.status == "unprocessed").count()
+        analyzed = db.query(models.Feedback).filter(models.Feedback.status == "analyzed").count()
+        total = db.query(models.Feedback).count()
+        return {
+            "unprocessed": unprocessed,
+            "analyzed": analyzed,
+            "total": total,
+        }
+    finally:
+        db.close()
+
+
+@app.post("/admin/trigger-pipeline", tags=["Admin"])
+def trigger_pipeline():
+    run_combined_job()
+    return {"status": "pipeline triggered"}
+
+
+@app.get("/privacy", include_in_schema=False)
+def privacy_policy():
+    return HTMLResponse("""
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Privacy Policy</title></head>
+<body>
+    <h1>Privacy Policy</h1>
+    <p>Last updated: June 2025</p>
+    <h2>What We Collect</h2>
+    <p>FMS collects Facebook Page access tokens...</p>
+</body>
+</html>
+    """)

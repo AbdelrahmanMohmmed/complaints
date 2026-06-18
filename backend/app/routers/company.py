@@ -1,16 +1,18 @@
-from fastapi import APIRouter, status, HTTPException, Depends, BackgroundTasks
+import logging
+
+from fastapi import APIRouter, status, HTTPException, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from datetime import datetime, timedelta, UTC
+from datetime import datetime, timedelta, timezone
 from .. import models, utils, database
 from ..schemas import company
 
 router = APIRouter(prefix="/companies", tags=["Companies"])
+logger = logging.getLogger(__name__)
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=company.CompanyOut)
 def create_company(
     signup: company.CompanySignup,
-    background_tasks: BackgroundTasks,
     db: Session = Depends(database.get_db)
 ):
     domain = db.query(models.Domain).filter(models.Domain.domain_id == signup.domain_id).first()
@@ -20,9 +22,17 @@ def create_company(
     existing = db.query(models.User).filter(models.User.email == signup.email).first()
     if existing:
         if not existing.is_verified:
-        # Resend code instead of blocking
+            # Resend code instead of blocking
             code = utils.set_verification_code(existing,db)
-            background_tasks.add_task(utils.send_verification_email, signup.email, code, existing.f_name)
+            try:
+                utils.send_verification_email(signup.email, code, existing.f_name)
+            except Exception as e:
+                logger.error(
+                    "Failed to send verification email for existing unverified user %s: %s",
+                    signup.email,
+                    str(e),
+                    exc_info=True,
+                )
             raise HTTPException(
                 status_code=400,
                 detail="EMAIL_NOT_VERIFIED"  # frontend will redirect to verify page
@@ -40,7 +50,7 @@ def create_company(
         db.flush()
 
         code = utils.generate_verification_code()
-        expires_at = datetime.now(UTC) + timedelta(minutes=15)
+        expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)
 
         new_user = models.User(
             company_id=new_company.company_id,
@@ -57,9 +67,7 @@ def create_company(
         db.commit()
         db.refresh(new_company)
 
-        # Send email in background so signup doesn't wait
-        background_tasks.add_task(
-            utils.send_verification_email,
+        utils.send_verification_email(
             to_email=signup.email,
             code=code,
             name=signup.f_name,

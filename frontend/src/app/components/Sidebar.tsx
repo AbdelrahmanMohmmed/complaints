@@ -7,20 +7,11 @@ import {
   MessageSquare,
   Users,
   Settings,
-  Building2,
   LogOut,
   ChevronLeft,
   ChevronRight,
-  BarChart3,
-  Inbox,
-  Globe2,
-  Shield,
   UserCog,
-  ScrollText,
   Activity,
-  Tag,
-  UserCircle,
-  UsersRound,
   Plug,
 } from 'lucide-react';
 import { cn } from '../components/ui/utils';
@@ -55,11 +46,6 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
     websiteConfigurator: 'from-orange-500 to-amber-600',
   };
 
-  const roleBadgeColors: Record<string, string> = {
-    manager: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
-    customerServiceSupervisor: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-    websiteConfigurator: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
-  };
 
   const navigationByRole: Record<string, NavSection[]> = {
     manager: [
@@ -74,7 +60,6 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
         items: [
           { name: t('nav.allComplaints'), href: '/app/feedback', icon: MessageSquare },
           { name: t('nav.users'), href: '/app/users', icon: Users },
-          // { name: t('nav.categories'), href: '/app/categories', icon: Tag },
         ],
       },
       {
@@ -133,7 +118,6 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
   };
 
   const gradientClass = user?.role ? roleColors[user.role] : 'from-blue-600 to-purple-600';
-  const badgeClass = user?.role ? roleBadgeColors[user.role] : '';
 
   const roleIcon: Record<string, React.ComponentType<{ className?: string }>> = {
     manager: UserCog,
@@ -170,25 +154,39 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
           </div>
 
           {!isCollapsed && (
-            <span className="font-bold text-white">
+            <span className="font-bold text-gray-900 dark:text-white">
               Ara2kom AI
             </span>
           )}
         </div>
 
+
         {/* Toggle */}
         <button
           onClick={onToggle}
-          className="hidden lg:flex w-7 h-7 rounded-full border border-gray-700 bg-gray-800 items-center justify-center hover:bg-gray-700 transition-colors"
+          className="
+    hidden lg:flex
+    w-7 h-7
+    rounded-full
+    border border-gray-300 dark:border-gray-700
+    bg-white dark:bg-gray-800
+    items-center justify-center
+    hover:bg-gray-100 dark:hover:bg-gray-700
+    transition-colors
+  "
         >
           {isAr ? (
-            isCollapsed
-              ? <ChevronLeft className="w-4 h-4 text-gray-400" />
-              : <ChevronRight className="w-4 h-4 text-gray-400" />
+            isCollapsed ? (
+              <ChevronLeft className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+            ) : (
+              <ChevronRight className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+            )
           ) : (
-            isCollapsed
-              ? <ChevronRight className="w-4 h-4 text-gray-400" />
-              : <ChevronLeft className="w-4 h-4 text-gray-400" />
+            isCollapsed ? (
+              <ChevronRight className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+            ) : (
+              <ChevronLeft className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+            )
           )}
         </button>
 
@@ -196,36 +194,34 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1">
-         {sections.map((section, sIdx) => (
-    <div key={sIdx} className={sIdx > 0 ? 'mt-4' : ''}>
-      {/* ... section title ... */}
-      <div className="space-y-0.5">
-        {section.items.map((item) => {
-          const active = isActive(item.href);
-          // Map href to tour target
-          const tourMap: Record<string, string> = {
-            '/app': 'nav-dashboard',
-            '/app/feedback': 'nav-feedback',
-            '/app/integrations': 'nav-integrations',
-            '/app/reports': 'nav-reports',
-            '/app/settings': 'nav-settings',
-            '/app/users': 'nav-users',
-          };
-          const tourId = tourMap[item.href];
-
-          return (
-            <Link
-              key={item.href}
-              to={item.href}
-              data-tour={tourId}
-              onClick={() => { if (window.innerWidth < 1024) onToggle(); }}
-              className={cn(
-                'flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-150 group relative',
-                active
-                  ? cn('text-white shadow-sm', `bg-gradient-to-r ${gradientClass}`)
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
-              )}
-            >
+        {sections.map((section, sIdx) => (
+          <div key={sIdx} className={sIdx > 0 ? 'mt-4' : ''}>
+            {section.title && !isCollapsed && (
+              <p className="px-3 mb-1 text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">
+                {section.title}
+              </p>
+            )}
+            {section.title && isCollapsed && (
+              <div className="h-px bg-gray-100 dark:bg-gray-800 mx-2 mb-2" />
+            )}
+            <div className="space-y-0.5">
+              {section.items.map((item) => {
+                const active = isActive(item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    to={item.href}
+                    onClick={() => {
+                      if (window.innerWidth < 1024) onToggle();
+                    }}
+                    title={isCollapsed ? item.name : undefined}
+                    className={cn(
+                      'flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-150 group relative',
+                      active
+                        ? cn('text-white shadow-sm', `bg-gradient-to-r ${gradientClass}`)
+                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
+                    )}
+                  >
                     <item.icon className={cn('w-5 h-5 flex-shrink-0', active ? 'text-white' : '')} />
                     {!isCollapsed && (
                       <span className="text-sm font-medium truncate">{item.name}</span>
@@ -242,21 +238,6 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
           </div>
         ))}
       </nav>
-
-      {/* Collapsed Toggle */}
-      {/* {isCollapsed && (
-        <div className="px-2 pb-2">
-          <button
-            onClick={onToggle}
-            className="hidden lg:flex w-full justify-center py-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-          >
-            {isAr
-              ? <ChevronLeft className="w-4 h-4" />
-              : <ChevronRight className="w-4 h-4" />
-            }
-          </button>
-        </div>
-      )} */}
 
       {/* User Footer */}
       <div className="border-t border-gray-200 dark:border-gray-800 p-3 flex-shrink-0">

@@ -181,7 +181,7 @@ class Feedback(Base):
     # Primary Keys & Foreign Keys
     feedback_id = Column(Integer, primary_key=True, autoincrement=True)
     company_id = Column(Integer, ForeignKey("companies.company_id"), nullable=False)
-    api_id = Column(Integer, ForeignKey("apis.api_id",ondelete="SET NULL"), nullable=True)
+    api_id = Column(Integer, ForeignKey("apis.api_id"), nullable=False)
     category_id = Column(
         Integer, ForeignKey("feedback_categories.category_id"), nullable=True
     )
@@ -191,6 +191,7 @@ class Feedback(Base):
     feedback_context = Column(Text)
 
     # Processing Pipeline
+    language = Column(String(20), nullable=True)
     cleaned_text = Column(Text, nullable=True)  # Preprocessed text
     status = Column(
         String(20), default="unprocessed"

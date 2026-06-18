@@ -358,7 +358,7 @@ export function IntegrationSettings() {
                 {t('integrations.addIntegration')}
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="bg-white dark:bg-gray-950 max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{t('integrations.addIntegration')}</DialogTitle>
                 <DialogDescription>
@@ -377,7 +377,7 @@ export function IntegrationSettings() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="facebook">{isAr ? 'فيسبوك' : 'Facebook'}</SelectItem>
-                      <SelectItem value="twitter">{isAr ? 'تويتر / X' : 'Twitter / X'}</SelectItem>
+                      <SelectItem value="twitter">{isAr ? 'تويتر / إكس' : 'Twitter / X'}</SelectItem>
                       <SelectItem value="gmail">Gmail</SelectItem>
                       <SelectItem value="freshdesk">Freshdesk</SelectItem>
                     </SelectContent>
@@ -402,7 +402,7 @@ export function IntegrationSettings() {
                       </p>
                       <p className="text-xs text-blue-600 dark:text-blue-400">
                         {isAr
-                          ? `خطوات الحصول على مفتاح API لـ ${integrationGuides[newChannelName].title}`
+                          ? `خطوات الحصول على مفتاح API لـ ${integrationGuides[newChannelName].titleAr}`
                           : `How to get API key for ${integrationGuides[newChannelName].title}`
                         }
                       </p>

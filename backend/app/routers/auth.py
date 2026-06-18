@@ -1,5 +1,5 @@
 from datetime import datetime
-from fastapi import APIRouter, Depends, status, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, status, HTTPException
 from fastapi.security.oauth2 import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from .. import database, models, oauth2, utils
@@ -66,7 +66,6 @@ def verify_email(
 @router.post("/resend-verification")
 def resend_verification(
     payload: auth.ResendRequest,
-    background_tasks: BackgroundTasks,
     db: Session = Depends(database.get_db),
 ):
     user = db.query(models.User).filter(models.User.email == payload.email).first()
@@ -75,16 +74,13 @@ def resend_verification(
 
     code = utils.set_verification_code(user, db)
 
-    background_tasks.add_task(
-        utils.send_verification_email, payload.email, code, user.f_name
-    )
+    utils.send_verification_email(payload.email, code, user.f_name)
     return {"message": "Verification code resent"}
 
 
 @router.post("/forgot-password")
 def forgot_password(
     payload: auth.ForgotPasswordRequest,
-    background_tasks: BackgroundTasks,
     db: Session = Depends(database.get_db),
 ):
     user = db.query(models.User).filter(models.User.email == payload.email).first()
@@ -94,7 +90,7 @@ def forgot_password(
 
     code = utils.set_verification_code(user, db)
 
-    background_tasks.add_task(utils.send_reset_email, payload.email, code, user.f_name)
+    utils.send_reset_email(payload.email, code, user.f_name)
     return {"message": "If this email exists, a reset code has been sent"}
 
 

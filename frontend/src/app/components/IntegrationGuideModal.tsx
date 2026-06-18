@@ -6,7 +6,7 @@ import {
 } from '../components/ui/dialog';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
-import { BookOpen, ChevronRight, ChevronLeft, Clock, AlertCircle, CheckCircle2, Copy, X } from 'lucide-react';
+import { BookOpen, ChevronRight, ChevronLeft, Clock, AlertCircle, CheckCircle2, Copy } from 'lucide-react';
 import { cn } from '../components/ui/utils';
 import { IntegrationGuide } from '../config/integrationGuides';
 
@@ -63,7 +63,7 @@ export function IntegrationGuideModal({ guide, isOpen, onClose }: IntegrationGui
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 gap-0">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 gap-0 bg-white dark:bg-gray-900">
         {/* Header */}
         <DialogHeader className="p-6 pb-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-start justify-between">
@@ -80,15 +80,12 @@ export function IntegrationGuideModal({ guide, isOpen, onClose }: IntegrationGui
                 </div>
               </div>
               <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
-                {guide.title}
+                {isAr ? guide.titleAr : guide.title}
               </DialogTitle>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                {guide.description}
+                {isAr ? guide.descriptionAr : guide.description}
               </p>
             </div>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-              <X className="w-5 h-5" />
-            </button>
           </div>
 
           {/* Progress bar */}
@@ -114,7 +111,7 @@ export function IntegrationGuideModal({ guide, isOpen, onClose }: IntegrationGui
               <span className="text-sm font-bold text-blue-600 dark:text-blue-400">{currentStep + 1}</span>
             </div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              {step.title}
+              {isAr ? step.titleAr : step.title}
             </h3>
           </div>
 
@@ -123,7 +120,7 @@ export function IntegrationGuideModal({ guide, isOpen, onClose }: IntegrationGui
             <div className="relative rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
               <img
                 src={step.image}
-                alt={step.title}
+                alt={isAr ? step.titleAr : step.title}
                 className="w-full h-auto relative z-10"
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = 'none';
@@ -134,7 +131,7 @@ export function IntegrationGuideModal({ guide, isOpen, onClose }: IntegrationGui
 
           {/* Description */}
           <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-            {step.description}
+            {isAr ? step.descriptionAr : step.description}
           </p>
 
           {/* Code Snippet */}
@@ -163,7 +160,7 @@ export function IntegrationGuideModal({ guide, isOpen, onClose }: IntegrationGui
             <div className="flex items-start gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-3">
               <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
               <p className="text-xs text-amber-700 dark:text-amber-300">
-                <strong>{isAr ? 'نصيحة:' : 'Tip:'}</strong> {step.tip}
+                <strong>{isAr ? 'نصيحة:' : 'Tip:'}</strong> {isAr ? step.tipAr : step.tip}
               </p>
             </div>
           )}
@@ -175,7 +172,7 @@ export function IntegrationGuideModal({ guide, isOpen, onClose }: IntegrationGui
                 {isAr ? 'المتطلبات:' : 'Requirements:'}
               </h4>
               <ul className="space-y-1.5">
-                {guide.requirements.map((req, i) => (
+                {(isAr ? guide.requirementsAr : guide.requirements).map((req, i) => (
                   <li key={i} className="flex items-center gap-2 text-xs text-blue-700 dark:text-blue-400">
                     <CheckCircle2 className="w-3.5 h-3.5" />
                     {req}

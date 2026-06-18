@@ -1,111 +1,174 @@
-"""Async AI analysis service."""
+"""AI prediction service for scheduled feedback analysis.
 
+Runs as a scheduled task after preprocessing via APScheduler.
+Processes preprocessed feedback records through ML models to generate:
+- Sentiment (positive/negative/neutral)
+- Emotion (happy/sad/angry/etc.)
+- Problem Type (Service Quality/Billing/etc.)
+- Priority (high/medium/low)
+"""
+
+import gc
 import logging
-import asyncio
-from typing import Any, Dict
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Any, Dict, List
+
+from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
 
-from .. import models
-from ..ai.labels import *
-from ..ai.predict import run_ai_pipeline
+from .. import database, models
+from ..ai.arabic_predictor import load_arabic_models, predict_arabic
+from ..ai.english_predictor import load_english_models, predict_english
+from ..ai.labels import (
+    SENTIMENT_LABEL2ID,
+    EMOTION_LABEL2ID,
+    PROBLEM_TYPE_LABEL2ID,
+)
 
 logger = logging.getLogger(__name__)
 
 
-async def run_ai_analysis_async(db: AsyncSession) -> int:
-    """Process AI analysis in async batches."""
-    processed = 0
-    batch_size = 3
+# ============================================================================
+# Helper Functions
+# ============================================================================
 
-    result = await db.execute(
-        select(models.Feedback)
-        .where(models.Feedback.status == "preprocessed")
-        .limit(batch_size)
+
+def _get_unprocessed_feedback(db: Session, limit: int = 30) -> List[models.Feedback]:
+    """Fetch feedback records with status 'preprocessed', limited per run."""
+    return (
+        db.query(models.Feedback)
+        .filter(models.Feedback.status == "preprocessed")
+        .limit(limit)
+        .all()
     )
-    batch = result.scalars().all()
 
-    if not batch:
+
+def _batch_iterator(data: list, batch_size: int):
+    """Yield successive n-sized chunks from a list."""
+    for i in range(0, len(data), batch_size):
+        yield data[i : i + batch_size]
+
+
+def _update_feedback_record(
+    db: Session, feedback: models.Feedback, predictions: Dict[str, Any]
+):
+    """Update a feedback record with AI predictions."""
+    sentiment = predictions["sentiment"]
+    emotion = predictions["emotion"]
+    problem_type = predictions["problem_type"]
+
+    feedback.sentiment = sentiment
+    feedback.sentiment_id = SENTIMENT_LABEL2ID.get(sentiment.lower()) if sentiment else None
+    feedback.emotion = emotion
+    feedback.emotion_id = EMOTION_LABEL2ID.get(emotion.lower()) if emotion else None
+    feedback.problem_type = problem_type
+    feedback.problem_type_id = PROBLEM_TYPE_LABEL2ID.get(problem_type) if problem_type else None
+
+    priority = predictions.get("priority")
+    feedback.priority = priority.lower() if isinstance(priority, str) else priority
+    feedback.status = "analyzed"
+    feedback.ml_processed_at = func.now()
+
+
+# ============================================================================
+# Main AI Analysis Job
+# ============================================================================
+
+
+def run_ai_job(db: Session, batch_size: int = 50, max_records: int = 30) -> int:
+    """Run AI predictions on preprocessed feedback, batched by language.
+
+    Args:
+        db: SQLAlchemy database session.
+        batch_size: Number of records to process per batch.
+        max_records: Max records to process per run (prevents timeout).
+
+    Returns:
+        Number of successfully processed feedback records.
+    """
+    processed_count = 0
+    feedback_items = _get_unprocessed_feedback(db, limit=max_records)
+    if not feedback_items:
+        logger.info("No preprocessed feedback to analyze.")
         return 0
 
-    tasks = [analyze_single(feedback.cleaned_text or "") for feedback in batch]
-    results = await asyncio.gather(*tasks, return_exceptions=True)
+    logger.info(f"Starting AI analysis for {len(feedback_items)} feedback records (limit={max_records}).")
 
-    for feedback, result in zip(batch, results):
+    # Split by language
+    arabic_feedback = [f for f in feedback_items if f.language in ("ar", "franko")]
+    english_feedback = [f for f in feedback_items if f.language == "en" or not f.language]
+
+    # Process Arabic feedback
+    if arabic_feedback:
+        logger.info(f"Processing {len(arabic_feedback)} Arabic feedback records.")
         try:
-            if isinstance(result, Exception):
-                raise result
+            arabic_models = load_arabic_models()
+            for batch in _batch_iterator(arabic_feedback, batch_size):
+                for feedback in batch:
+                    try:
+                        if not feedback.cleaned_text:
+                            continue
+                        predictions = predict_arabic(feedback.cleaned_text, arabic_models)
+                        _update_feedback_record(db, feedback, predictions)
+                        processed_count += 1
+                    except Exception as e:
+                        logger.error(
+                            f"Error analyzing Arabic feedback {feedback.feedback_id}: {e}",
+                            exc_info=True,
+                        )
+                        db.rollback()
+                        continue
+                db.commit()
+        finally:
+            del arabic_models
+            gc.collect()
+            logger.info("Unloaded Arabic models and triggered garbage collection.")
 
-            if not result:
-                # Empty text — defaults
-                feedback.sentiment = SENTIMENT_DEFAULT_LABEL      # ← ADD: string
-                feedback.sentiment_id = SENTIMENT_DEFAULT_ID      # int
-                feedback.emotion = EMOTION_DEFAULT_LABEL            # ← ADD: string
-                feedback.emotion_id = EMOTION_DEFAULT_ID            # int
-                feedback.problem_type = None                        # ← ADD: string
-                feedback.problem_type_id = PROBLEM_TYPE_DEFAULT_ID  # int
-                feedback.priority = "Low"
-            else:
-                # Sentiment: store BOTH string and id
-                sentiment_key = result.get("sentiment", "") or SENTIMENT_DEFAULT_LABEL
-                feedback.sentiment = sentiment_key.capitalize()     # ← ADD: "Positive", "Negative", "Neutral"
-                feedback.sentiment_id = result.get("sentiment_id") or SENTIMENT_LABEL2ID.get(
-                    sentiment_key, SENTIMENT_DEFAULT_ID
-                )
+    # Process English feedback
+    if english_feedback:
+        logger.info(f"Processing {len(english_feedback)} English feedback records.")
+        try:
+            english_models = load_english_models()
+            for batch in _batch_iterator(english_feedback, batch_size):
+                for feedback in batch:
+                    try:
+                        if not feedback.cleaned_text:
+                            continue
+                        predictions = predict_english(feedback.cleaned_text, english_models)
+                        _update_feedback_record(db, feedback, predictions)
+                        processed_count += 1
+                    except Exception as e:
+                        logger.error(
+                            f"Error analyzing English feedback {feedback.feedback_id}: {e}",
+                            exc_info=True,
+                        )
+                        db.rollback()
+                        continue
+                db.commit()
+        finally:
+            del english_models
+            gc.collect()
+            logger.info("Unloaded English models and triggered garbage collection.")
 
-                # Emotion: store BOTH string and id
-                emotion_key = result.get("emotion", "") or EMOTION_DEFAULT_LABEL
-                feedback.emotion = emotion_key.capitalize()       # ← ADD: "Happy", "Sad", etc.
-                feedback.emotion_id = result.get("emotion_id") or EMOTION_LABEL2ID.get(
-                    emotion_key, EMOTION_DEFAULT_ID
-                )
-
-                # Problem type: store BOTH string and id (can be None)
-                problem_type_key = result.get("problem_type")
-                if problem_type_key:
-                    feedback.problem_type = problem_type_key.capitalize()  # ← ADD
-                    feedback.problem_type_id = result.get("problem_type_id") or PROBLEM_TYPE_LABEL2ID.get(
-                        problem_type_key, PROBLEM_TYPE_DEFAULT_ID
-                    )
-                else:
-                    feedback.problem_type = None
-                    feedback.problem_type_id = None
-
-                # Priority
-                priority_val = result.get("priority", "Low")
-                # Handle if priority is int (1-4) from calculate_priority
-                if isinstance(priority_val, int):
-                    priority_map = {1: "Low", 2: "Medium", 3: "High", 4: "Critical"}
-                    feedback.priority = priority_map.get(priority_val, "Low")
-                else:
-                    feedback.priority = str(priority_val)
-
-            feedback.status = "analyzed"
-            feedback.ml_processed_at = func.now()
-            processed += 1
-
-        except Exception as e:
-            logger.error(f"AI failed for feedback {feedback.feedback_id}: {e}")
-            # Don't mark as analyzed — will retry
-
-    await db.commit()
-    return processed
+    logger.info(f"AI analysis job completed: {processed_count} records processed.")
+    return processed_count
 
 
-async def analyze_single(text: str) -> Dict[str, Any]:
-    """Run AI pipeline in thread pool."""
-    if not text.strip():
-        return None
+# ============================================================================
+# Service Wrapper
+# ============================================================================
 
-    loop = asyncio.get_running_loop()
 
+def ai_analysis_service() -> None:
+    """Wrapper function for the AI analysis job with database session management.
+
+    Called by APScheduler as a background scheduled task.
+    Handles database session creation, error handling, and cleanup.
+    """
+    db = database.SessionLocal()
     try:
-        result = await asyncio.wait_for(
-            loop.run_in_executor(None, run_ai_pipeline, text),
-            timeout=45.0
-        )
-        return result
-    except asyncio.TimeoutError:
-        logger.error("AI pipeline timeout")
-        raise
+        processed = run_ai_job(db, max_records=30)
+        logger.info(f"AI analysis service completed: {processed} records processed")
+    except Exception as e:
+        logger.error(f"Error in AI analysis service: {str(e)}", exc_info=True)
+    finally:
+        db.close()

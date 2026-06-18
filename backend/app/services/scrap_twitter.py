@@ -1,4 +1,5 @@
 import asyncio
+import sys
 import json
 from playwright.async_api import async_playwright
 
@@ -17,6 +18,7 @@ async def fetch_replies(
         auth_token: str = AUTH_TOKEN,
         ct0: str = CT0,
         max_posts: int = MAX_POSTS,
+        scroll_count: int = 3,
         max_comments_per_post: int = MAX_COMMENTS_PER_POST,
         goto_timeout_ms: int = GOTO_TIMEOUT_MS,
         scroll_delay_s: float = SCROLL_DELAY_S,
@@ -129,8 +131,8 @@ async def fetch_replies(
         # Give React/X time to hydrate the timeline
         await asyncio.sleep(5)
 
-        # Scroll a few times to load more tweets
-        while True:
+        # Scroll profile page to load more tweets
+        for _ in range(max(scroll_count, 0)):
             await page.mouse.wheel(0, 2000)
             await asyncio.sleep(2)
             status_links = await page.query_selector_all('a[href*="/status/"]')
@@ -230,3 +232,9 @@ async def fetch_replies(
 
 if __name__ == "__main__":
     asyncio.run(fetch_replies(save_to_file=True))
+
+
+def fetch_replies_sync(*args, **kwargs):
+    if sys.platform == "win32" and hasattr(asyncio, "WindowsProactorEventLoopPolicy"):
+        asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+    return asyncio.run(fetch_replies(*args, **kwargs))

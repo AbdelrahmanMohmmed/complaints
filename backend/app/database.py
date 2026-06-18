@@ -1,14 +1,16 @@
-"""Database configuration with async support."""
+"""Database configuration and session management.
+
+Handles SQLAlchemy engine setup, session creation, and database connection.
+"""
 
 from sqlalchemy import create_engine
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker, declarative_base
-from sqlalchemy.pool import NullPool
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
 
 from .config import settings
 
 # ============================================================================
-# Sync Engine (for migrations, existing code)
+# Database Configuration
 # ============================================================================
 
 SQLALCHEMY_DATABASE_URL = (
@@ -17,47 +19,32 @@ SQLALCHEMY_DATABASE_URL = (
     f"{settings.DATABASE_PORT}/{settings.DATABASE_NAME}"
 )
 
-engine = create_engine(SQLALCHEMY_DATABASE_URL, pool_pre_ping=True)
+# Create database engine with connection pooling
+engine = create_engine(SQLALCHEMY_DATABASE_URL)
+
+# Session factory for creating new sessions
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-# ============================================================================
-# Async Engine (for FastAPI + background jobs)
-# ============================================================================
-
-# Convert to asyncpg URL
-ASYNC_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
-
-async_engine = create_async_engine(
-    ASYNC_DATABASE_URL,
-    poolclass=NullPool,  # Better for async, or use proper pool settings
-    pool_pre_ping=True,
-    echo=False,
-)
-
-AsyncSessionLocal = sessionmaker(
-    async_engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
-    autocommit=False,
-    autoflush=False,
-)
 
 Base = declarative_base()
 
 
 # ============================================================================
-# Session Dependencies
+# Session Management
 # ============================================================================
 
+
 def get_db():
-    """Sync session for regular endpoints."""
+    """Get a database session.
+
+    Yields a database session and ensures proper cleanup via try/finally.
+    Used as a dependency in FastAPI routes.
+
+    Yields:
+        Session: SQLAlchemy database session
+    """
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
 
-async def get_async_db():
-    """Async session for async endpoints."""
-    async with AsyncSessionLocal() as session:
-        yield session

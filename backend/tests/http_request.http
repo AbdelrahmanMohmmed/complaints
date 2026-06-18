@@ -1,7 +1,6 @@
-ET http://127.0.0.1:8000
+GET http://127.0.0.1:8000
 Accept : application/json
 
-###
 POST http://127.0.0.1:8000/users
 content-Type :application/json
 
@@ -22,12 +21,11 @@ content-Type :application/json
 POST http://localhost:8000/api/v1/login/
 Content-Type: application/x-www-form-urlencoded
 
-username=madara@gmail.com&
-password=madara11
+username=alwa%40gmail.com&password=ali123
 
 ### Step 2: Get Facebook OAuth URL (Copy JWT token from Step 1 response)
 GET http://127.0.0.1:8000/api/v1/integrations/facebook/connect
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMTQiLCJleHAiOjE3ODAzMDI2NTZ9.KPWpUs9GLm3XGR2Sk7T018UaqrGBLmer1wLvvHss6NQ
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMSIsImV4cCI6MTc3NzUyMzE1MH0.IvtjZQeLc_4LLfIru1b6SWwNFXUolzsJ2JoF6k4thwQ
 
 ### Step 3: Open Facebook OAuth URL in Browser
 # The response from Step 2 will give you an oauth_url

@@ -173,7 +173,7 @@ const updateUser = async () => {
 
           </DialogTrigger>
 
-          <DialogContent>
+          <DialogContent className="bg-white dark:bg-zinc-950">
 
             <DialogHeader>
 
@@ -459,7 +459,7 @@ const updateUser = async () => {
 
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
 
-        <DialogContent>
+        <DialogContent className="bg-white dark:bg-zinc-950">
 
           <DialogHeader>
 

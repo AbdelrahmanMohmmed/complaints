@@ -1,7 +1,7 @@
-from pydantic_settings import BaseSettings
-import os
 from pathlib import Path
-BASE_DIR = Path(__file__).resolve().parent.parent
+
+from pydantic_settings import BaseSettings
+
 
 class Settings(BaseSettings):
     """Application configuration loaded from environment variables."""
@@ -96,20 +96,21 @@ class Settings(BaseSettings):
     # Backwards-compatible fields for Hugging Face env vars present in .env
     en_sentiment_huggingface_path: str = ""
     hugging_face_token: str = ""
-    # HF model paths
-    ar_sentiment_hf_path: str = ""
-    en_sentiment_hf_path: str = ""
-    multilingual_emotion_hf_path: str = ""
 
-    # HF model names
-    ar_sentiment_hf_model: str = ""
-    en_sentiment_hf_model: str = ""
-    multilingual_emotion_hf_model: str = ""
+    # HF-only sentiment/emotion configuration
+    AR_SENTIMENT_HF_MODEL: str = "CAMeL-Lab/bert-base-arabic-camelbert-da-sentiment"
+    EN_SENTIMENT_HF_MODEL: str = (
+        "mrm8488/distilroberta-finetuned-financial-news-sentiment-analysis"
+    )
+    MULTILINGUAL_EMOTION_HF_MODEL: str = (
+        "tabularisai/multilingual-emotion-classification"
+    )
+    MULTILINGUAL_EMOTION_THRESHOLD: float = 0.5
 
-    # HF threshold
-    multilingual_emotion_threshold: float = 0.5
-    model_config = {"env_file": os.path.join(BASE_DIR, ".env")
-    , "case_sensitive": False}
+    model_config = {
+        "env_file": Path(__file__).resolve().parents[1] / ".env",
+        "case_sensitive": False,
+    }
 
 
 settings = Settings()

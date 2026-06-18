@@ -1,8 +1,7 @@
-"""English text preprocessing pipeline."""
+"""English text preprocessing pipeline - CACHED MODELS (load once, use forever)."""
 import re
 import logging
 
-# Try to import optional dependencies
 try:
     import emoji
     EMOJI_AVAILABLE = True
@@ -17,52 +16,45 @@ except ImportError:
 
 try:
     from spellchecker import SpellChecker
-    SPELL_AVAILABLE = True
+    SPELLCHECKER_AVAILABLE = True
 except ImportError:
-    SPELL_AVAILABLE = False
+    SPELLCHECKER_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
-# ─── LOAD MODELS ONCE ───────────────────────────────────────────────
+# ============================================================================
+# LOAD MODELS ONCE AT MODULE IMPORT TIME
+# ============================================================================
 
-# Load spaCy model once (lazy)
-_NLP = None
+logger.info("[English] Loading NLP models into memory...")
 
-def _get_nlp():
-    global _NLP
-    if _NLP is None and SPACY_AVAILABLE:
-        try:
-            _NLP = spacy.load("en_core_web_md")
-            logger.info("Loaded spaCy English model")
-        except Exception as e:
-            logger.warning(f"Failed to load spaCy model: {e}")
-    return _NLP
+_nlp_model = None
+_spell_checker = None
 
+try:
+    if SPACY_AVAILABLE:
+        _nlp_model = spacy.load("en_core_web_md")
+        logger.info("[English] ✓ spaCy model loaded")
+    else:
+        logger.warning("[English] spaCy not available")
+except OSError:
+    logger.warning("[English] spaCy model 'en_core_web_md' not found. Install: python -m spacy download en_core_web_md")
+except Exception as e:
+    logger.warning(f"[English] spaCy load failed: {e}")
 
-# Load spell checker once (lazy)
-_SPELL = None
-
-def _get_spell():
-    global _SPELL
-    if _SPELL is None and SPELL_AVAILABLE:
-        try:
-            _SPELL = SpellChecker()
-        except Exception as e:
-            logger.warning(f"Failed to load spell checker: {e}")
-    return _SPELL
-
-
-# Pre-compiled regex
-_NON_ALPHANUM = re.compile(r"[^a-zA-Z0-9\s]")
-_SINGLE_CHAR = re.compile(r"\b[a-zA-Z]\b")
-_WHITESPACE = re.compile(r"\s{2,}")
+try:
+    if SPELLCHECKER_AVAILABLE:
+        _spell_checker = SpellChecker()
+        logger.info("[English] ✓ SpellChecker loaded")
+except Exception as e:
+    logger.warning(f"[English] SpellChecker load failed: {e}")
 
 
 def english_pipeline(text: str) -> str:
-    """Fast English text preprocessing."""
-    if not text or not text.strip():
-        return text
-
+    """
+    Process English text through cleaning, spell checking, and lemmatization.
+    Uses CACHED models - no loading per call.
+    """
     # Remove emojis
     if EMOJI_AVAILABLE:
         try:
@@ -70,41 +62,38 @@ def english_pipeline(text: str) -> str:
         except Exception:
             pass
 
-    # Remove special chars
-    text = _NON_ALPHANUM.sub(" ", text)
+    # Remove special characters, keep only alphanumeric and spaces
+    text = re.sub(r"[^a-zA-Z0-9\s]", " ", text)
 
-    # Remove single chars
-    text = _SINGLE_CHAR.sub(" ", text)
+    # Remove single character words
+    text = re.sub(r"\b[a-zA-Z]\b", " ", text)
 
     # Normalize whitespace
-    text = _WHITESPACE.sub(" ", text).strip()
+    text = re.sub(r"\s{2,}", " ", text)
+    text = text.strip()
 
     if not text:
         return text
 
+    # Convert to lowercase
     text = text.lower()
-    text = text.replace('\n', ' ').replace('\r', ' ').strip()
-    # Remove multiple spaces
-    text = ' '.join(text.split())
-    words = text.split()
 
-    # Spell check (optional)
-    spell = _get_spell()
-    if spell:
+    # Spell correction (cached)
+    if _spell_checker:
         try:
-            words = [spell.correction(w) or w for w in words]
+            words = text.split()
+            corrected = [_spell_checker.correction(word) or word for word in words]
+            text = " ".join(corrected)
         except Exception:
             pass
 
-    # Lemmatize (optional)
-    nlp = _get_nlp()
-    if nlp:
+    # Lemmatization with cached spacy model
+    if _nlp_model:
         try:
-            doc = nlp(" ".join(words))
-            lemmas = [w.lemma_ for w in doc if not w.is_stop]
-            if lemmas:
-                return " ".join(lemmas)
-        except Exception as e:
-            logger.debug(f"Lemmatization failed: {e}")
+            doc = _nlp_model(text)
+            lemmas = [word.lemma_ for word in doc if not word.is_stop]
+            return " ".join(lemmas)
+        except Exception:
+            return text
 
-    return " ".join(words)
+    return text
