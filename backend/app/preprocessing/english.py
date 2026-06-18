@@ -1,4 +1,4 @@
-"""English text preprocessing pipeline - OPTIMIZED with model caching."""
+"""English text preprocessing pipeline - CACHED MODELS (load once, use forever)."""
 import re
 import logging
 
@@ -23,51 +23,44 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 # ============================================================================
-# CACHE MODELS AT MODULE LEVEL - Load once, reuse forever
+# LOAD MODELS ONCE AT MODULE IMPORT TIME
 # ============================================================================
+
+logger.info("[English] Loading NLP models into memory...")
 
 _nlp_model = None
 _spell_checker = None
-_model_loading_attempted = False
 
-def _load_models():
-    """Load spaCy and spellchecker models once at module level."""
-    global _nlp_model, _spell_checker, _model_loading_attempted
-
-    if _model_loading_attempted:
-        return  # Already tried, don't retry
-
-    _model_loading_attempted = True
-
+try:
     if SPACY_AVAILABLE:
-        try:
-            _nlp_model = spacy.load("en_core_web_md")
-            logger.info("✓ spaCy model loaded and cached")
-        except OSError:
-            logger.warning("spacy en_core_web_md not found. Install with: python -m spacy download en_core_web_md")
+        _nlp_model = spacy.load("en_core_web_md")
+        logger.info("[English] ✓ spaCy model loaded")
+    else:
+        logger.warning("[English] spaCy not available")
+except OSError:
+    logger.warning("[English] spaCy model 'en_core_web_md' not found. Install: python -m spacy download en_core_web_md")
+except Exception as e:
+    logger.warning(f"[English] spaCy load failed: {e}")
 
+try:
     if SPELLCHECKER_AVAILABLE:
-        try:
-            _spell_checker = SpellChecker()
-            logger.info("✓ SpellChecker loaded and cached")
-        except Exception as e:
-            logger.warning(f"SpellChecker failed to load: {e}")
-
-# Load models on first import
-_load_models()
+        _spell_checker = SpellChecker()
+        logger.info("[English] ✓ SpellChecker loaded")
+except Exception as e:
+    logger.warning(f"[English] SpellChecker load failed: {e}")
 
 
 def english_pipeline(text: str) -> str:
     """
     Process English text through cleaning, spell checking, and lemmatization.
-    Uses cached models for speed.
+    Uses CACHED models - no loading per call.
     """
     # Remove emojis
     if EMOJI_AVAILABLE:
         try:
             text = emoji.demojize(text)
-        except Exception as e:
-            logger.debug(f"Emoji removal failed: {e}")
+        except Exception:
+            pass
 
     # Remove special characters, keep only alphanumeric and spaces
     text = re.sub(r"[^a-zA-Z0-9\s]", " ", text)
@@ -91,8 +84,8 @@ def english_pipeline(text: str) -> str:
             words = text.split()
             corrected = [_spell_checker.correction(word) or word for word in words]
             text = " ".join(corrected)
-        except Exception as e:
-            logger.debug(f"Spell correction failed: {e}")
+        except Exception:
+            pass
 
     # Lemmatization with cached spacy model
     if _nlp_model:
@@ -100,8 +93,7 @@ def english_pipeline(text: str) -> str:
             doc = _nlp_model(text)
             lemmas = [word.lemma_ for word in doc if not word.is_stop]
             return " ".join(lemmas)
-        except Exception as e:
-            logger.debug(f"Spacy lemmatization failed: {e}")
+        except Exception:
             return text
 
     return text

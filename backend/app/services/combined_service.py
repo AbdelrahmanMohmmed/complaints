@@ -1,8 +1,4 @@
-"""Combined preprocessing + AI analysis service.
-
-Runs as a single scheduled job - no separate preprocessing step.
-Processes unprocessed feedback directly through AI models.
-"""
+"""Combined preprocessing + AI analysis service - WITH CACHED MODELS."""
 
 import gc
 import logging
@@ -25,7 +21,7 @@ from ..ai.labels import (
 logger = logging.getLogger(__name__)
 
 
-def _get_unprocessed_feedback(db: Session, limit: int = 30) -> List[models.Feedback]:
+def _get_unprocessed_feedback(db: Session, limit: int = 50) -> List[models.Feedback]:
     """Fetch unprocessed feedback records."""
     return (
         db.query(models.Feedback)
@@ -56,15 +52,11 @@ def _update_feedback_record(
     feedback.ml_processed_at = func.now()
 
 
-def run_combined_job(db: Session, batch_size: int = 30) -> int:
+def run_combined_job(db: Session, batch_size: int = 50) -> int:
     """Run combined preprocess + AI on unprocessed feedback.
 
-    Args:
-        db: SQLAlchemy database session.
-        batch_size: Number of records to process per run.
-
-    Returns:
-        Number of successfully processed feedback records.
+    Preprocessing uses CACHED spaCy/Camel models (loaded once at startup).
+    Only AI models (transformers) are loaded/unloaded per run for memory.
     """
     processed_count = 0
     feedback_items = _get_unprocessed_feedback(db, limit=batch_size)
@@ -76,11 +68,8 @@ def run_combined_job(db: Session, batch_size: int = 30) -> int:
     logger.info(f"Starting combined processing for {len(feedback_items)} feedback records.")
     job_start = time.time()
 
-    # Split by language
-    arabic_feedback = [f for f in feedback_items if f.language in ("ar", "franko")]
-    english_feedback = [f for f in feedback_items if f.language == "en" or not f.language]
-
-    # First pass: detect language and preprocess for all
+    # Step 1: Preprocess ALL records first (uses cached spaCy/Camel - FAST!)
+    prep_start = time.time()
     for fb in feedback_items:
         try:
             if not fb.feedback_context or not fb.feedback_context.strip():
@@ -93,10 +82,17 @@ def run_combined_job(db: Session, batch_size: int = 30) -> int:
             logger.error(f"Preprocess failed for feedback {fb.feedback_id}: {e}")
             fb.language = "en"
             fb.cleaned_text = fb.feedback_context or ""
+    prep_time = time.time() - prep_start
+    logger.info(f"Preprocessing done: {len(feedback_items)} records in {prep_time:.2f}s")
 
+    # Split by language
+    arabic_feedback = [f for f in feedback_items if f.language in ("ar", "franko")]
+    english_feedback = [f for f in feedback_items if f.language == "en" or not f.language]
+
+    # Step 2: AI Prediction (load transformers, predict, unload)
     # Process Arabic feedback
     if arabic_feedback:
-        logger.info(f"Processing {len(arabic_feedback)} Arabic feedback records.")
+        logger.info(f"AI: Processing {len(arabic_feedback)} Arabic records...")
         try:
             arabic_models = load_arabic_models()
             for feedback in arabic_feedback:
@@ -113,11 +109,11 @@ def run_combined_job(db: Session, batch_size: int = 30) -> int:
         finally:
             del arabic_models
             gc.collect()
-            logger.info("Unloaded Arabic models.")
+            logger.info("Unloaded Arabic transformer models.")
 
     # Process English feedback
     if english_feedback:
-        logger.info(f"Processing {len(english_feedback)} English feedback records.")
+        logger.info(f"AI: Processing {len(english_feedback)} English records...")
         try:
             english_models = load_english_models()
             for feedback in english_feedback:
@@ -134,9 +130,10 @@ def run_combined_job(db: Session, batch_size: int = 30) -> int:
         finally:
             del english_models
             gc.collect()
-            logger.info("Unloaded English models.")
+            logger.info("Unloaded English transformer models.")
 
-    logger.info(f"Combined job completed: {processed_count} records in {time.time()-job_start:.2f}s.")
+    total_time = time.time() - job_start
+    logger.info(f"Combined job done: {processed_count} records in {total_time:.2f}s (prep={prep_time:.2f}s).")
     return processed_count
 
 

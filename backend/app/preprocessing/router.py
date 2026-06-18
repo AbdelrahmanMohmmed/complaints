@@ -1,4 +1,4 @@
-"""Language detection and routing logic - MINIMAL VERSION (no heavy models)."""
+"""Language detection and routing logic - WITH CACHED NLP MODELS."""
 
 import re
 import logging
@@ -10,14 +10,21 @@ try:
 except ImportError:
     LANGDETECT_AVAILABLE = False
 
+from .arabic import arabic_pipeline
+from .english import english_pipeline
+from .franko import franko_pipeline
+
 logger = logging.getLogger(__name__)
 
 # Arabizi (Franco-Arabic) patterns for detection
 ARABIZI_PATTERNS = [
-    "helw", "gamed", "tohfaa", "kwayes", "7elw", "sa7", "tamam", "mazboot",
-    "3ady", "7ar", "7ar2", "nashf", "tayeb", "mestawe", "m3aga", "sa5en",
-    "sa2e3", "ratb", "na3em", "saraha", "gdn", "awii", "shwaya", "keda",
-    "bas", "lakn", "y3ni", "ba2a",
+    "helw", "gamed", "tohfaa", "kwayes", "7elw", "7elwawi", "7elwgedn",
+    "sa7", "tamam", "mazboot", "7aga7elwa", "a7la", "mshhelw", "wa7esh",
+    "say2", "mshmazboot", "mshkwayes", "mshlazem", "3ady", "msh7elw",
+    "7ar", "7ar2", "masale7", "sokar", "meleh", "7amdy", "ta3mo7elw",
+    "ta3mokwayes", "nashf", "tayeb", "mestawe", "m3aga", "sa5en",
+    "sa2e3", "ratb", "na3em", "saraha", "gdn", "awii", "shwaya",
+    "keda", "bas", "lakn", "y3ni", "ba2a",
 ]
 
 
@@ -37,58 +44,53 @@ def is_arabizi(text: str) -> bool:
     return matches >= 2 or (matches >= 1 and has_arabic_numbers)
 
 
-def detect_language(text: str) -> Literal["ar", "en", "franko"]:
-    """Detect stored feedback language bucket - FAST, no heavy models."""
-    if not text or not text.strip():
-        return "en"
+def route_pipeline(text: str) -> Literal["arabic", "english", "franko"]:
+    """Route text to appropriate preprocessing pipeline."""
     if is_arabizi(text):
+        logger.debug("Detected Arabizi text")
         return "franko"
     if contains_arabic_script(text):
+        logger.debug("Detected Arabic script text")
+        return "arabic"
+    if not LANGDETECT_AVAILABLE:
+        logger.debug("langdetect not available, defaulting to English")
+        return "english"
+    try:
+        lang = detect(text)
+        if lang == "ar":
+            logger.debug("Detected Arabic text")
+            return "arabic"
+        else:
+            logger.debug(f"Detected {lang} text, routing to English pipeline")
+            return "english"
+    except Exception as e:
+        logger.debug(f"Language detection failed: {e}, defaulting to English")
+        return "english"
+
+
+def detect_language(text: str) -> Literal["ar", "en", "franko"]:
+    """Detect stored feedback language bucket."""
+    pipeline = route_pipeline(text)
+    if pipeline == "arabic":
         return "ar"
-    if LANGDETECT_AVAILABLE:
-        try:
-            lang = detect(text)
-            if lang == "ar":
-                return "ar"
-        except Exception:
-            pass
+    if pipeline == "franko":
+        return "franko"
     return "en"
-
-
-def _basic_clean(text: str) -> str:
-    """Basic text cleaning without any heavy NLP models."""
-    if not text:
-        return ""
-    # Remove extra whitespace
-    text = re.sub(r"\s+", " ", text)
-    # Remove URLs
-    text = re.sub(r"http\S+|www\.\S+", "", text)
-    # Remove email addresses
-    text = re.sub(r"\S+@\S+", "", text)
-    # Remove special chars but keep letters, numbers, Arabic, basic punctuation
-    text = re.sub(r"[^\w\s\u0600-\u06FF.,!?;:']", " ", text)
-    # Normalize whitespace
-    text = re.sub(r"\s+", " ", text).strip()
-    return text
 
 
 def preprocess_feedback(text: str) -> str:
     """
-    Minimal preprocessing - just basic cleaning, no spaCy/Camel loading.
+    Preprocess feedback text by routing to appropriate pipeline.
+    Uses CACHED models - spaCy/Camel loaded once at startup.
     """
     try:
-        return _basic_clean(text)
+        pipeline = route_pipeline(text)
+        if pipeline == "arabic":
+            return arabic_pipeline(text)
+        elif pipeline == "franko":
+            return franko_pipeline(text)
+        else:
+            return english_pipeline(text)
     except Exception as e:
-        logger.error(f"Error in minimal preprocessing: {e}")
+        logger.error(f"Error in preprocessing: {e}", exc_info=True)
         return text
-
-
-# Backward compatibility - route_pipeline is used by __init__.py
-def route_pipeline(text: str) -> Literal["arabic", "english", "franko"]:
-    """Route text to appropriate preprocessing pipeline."""
-    lang = detect_language(text)
-    if lang == "franko":
-        return "franko"
-    if lang == "ar":
-        return "arabic"
-    return "english"

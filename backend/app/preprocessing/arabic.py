@@ -1,7 +1,6 @@
-"""Arabic text preprocessing pipeline - OPTIMIZED with model caching."""
+"""Arabic text preprocessing pipeline - CACHED MODELS (load once, use forever)."""
 import re
 import logging
-from functools import lru_cache
 from pathlib import Path
 
 try:
@@ -25,59 +24,48 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 # ============================================================================
-# CACHE EVERYTHING AT MODULE LEVEL
+# LOAD MODELS ONCE AT MODULE IMPORT TIME
 # ============================================================================
 
-_stop_words = None
+logger.info("[Arabic] Loading NLP models into memory...")
+
+_stop_words = set()
 _camel_disambiguator = None
-_model_loading_attempted = False
 
-def _load_models():
-    """Load Arabic models once at module level."""
-    global _stop_words, _camel_disambiguator, _model_loading_attempted
-
-    if _model_loading_attempted:
-        return
-    _model_loading_attempted = True
-
-    # Load stopwords
-    _stop_words = set()
+try:
     stopwords_path = Path(__file__).parent / "arabic_stopwords.txt"
-    try:
-        with open(stopwords_path, "r", encoding="utf-8") as file:
-            for line in file:
-                word = line.strip()
-                if word:
-                    _stop_words.add(word)
-        logger.info(f"✓ Loaded {len(_stop_words)} Arabic stopwords")
-    except FileNotFoundError:
-        logger.warning(f"Stopwords file not found at {stopwords_path}")
-    except Exception as e:
-        logger.error(f"Error loading stopwords: {e}")
+    with open(stopwords_path, "r", encoding="utf-8") as file:
+        for line in file:
+            word = line.strip()
+            if word:
+                _stop_words.add(word)
+    logger.info(f"[Arabic] ✓ Loaded {len(_stop_words)} stopwords")
+except FileNotFoundError:
+    logger.warning(f"[Arabic] Stopwords file not found at {stopwords_path}")
+except Exception as e:
+    logger.warning(f"[Arabic] Stopwords load failed: {e}")
 
-    # Load camel disambiguator
+try:
     if CAMEL_AVAILABLE:
-        try:
-            _camel_disambiguator = MLEDisambiguator.pretrained("calima-egy-r13")
-            logger.info("✓ Camel MLEDisambiguator loaded and cached")
-        except Exception as e:
-            logger.debug(f"Camel tools resource unavailable: {e}")
-
-# Load on import
-_load_models()
+        _camel_disambiguator = MLEDisambiguator.pretrained("calima-egy-r13")
+        logger.info("[Arabic] ✓ Camel MLEDisambiguator loaded")
+    else:
+        logger.warning("[Arabic] Camel tools not available")
+except Exception as e:
+    logger.warning(f"[Arabic] Camel load failed: {e}")
 
 
 def arabic_pipeline(text: str) -> str:
     """
     Process Arabic text through cleaning, tokenization, and lemmatization.
-    Uses cached models for speed.
+    Uses CACHED models - no loading per call.
     """
     # Remove emojis
     if EMOJI_AVAILABLE:
         try:
             text = emoji.demojize(text, language="ar")
-        except Exception as e:
-            logger.debug(f"Emoji removal failed: {e}")
+        except Exception:
+            pass
 
     # Remove Arabic diacritics
     arabic_diacritics = re.compile(r"[\u0617-\u061A\u064B-\u0652]")
@@ -101,8 +89,7 @@ def arabic_pipeline(text: str) -> str:
         try:
             from nltk.tokenize import wordpunct_tokenize
             tokens = wordpunct_tokenize(text)
-        except Exception as e:
-            logger.debug(f"NLTK tokenization failed: {e}")
+        except Exception:
             tokens = text.split()
     else:
         tokens = text.split()
@@ -122,8 +109,7 @@ def arabic_pipeline(text: str) -> str:
                 d.analyses[0].analysis["lex"] for d in disambiguated if d.analyses
             ]
             final_text = " ".join(lemmas)
-        except Exception as e:
-            logger.debug(f"Camel lemmatization failed: {e}")
+        except Exception:
             final_text = " ".join(tokens)
     else:
         final_text = " ".join(tokens)
