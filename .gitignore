@@ -1,0 +1,12 @@
+google-chrome-stable_current_amd64.deb
+/downloaded_files
+/venv
+__pycache__
+frontend/dist
+.pypirc
+/frontend/node_modules
+/backend/models
+/backend/__pycache__
+.idea
+.env
+/backend/.env
