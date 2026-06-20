@@ -115,7 +115,6 @@ uvicorn app.main:app --reload
 - https://ara2komai.me/
 
 **Backend:**
-- Deploy: Docker container or direct server
 - ASGI server: Gunicorn + Uvicorn workers
 - Database: PostgreSQL (production)
 
