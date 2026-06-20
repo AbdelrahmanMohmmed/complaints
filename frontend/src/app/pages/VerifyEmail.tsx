@@ -1,8 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { Link, useSearchParams, useLocation } from 'react-router';
+import { useEffect, useState } from 'react';
+import { Link, useLocation } from 'react-router';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import * as authService from '../../services/authService';
 import { CheckCircle2, AlertCircle, ArrowLeft, ArrowRight, Moon, Sun, Languages } from 'lucide-react';
 
 export function VerifyEmail() {

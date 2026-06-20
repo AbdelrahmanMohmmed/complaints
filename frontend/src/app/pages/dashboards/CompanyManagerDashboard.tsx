@@ -1,6 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { useAuth } from '../../contexts/AuthContext';
 import { request } from '../../../services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import {
@@ -8,7 +7,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 import {
-  MessageSquare, Building2, Smile, TrendingDown ,Angry
+  MessageSquare, TrendingDown ,Angry
 } from 'lucide-react';
 import { cn } from '../../components/ui/utils';
 
@@ -34,7 +33,7 @@ const SENTIMENT_COLORS = {
 };
 
 const BAR_COLORS = ['#3b82f6', '#ef4444', '#f59e0b', '#10b981', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
-const RADIAN = Math.PI / 180;
+// const RADIAN = Math.PI / 180;
 
 type SentimentLabelProps = {
   cx?: number;
@@ -52,12 +51,8 @@ const renderSentimentLabel = ({
   cx,
   cy,
   midAngle,
-  innerRadius,
   outerRadius,
-  name,
-  value,
   percent,
-  isAr,
 }: SentimentLabelProps) => {
   if (
     percent === undefined ||
@@ -70,12 +65,12 @@ const renderSentimentLabel = ({
     return null;
   }
 
-  const LABEL_OFFSET = isAr ? 30 : 25;
-  const radius = (outerRadius ?? 0) + LABEL_OFFSET;
-  const x = (cx ?? 0) + radius * Math.cos(-midAngle * RADIAN);
-  const y = (cy ?? 0) + radius * Math.sin(-midAngle * RADIAN);
+  // const LABEL_OFFSET = isAr ? 30 : 25;
+  // const radius = (outerRadius ?? 0) + LABEL_OFFSET;
+  // const x = (cx ?? 0) + radius * Math.cos(-midAngle * RADIAN);
+  // const y = (cy ?? 0) + radius * Math.sin(-midAngle * RADIAN);
 
-  const displayName = isAr && name && name.length > 15 ? name.substring(0, 12) + '...' : name;
+  // const displayName = isAr && name && name.length > 15 ? name.substring(0, 12) + '...' : name;
 
   // return (
   //   <text
@@ -94,7 +89,6 @@ const renderSentimentLabel = ({
 
 export function CompanyAdminDashboard() {
   const { t, language } = useLanguage();
-  const { user } = useAuth();
   const isAr = language === 'ar';
 
   const [stats, setStats] = useState<DashboardStats | null>(null);

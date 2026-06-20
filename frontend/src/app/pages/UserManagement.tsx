@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -30,7 +30,6 @@ interface BackendUser {
 }
 
 const roleMap: Record<number, string> = { 1: 'manager', 2: 'customerServiceSupervisor', 3: 'websiteConfigurator' };
-const roleIdMap: Record<string, number> = { manager: 1, customerServiceSupervisor: 2, websiteConfigurator: 3 };
 const roleColors: Record<string, string> = {
   manager: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
   customerServiceSupervisor: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',

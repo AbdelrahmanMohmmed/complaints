@@ -4,10 +4,6 @@
  * Handles all authentication flows: login, logout, token refresh, and current user.
  * Currently uses mock promises to define the expected API contract.
  * 
- * TODO (Frontend - Integration):
- * - Replace mock promises with actual `request<T>()` calls from api.ts
- * - Add error handling and retry logic
- * - Coordinate with AuthContext for state management
  */
 import { UserRole } from '../app/contexts/AuthContext';
 import { BASE_URL, request } from './api';
@@ -18,19 +14,7 @@ import {
   SignupResponse,
 } from '../types/api';
 
-/**
- * Mock token storage
- * 
- * TODO (Frontend - Production):
- * - Replace with secure memory storage or sessionStorage
- * - Never store tokens in localStorage (XSS vulnerable)
- * - Refresh token should be HTTP-only cookie (server-set)
- * 
- * TODO (Backend - FastAPI):
- * - Issue access_token with short expiry (15-30 min)
- * - Issue refresh_token as HTTP-only secure cookie
- * - No need to send refresh_token in response body in production
- */
+
 const tokenStorage = {
   accessToken: null as string | null,
   refreshToken: null as string | null,
@@ -63,12 +47,7 @@ const tokenStorage = {
  * Registers a new company admin. Backend sends verification email.
  * User must verify email then use login to authenticate.
  *
- * TODO (Backend - FastAPI):
- * - Endpoint: POST /api/v1/auth/signup
- * - Validate domain exists, at least one API selected, etc.
- * - Create company + company admin user (unverified)
- * - Send verification email with link containing token
- * - Return 201 { success, message }; do NOT return tokens
+ 
  */
 export async function signup(data: SignupRequest): Promise<SignupResponse> {
   const response = await request<SignupResponse>('/companies/', {
@@ -89,7 +68,6 @@ export async function signup(data: SignupRequest): Promise<SignupResponse> {
 
 /**
  * التحقق من البريد الإلكتروني (called when user clicks link in email)
- * TODO (Backend - FastAPI): GET/POST /api/v1/auth/verify-email?token=...
  */
 export async function verifyEmail(token: string): Promise<{ success: boolean; error?: string }> {
   await new Promise((resolve) => setTimeout(resolve, 400));
@@ -149,15 +127,6 @@ export async function resetPassword(email: string, code: string, newPassword: st
 
 /**
  * Login Function
- * 
- * TODO (Backend - FastAPI):
- * - Endpoint: POST /api/v1/auth/login
- * - Request body: { email: string, password: string }
- * - Response: {
- *     access_token: string (JWT with exp, sub, role, companyId),
- *     refresh_token?: string (in body for demo; HTTP-only cookie in prod),
- *     user: User
- *   }
  * 
  * - Validate email format
  * - Hash password comparison (use bcrypt or similar)
@@ -236,10 +205,7 @@ function mapRoleIdToRole(role_id: number): UserRole {
 }
 
 export async function logout(): Promise<void> {
-  // TODO: Replace with actual API call (optional):
-  // await request('/auth/logout', {
-  //   method: 'POST',
-  // }).catch(console.error); // Ignore errors; always logout client-side
+ 
 
   // Clear tokens
   tokenStorage.clearTokens();
@@ -252,12 +218,6 @@ export async function logout(): Promise<void> {
 /**
  * Refresh Token Function
  * 
- * TODO (Backend - FastAPI):
- * - Endpoint: POST /api/v1/auth/refresh
- * - Request: send refresh_token via:
- *   a) HTTP-only cookie (automatic, no JS needed)
- *   b) Authorization header: Bearer <refresh_token>
- * - Response: { access_token, refresh_token?, user }
  * 
  * - Validate refresh_token (signature, expiry)
  * - Return 401 if invalid/expired
@@ -304,11 +264,6 @@ export async function refreshToken(): Promise<LoginResponse> {
 /**
  * Get Current User Function
  * 
- * TODO (Backend - FastAPI):
- * - Endpoint: GET /api/v1/auth/me
- * - Authorization required: Bearer <access_token>
- * - Response: User object with current user info
- * 
  * - Decode user from JWT or fetch from DB
  * - Return 401 if token invalid/expired
  * - Client will retry with refreshed token if needed
@@ -319,13 +274,8 @@ export async function refreshToken(): Promise<LoginResponse> {
  * - Allows graceful handling of expired tokens
  */
 export async function getCurrentUser(): Promise<User> {
-  // TODO: Replace with actual API call:
-  // const user = await request<User>('/auth/me', {
-  //   method: 'GET',
-  // });
-  // return user;
 
-  // Mock: return cached user or throw
+
   if (tokenStorage.user) {
     return tokenStorage.user;
   }
@@ -347,15 +297,8 @@ export function getAccessToken(): string | null {
  * 
  * Called by AuthContext on mount to restore session
  * 
- * TODO (Frontend):
- * - Called in useEffect(() => { ... }, []) on app start
- * - Attempts to restore tokens from localStorage/sessionStorage
- * - Verifies token is still valid by calling getCurrentUser()
- * - If invalid, clears tokens and redirects to login
- * - If valid, restores user state
  */
 export function initializeAuth(): { user: User | null; tokens: boolean } {
-  // TODO: Restore from localStorage (demo) -> should be sessionStorage or memory in prod
   const storedUser = localStorage.getItem('ara2kom-user');
   const storedToken = localStorage.getItem('ara2kom-access-token');
 

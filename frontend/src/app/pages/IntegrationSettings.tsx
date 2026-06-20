@@ -14,7 +14,7 @@ import {
 } from '../components/ui/select';
 import {
   Plus, Plug, Mail, Phone, Globe, CheckCircle,
-  XCircle, Trash2, RefreshCw, Twitter, Facebook, BookOpen, HelpCircle, ChevronRight,
+  XCircle, Trash2, RefreshCw, Twitter, Facebook, BookOpen, ChevronRight,
 } from 'lucide-react';
 import { cn } from '../components/ui/utils';
 import { IntegrationGuideModal } from '../components/IntegrationGuideModal';

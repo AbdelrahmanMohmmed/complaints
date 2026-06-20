@@ -14,39 +14,18 @@ import { UserManagement } from './pages/UserManagement';
 import { IntegrationSettings } from './pages/IntegrationSettings';
 import { Settings } from './pages/Settings';
 import { Reports } from './pages/Reports';
-// import { SystemLogs } from './pages/SystemLogs';
-// import { SystemAnalytics } from './pages/SystemAnalytics';
-// import { TeamPerformance } from './pages/TeamPerformance';
 import { NotFound } from './pages/NotFound';
 import { UserRole } from './contexts/AuthContext';
 
-/**
- * Route metadata for RBAC.
- *
- * NOTE:
- * - This extends the core react-router `RouteObject` shape with optional
- *   RBAC-related properties used only on the client.
- * - The router itself still only cares about the standard `RouteObject` fields.
- */
+
 type RouteWithMeta = RouteObject & {
-  /**
-   * Roles allowed to access this route
-   * If undefined or empty, route is public or special (Layout role-gating)
-   * 
-   * TODO (Backend - FastAPI):
-   * - Decode role from JWT
-   * - Check against route-specific permissions
-   * - Return 403 Forbidden if not allowed
-   */
-  allowedRoles?: UserRole[];
-  /**
-   * Human-readable route name (for debugging/logging)
-   */
+  
+   allowedRoles?: UserRole[];
+
   name?: string;
 };
 
 const routes = [
-  // Public routes (no auth required)
   { path: '/', name: 'Landing', Component: LandingPage },
   { path: '/sign-in', name: 'Sign In', Component: SignInPage },
   { path: '/signup', name: 'Signup', Component: SignupPage },
@@ -134,16 +113,7 @@ export const router = createBrowserRouter(
   _definingPlugin: undefined;
 };
 
-/**
- * Helper to extract allowed roles from a route path
- * 
- * Used by ProtectedRoute to check if current user's role is allowed
- * 
- * TODO (Frontend - Enhancement):
- * - This is a client-side hint only
- * - Backend must independently validate permissions
- * - Never trust client-side role checks for authorization decisions
- */
+
 export function getAllowedRolesForPath(path: string): UserRole[] | undefined {
   const appRoute = router.routes.find((r) => r.path === '/app');
   if (!appRoute?.children) return undefined;

@@ -246,7 +246,7 @@ export function FeedbackList() {
     return <Navigate to="/app/my-feedback" replace />;
   }
 
-  const agents: any[] = []; // TODO: fetch from /users/ when needed
+  const agents: any[] = []; 
   const isManagerOrSupervisor = user?.role === 'manager' || user?.role === 'customerServiceSupervisor';
 
   useEffect(() => {
@@ -718,7 +718,7 @@ export function FeedbackList() {
       {/* Mobile Cards - visible only on mobile */}
       <div className="sm:hidden space-y-3">
         {paginatedFeedback.map((fb) => {
-          const currentStatus = normalizeStatus(feedbackStatuses[fb.feedback_id] || fb.status);
+          // const currentStatus = normalizeStatus(feedbackStatuses[fb.feedback_id] || fb.status);
           const currentPriority = normalizePriority(feedbackPriorities[fb.feedback_id] || fb.priority || 'low');
           const currentSentimentKey = getSentimentKey(
             feedbackSentiments[fb.feedback_id] ?? fb.sentiment_id,

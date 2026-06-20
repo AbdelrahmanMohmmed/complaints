@@ -1,10 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { useAuth } from '../contexts/AuthContext';
 import { request } from '../../services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { Badge } from '../components/ui/badge';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '../components/ui/select';
@@ -42,9 +40,6 @@ interface ReportsData {
   resolution_trend: { week: string; resolved: number; avgTime: number }[];
 }
 
-// Helper function for random colors
-// Helper function to generate consistent unique colors based on channel name
-// Helper function to generate consistent unique colors based on channel name
 const getChannelColor = (name: string, index: number) => {
   // Predefined color map for common channels with UNIQUE colors
   const colorMap: { [key: string]: string } = {
@@ -95,39 +90,6 @@ const getChannelColor = (name: string, index: number) => {
   const colorIndex = Math.abs(hash) % uniqueColors.length;
   return uniqueColors[colorIndex];
 };
-type RenderCustomLabelProps = {
-  cx: number;
-  cy: number;
-  midAngle: number;
-  innerRadius?: number;
-  outerRadius: number;
-  percent: number;
-  name: string;
-  isAr: boolean;
-};
-
-const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, name, isAr }: RenderCustomLabelProps): React.ReactElement => {
-  const RADIAN = Math.PI / 180;
-  const radius = (outerRadius ?? 0) + (isAr ? 30 : 25);
-  const x = (cx ?? 0) + radius * Math.cos(-midAngle * RADIAN);
-  const y = (cy ?? 0) + radius * Math.sin(-midAngle * RADIAN);
-
-  const displayName = isAr && name && name.length > 15 ? name.substring(0, 12) + '...' : name;
-
-  return (
-    <text
-      x={x}
-      y={y}
-      fill={isAr ? "#1f2937" : "#374151"}
-      textAnchor={x > cx ? 'start' : 'end'}
-      dominantBaseline="central"
-      fontSize={isAr ? 12 : 12}
-      fontWeight={50}
-    >
-      {`${displayName}: ${(percent * 100).toFixed(0)}%`}
-    </text>
-  );
-};
 
 const getChangeTrend = (change?: string) => (change?.startsWith('+') ? 'up' : 'down');
 
@@ -135,7 +97,6 @@ const getChangeValue = (change?: string) => change || '';
 
 export function Reports() {
   const { t, language } = useLanguage();
-  const { user } = useAuth();
   const [dateRange, setDateRange] = useState('30days');
   const [activeTab, setActiveTab] = useState('sentiment');
   const isAr = language === 'ar';

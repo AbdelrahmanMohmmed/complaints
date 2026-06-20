@@ -1,20 +1,15 @@
-import React from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router';
 import {
-  Search,
-  Bell,
   Moon,
   Sun,
   Languages,
-  User,
   LogOut,
   Menu,
   Settings,
 } from 'lucide-react';
-import { Input } from './ui/input';
 import { Button } from './ui/button';
 import {
   DropdownMenu,
@@ -24,7 +19,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
-import { Badge } from './ui/badge';
 import { cn } from './ui/utils';
 
 const roleGradients: Record<string, string> = {
@@ -72,17 +66,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
         <Menu className="w-5 h-5" />
       </Button>
 
-      {/* Search Bar */}
-      {/* <div className="flex-1 max-w-sm hidden sm:block">
-        <div className="relative">
-          <Search className={cn('absolute top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400', isAr ? 'right-3' : 'left-3')} />
-          <Input
-            type="search"
-            placeholder={t('common.search')}
-            className={cn('bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 h-9 text-sm', isAr ? 'pr-10' : 'pl-10')}
-          />
-        </div>
-      </div> */}
+
 
       {/* Spacer */}
       <div className="flex-1" />
@@ -115,11 +99,6 @@ export function TopBar({ onMenuClick }: TopBarProps) {
           )}
         </Button>
 
-        {/* Notifications */}
-        {/* <Button variant="ghost" size="icon" className="relative w-9 h-9">
-          <Bell className="w-4 h-4" />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
-        </Button> */}
 
         {/* User Menu */}
         <DropdownMenu>
@@ -166,15 +145,6 @@ export function TopBar({ onMenuClick }: TopBarProps) {
               <Settings className="w-4 h-4" />
               {isAr ? 'الإعدادات' : 'Settings'}
             </DropdownMenuItem>
-            {/* <DropdownMenuItem onClick={toggleLanguage} className="gap-2">
-              <Languages className="w-4 h-4" />
-              {language === 'en' ? 'العربية' : 'English'}
-            </DropdownMenuItem> */}
-            {/* <DropdownMenuItem onClick={toggleTheme} className="gap-2">
-              {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
-              {theme === 'light' ? (isAr ? 'الوضع المظلم' : 'Dark Mode') : (isAr ? 'الوضع الفاتح' : 'Light Mode')}
-            </DropdownMenuItem> */}
-            {/* <DropdownMenuSeparator /> */}
             <DropdownMenuItem onClick={handleLogout} className="text-red-600 dark:text-red-400 gap-2">
               <LogOut className="w-4 h-4" />
               {isAr ? 'تسجيل الخروج' : 'Logout'}

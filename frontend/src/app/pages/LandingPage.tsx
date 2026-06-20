@@ -39,12 +39,6 @@ export function LandingPage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // const handleContactSubmit = (e: React.FormEvent) => {
-  //   e.preventDefault();
-  //   setContactSent(true);
-  //   setContactForm({ name: '', email: '', company: '', message: '' });
-  //   setTimeout(() => setContactSent(false), 4000);
-  // };
 
   const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -8,27 +8,7 @@ interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
-/**
- * Protected Route Component
- * 
- * Enforces:
- * 1. Authentication: User must be logged in
- * 2. Authorization: User's role must match route's allowedRoles
- * 
- * TODO (Frontend & Backend Collaboration):
- * - Frontend: Hides UI and blocks navigation if user not authorized
- * - Backend: MUST independently validate role on API endpoints
- * - Users may attempt to bypass by manipulating client state or calling APIs directly
- * - Backend must enforce RBAC on every endpoint
- * 
- * Role Validation Flow:
- * 1. User action -> Navigate to /app/route
- * 2. ProtectedRoute checks: user exists? role in allowedRoles?
- * 3. If not authorized: redirect to /login or 403 page
- * 4. On API call: Authorization header with access_token sent
- * 5. Backend: Decode JWT, verify role, enforce permissions
- * 6. Backend response: 401 (token invalid), 403 (role not allowed), or 200 (success)
- */
+
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user, isLoading } = useAuth();
   const location = useLocation();
@@ -62,14 +42,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   if (routePath) {
     const allowedRoles = getAllowedRolesForPath(routePath);
     
-    /**
-     * TODO (Logging & Monitoring):
-     * - Log unauthorized access attempts for security auditing
-     * - Alert if same user attempts repeated unauthorized access
-     * - Backend should also log denied requests
-     * 
-     * console.warn(`Unauthorized access attempt: ${user.email} (${user.role}) tried to access ${routePath}`);
-     */
+   
     
     if (allowedRoles && !allowedRoles.includes(user.role)) {
       // User's role is not allowed for this route
