@@ -110,6 +110,9 @@ uvicorn app.main:app --reload
 **Frontend:**
 - Build: `npm run build` → outputs to `dist/`
 - Host on: Netlify, Vercel, Cloudflare Pages, or static hosting
+- https://ara2kom.vercel.app
+- http://arakom.duckdns.org
+- https://ara2komai.me/
 
 **Backend:**
 - Deploy: Docker container or direct server
