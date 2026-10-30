@@ -80,10 +80,30 @@ cp .env.example .env
 # Edit .env with backend URL
 npm run dev
 ```
-or for docker
+#### Docker (Linux/macOS)
+Build the image from the `frontend` directory, then run it:
 ```bash
-cd ~/complaints/frontend && sudo docker run --rm --name complaints-frontend -p 5173:5173 complaints-frontend:dev
+cd ~/complaints/frontend
+sudo docker build \
+  --progress=plain \
+  --target dev \
+  -t complaints-frontend:dev .
+
+sudo docker run --rm --name complaints-frontend -p 5173:5173 complaints-frontend:dev
 ```
+
+#### Docker (Windows PowerShell)
+Build the image from the `frontend` directory, then run it:
+```powershell
+Set-Location "$HOME\complaints\frontend"
+docker build `
+  --progress=plain `
+  --target dev `
+  -t complaints-frontend:dev .
+
+docker run --rm --name complaints-frontend -p 5173:5173 complaints-frontend:dev
+```
+
 ### Backend
 ```bash
 cd backend
@@ -93,13 +113,60 @@ pip install -r requirements.txt
 # Create .env file with database URL and secrets
 uvicorn app.main:app --reload
 ```
-or for docker
+#### Docker (Linux/macOS)
+Build the image from the repository root, then run it:
 ```bash
-cd ~/complaints && sudo docker run --rm --name complaints-backend --add-host=host.docker.internal:host-gateway --env-file backend/.env -p 8000:8000 complaints-backend:dev
+cd ~/complaints
+sudo docker build \
+  --progress=plain \
+  --target dev \
+  -t complaints-backend:dev \
+  -f backend/Dockerfile .
+
+sudo docker run --rm --name complaints-backend \
+  --add-host=host.docker.internal:host-gateway \
+  --env-file backend/.env \
+  -p 8000:8000 \
+  complaints-backend:dev
 ```
-for docker database postegress
+
+#### Docker (Windows PowerShell)
+Build the image from the repository root, then run it:
+```powershell
+Set-Location "$HOME\complaints"
+docker build `
+  --progress=plain `
+  --target dev `
+  -t complaints-backend:dev `
+  -f backend/Dockerfile .
+
+docker run --rm --name complaints-backend `
+  --add-host=host.docker.internal:host-gateway `
+  --env-file backend/.env `
+  -p 8000:8000 `
+  complaints-backend:dev
+```
+
+#### Docker database (Linux/macOS)
 ```bash
-sudo docker run -d --name complaints-db --restart unless-stopped -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=change_this_password -e POSTGRES_DB=complaints -p 5432:5432 -v complaints-postgres-data:/var/lib/postgresql/data postgres:16-alpine
+sudo docker run -d --name complaints-db --restart unless-stopped \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=change_this_password \
+  -e POSTGRES_DB=complaints \
+  -p 5432:5432 \
+  -v complaints-postgres-data:/var/lib/postgresql/data \
+  postgres:16-alpine
+```
+
+#### Docker database (Windows PowerShell)
+```powershell
+docker run -d --name complaints-db --restart unless-stopped `
+  -e POSTGRES_USER=postgres `
+  -e POSTGRES_PASSWORD=change_this_password `
+  -e POSTGRES_DB=complaints `
+  -p 5432:5432 `
+  -v complaints-postgres-data:/var/lib/postgresql/data `
+  postgres:16-alpine
 ```
 ---
 
@@ -130,4 +197,3 @@ sudo docker run -d --name complaints-db --restart unless-stopped -e POSTGRES_USE
 
 ---
 --------
-
