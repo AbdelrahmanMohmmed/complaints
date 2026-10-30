@@ -1,0 +1,20 @@
+# Build context for the FRONTEND image (context = ./frontend).
+
+# Installed dependencies / build output (reinstalled inside the image)
+node_modules
+dist
+.vite
+
+# Version control
+.git
+
+# Local-only env overrides. NOTE: .env.production is intentionally NOT ignored —
+# Vite reads it at build time to bake VITE_API_BASE_URL into the bundle.
+.env.local
+.env.*.local
+
+# Logs / editor
+npm-debug.log*
+yarn-error.log*
+.DS_Store
+*.md

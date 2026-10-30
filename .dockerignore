@@ -1,0 +1,46 @@
+# Build context for the BACKEND image (context = repository root).
+# Keep the context small: only requirements.txt and backend/ are copied.
+
+# Version control / editors / agent config
+.git
+.gitignore
+.github
+.idea
+.cursor
+.windsurf
+.clinerules
+.opencode
+.agents
+.freebuff
+
+# Python caches & local environments
+venv
+.venv
+**/__pycache__
+**/*.py[cod]
+.pytest_cache
+.ruff_cache
+.mypy_cache
+
+# Secrets — never bake these into an image
+.env
+.env.*
+**/.env
+**/.env.*
+!**/.env.example
+
+# Frontend (irrelevant to the backend image) — also the biggest context hog
+frontend
+
+# Local data, notebooks and generated artifacts
+notebooks
+reports
+references
+docs
+data
+models
+backend/models
+downloaded_files
+
+# Docs (not needed at runtime)
+*.md

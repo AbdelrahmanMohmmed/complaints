@@ -80,7 +80,10 @@ cp .env.example .env
 # Edit .env with backend URL
 npm run dev
 ```
-
+or for docker
+```bash
+cd ~/complaints/frontend && sudo docker run --rm --name complaints-frontend -p 5173:5173 complaints-frontend:dev
+```
 ### Backend
 ```bash
 cd backend
@@ -90,7 +93,14 @@ pip install -r requirements.txt
 # Create .env file with database URL and secrets
 uvicorn app.main:app --reload
 ```
-
+or for docker
+```bash
+cd ~/complaints && sudo docker run --rm --name complaints-backend --add-host=host.docker.internal:host-gateway --env-file backend/.env -p 8000:8000 complaints-backend:dev
+```
+for docker database postegress
+```bash
+sudo docker run -d --name complaints-db --restart unless-stopped -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=change_this_password -e POSTGRES_DB=complaints -p 5432:5432 -v complaints-postgres-data:/var/lib/postgresql/data postgres:16-alpine
+```
 ---
 
 ## Testing

@@ -73,8 +73,14 @@ def create_company(
             name=signup.f_name,
         )
 
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
+        logger.error(
+            "Company signup failed for %s: %s",
+            signup.email,
+            exc,
+            exc_info=True,
+        )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Signup failed, please try again"

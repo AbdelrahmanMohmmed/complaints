@@ -6,6 +6,7 @@ import sys
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from . import models, database
+from .seed import seed_reference_data
 from .routers import (
     auth, company, contact, dashboard, domain,
     feedback, integration, categories, user,
@@ -45,6 +46,7 @@ if sys.platform == "win32" and hasattr(asyncio, "WindowsProactorEventLoopPolicy"
 # ============================================================================
 
 models.Base.metadata.create_all(bind=database.engine)
+seed_reference_data()
 app = FastAPI(title="Complaints Management System", version="1.0.0")
 
 scheduler = None
