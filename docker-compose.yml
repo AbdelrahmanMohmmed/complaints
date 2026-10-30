@@ -1,0 +1,103 @@
+# ============================================================================
+# Development stack — hot-reloading FastAPI + Vite, plus PostgreSQL.
+#
+#   FastAPI : http://localhost:8000        (docs at /docs)
+#   Vite    : http://localhost:5173
+#   Postgres: localhost:5432 (credentials come from ./.env)
+#
+# Get started:
+#   cp .env.example .env      # then edit SECRET_KEY / POSTGRES_PASSWORD
+#   docker compose up --build
+#
+# Production (separate, standalone file):
+#   docker compose -f docker-compose.prod.yml up -d --build
+# ============================================================================
+
+name: complaints
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-complaints}
+    ports:
+      # Exposed for local tools (psql/pgAdmin). Set POSTGRES_HOST_PORT= if you
+      # already run a local PostgreSQL on 5432.
+      - "${POSTGRES_HOST_PORT:-5432}:5432"
+    volumes:
+      # Named volume => data survives `docker compose down` and rebuilds.
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-complaints}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      # Context = repo root because requirements.txt lives there.
+      context: .
+      dockerfile: backend/Dockerfile
+      target: dev
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # --- Database -----------------------------------------------------------
+      # "db" is the compose service name (container-to-container networking).
+      # The backend's config is case-insensitive, so these satisfy the
+      # DATABASE_* / secret_key fields declared in backend/app/config.py.
+      DATABASE_HOSTNAME: db
+      DATABASE_PORT: 5432
+      DATABASE_NAME: ${POSTGRES_DB:-complaints}
+      DATABASE_USERNAME: ${POSTGRES_USER:-postgres}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      # --- Auth (secrets come from .env, never hardcoded) ---------------------
+      SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in .env (copy .env.example first)}
+      ALGORITHM: ${ALGORITHM:-HS256}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-60}
+      # --- Email / integrations (required or optional per config.py) ----------
+      GMAIL_USER: ${GMAIL_USER:-}
+      GMAIL_APP_PASSWORD: ${GMAIL_APP_PASSWORD:-}
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-http://localhost:5173}
+      FACEBOOK_APP_ID: ${FACEBOOK_APP_ID:-}
+      FACEBOOK_APP_SECRET: ${FACEBOOK_APP_SECRET:-}
+      FACEBOOK_REDIRECT_URI: ${FACEBOOK_REDIRECT_URI:-}
+      TWITTER_AUTH_TOKEN: ${TWITTER_AUTH_TOKEN:-}
+      TWITTER_CT0: ${TWITTER_CT0:-}
+      # Opt-in reload polling when inotify does not reach the bind mount.
+      WATCHFILES_FORCE_POLLING: ${WATCHFILES_FORCE_POLLING:-}
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    volumes:
+      # Source mount => edits reload instantly, no rebuild. Installed deps live
+      # in /opt/venv (outside /app), so they are not hidden by this mount.
+      - ./backend:/app
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: dev
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      # Browser-facing backend URL (the browser runs on the host, not in a
+      # container, so this must stay localhost and NOT be the service name).
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000/api/v1}
+    ports:
+      - "${FRONTEND_PORT:-5173}:5173"
+    volumes:
+      # Source mount for HMR + a volume that shields the container's installed
+      # node_modules (Alpine/musl binaries) from the host mount.
+      - ./frontend:/app
+      - node_modules:/app/node_modules
+
+volumes:
+  db_data:
+  node_modules:

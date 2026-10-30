@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -106,6 +107,26 @@ class Settings(BaseSettings):
         "tabularisai/multilingual-emotion-classification"
     )
     MULTILINGUAL_EMOTION_THRESHOLD: float = 0.5
+
+    @field_validator("secret_key", "algorithm", mode="before")
+    @classmethod
+    def strip_surrounding_quotes(cls, value):
+        """Remove literal quotes that Docker Compose/shells may keep.
+
+        A value such as ``ALGORITHM="HS256"`` reaches python-jose as the
+        string ``"HS256"`` (quotes included), which raises
+        ``JWSError: Algorithm "HS256" not supported``. The same applies to
+        SECRET_KEY, silently changing the signing key.
+        """
+        if isinstance(value, str):
+            value = value.strip()
+            if (
+                len(value) >= 2
+                and value[0] == value[-1]
+                and value[0] in ("'", '"')
+            ):
+                return value[1:-1]
+        return value
 
     model_config = {
         "env_file": Path(__file__).resolve().parents[1] / ".env",

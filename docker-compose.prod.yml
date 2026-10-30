@@ -1,0 +1,81 @@
+# ============================================================================
+# Production stack — standalone (not an override of docker-compose.yml).
+#
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# Differences vs the development stack:
+#   * backend/frontend build the `prod` targets (no reload, no dev servers)
+#   * no source bind mounts — the image contents are what run
+#   * frontend is nginx:alpine serving the static bundle on port 80
+#   * backend drops to a non-root user and honours UVICORN_WORKERS
+#
+# The Vite build bakes frontend/.env.production (VITE_API_BASE_URL) into the
+# bundle at build time — edit that file to point at your production API.
+# ============================================================================
+
+name: complaints-prod
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-complaints}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-complaints}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: prod
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_HOSTNAME: db
+      DATABASE_PORT: 5432
+      DATABASE_NAME: ${POSTGRES_DB:-complaints}
+      DATABASE_USERNAME: ${POSTGRES_USER:-postgres}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in .env}
+      ALGORITHM: ${ALGORITHM:-HS256}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-60}
+      GMAIL_USER: ${GMAIL_USER:-}
+      GMAIL_APP_PASSWORD: ${GMAIL_APP_PASSWORD:-}
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-}
+      FACEBOOK_APP_ID: ${FACEBOOK_APP_ID:-}
+      FACEBOOK_APP_SECRET: ${FACEBOOK_APP_SECRET:-}
+      FACEBOOK_REDIRECT_URI: ${FACEBOOK_REDIRECT_URI:-}
+      TWITTER_AUTH_TOKEN: ${TWITTER_AUTH_TOKEN:-}
+      TWITTER_CT0: ${TWITTER_CT0:-}
+      # Keep at 1 while the in-process APScheduler jobs are enabled.
+      UVICORN_WORKERS: ${UVICORN_WORKERS:-1}
+    ports:
+      # Published so the browser can reach the API directly (matching the
+      # project's separate-API-host deployment). If you instead terminate TLS
+      # at a reverse proxy / load balancer in front of this stack, drop this
+      # mapping and route to the `backend` service on 8000 internally.
+      - "${BACKEND_PORT:-8000}:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: prod
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "${FRONTEND_HTTP_PORT:-8080}:80"
+
+volumes:
+  db_data:
